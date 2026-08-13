@@ -1,0 +1,116 @@
+[
+ {
+  "id": "vu1",
+  "module": "vue",
+  "q": "Vue2 与 Vue3 响应式原理区别？",
+  "a": "**Vue2**：Object.defineProperty 递归劫持每个属性 getter/setter。缺点：① 对**新增/删除**属性无响应（需 Vue.set/delete）；② 数组需重写方法；③ 全量递归、初始化慢；④ 听不了 Map/Set。\n**Vue3**：用 **Proxy** 代理整个对象，天然支持增删、数组索引、Map/Set；**懒代理**（访问才代理深层），性能更好；配合 Reflect。\n组件 API：Vue3 主推 Composition API（setup），逻辑按功能聚合更易复用。"
+ },
+ {
+  "id": "vu2",
+  "module": "vue",
+  "q": "Vue3 中 ref 和 reactive 怎么选？",
+  "a": "都创建响应式。\n**ref**：可包装任意类型，`.value` 访问；模板自动解包；常用于基本类型或需整体替换。\n**reactive**：仅对象/数组，直接访问属性；**不能直接解构/展开**（会丢响应），要用 toRefs 转 ref。\n实践：基本类型/独立值用 ref；一组成员状态用 reactive；解构 reactive 必用 toRefs。"
+ },
+ {
+  "id": "vu3",
+  "module": "vue",
+  "q": "Vue 组件间通信方式有哪些？",
+  "a": "父子：props 下传 + emit 上发（v-model 是 :value+@input 语法糖，vue3 用 v-model:xxx）。\n跨层：provide/inject（祖先提供、后代注入，适合主题/用户）。\n全局：Vuex（vue2）或 Pinia（vue3 推荐，更轻、TS 友好、无 mutations）。\n其他：attrs 透传、$refs 调子方法、事件总线（mitt，不推荐大型项目）。\n注意 props 单向数据流，子不直接改父传对象。"
+ },
+ {
+  "id": "vu4",
+  "module": "vue",
+  "q": "Composition API 与 Options API 区别？",
+  "a": "**Options** data/methods/computed/mounted 按**选项类型**分块，易读但逻辑分散（一个功能散多处），复用靠 mixin（易命名冲突/来源不清）。\n**Composition** setup 里**按功能聚拢**变量与逻辑，复用靠**组合式函数 useX**（无冲突、类型好）。官方推荐 Composition；Options 适合小/老项目。注意 setup 中 this 不可用（用 ref/reactive）。"
+ },
+ {
+  "id": "vu5",
+  "module": "vue",
+  "q": "Vue3 生命周期？",
+  "a": "创建：**setup**（取代 beforeCreate/created）→ onBeforeMount → **onMounted**（DOM 就绪，发请求/初始化）。更新：**onBeforeUpdate** → **onUpdated**（避免里改响应式致死循环）。\n卸载：**onBeforeUnmount** → **onUnmounted**（**必清**定时器/监听/实例防泄漏）。缓存：onActivated/onDeactivated（keep-alive）。SSR 额外：onServerPrefetch。"
+ },
+ {
+  "id": "vu6",
+  "module": "vue",
+  "q": "v-if 与 v-show 区别？",
+  "a": "**v-if** **真条件渲染**，不满足不创建 DOM（销毁/重建），切换开销大、有过渡。**v-show** 始终渲染，**display:none** 切换显示，开销小、频繁切更优。\n实践：频繁切换用 v-show；极少切/权限控制用 v-if。v-if 与 v-for 同元素时 **v-if 优先级更低**（vue3 中 v-if 不访问 v-for 变量，应避免同用，用 computed 过滤）。"
+ },
+ {
+  "id": "vu7",
+  "module": "vue",
+  "q": "v-for 为什么需要 key？",
+  "a": "key 是 Vue **识别节点身份**的唯一标识，用于 Diff 复用。**有 key** 按 key 比对新旧，复用同 key 节点、移动而非重建，列表不乱。\n**无 key / 用 index** index 会变（删中间项后错位），易**状态错乱/性能差**。实践：用**稳定唯一 id** 做 key，绝不用 index（除非静态列表）。"
+ },
+ {
+  "id": "vu8",
+  "module": "vue",
+  "q": "Vue3 编译期优化（Patch Flag / hoist）？",
+  "a": "Vue3 模板编译器做的优化：① **Patch Flag** 编译时给动态节点打标（如 TEXT/CLASS），Diff 只比**有动态标记**的部分，跳过静态；② **静态提升 hoistStatic** 把静态节点/属性**提为常量**只建一次；\n③ **缓存事件**（cacheHandler）；④ **Block Tree** 收集动态子，跳过静态子树。→ 比 Vue2 快很多。"
+ },
+ {
+  "id": "vu9",
+  "module": "vue",
+  "q": "Teleport 和 Suspense 是什么？",
+  "a": "**Teleport** 把组件 DOM **传送到 body 等指定节点**（如弹窗/Toast 避免父 overflow 遮挡），逻辑仍在原组件。**Suspense** **异步组件/setup await** 的加载占位，#default 异步 + #fallback 兜底（vue3 实验性，SSR 稳）。\n用途：弹层用 Teleport；异步数据/代码分割用 Suspense 显示骨架。"
+ },
+ {
+  "id": "vu10",
+  "module": "vue",
+  "q": "computed 与 watch 区别？",
+  "a": "**computed** **派生状态**，依赖变才重算（**缓存**，无依赖不变），必须 return，适合“由别的状态算出来”。**watch** **监听变化做副作用**（请求/改 DOM），不 return，可异步，适合“变了要干嘛”。\n实践：显示用 computed（如全选）；副作用用 watch（如监听 id 发请求）。watch 有 immediate/deep（deep 监听对象开销大，改用具体属性）。"
+ },
+ {
+  "id": "vu11",
+  "module": "vue",
+  "q": "watchEffect 是什么？",
+  "a": "**watchEffect** 立即执行并**自动收集依赖**，依赖变就重跑（不需指定源），适合“依赖不明确”的副作用。对比 watch：watch 要显式写源+回调；watchEffect 自动追踪**回调内用到的响应式**。\n清理：返回函数（如取消监听）。停止：返回 stop()。注意：依赖收集基于同步读取，异步读不追踪。"
+ },
+ {
+  "id": "vu12",
+  "module": "vue",
+  "q": "自定义指令 directive 怎么写？",
+  "a": "封装**DOM 底层行为**（v-xxx）。钩子：created、beforeMount、mounted、beforeUpdate、updated、unmounted。例：v-focus（mounted 自动 el.focus()）、v-loading（插入遮罩）、v-permission（无权限移除节点）。\n全局 app.directive('x',{})；局部 components 同级 directives。区别：指令只管 DOM 行为，组件管结构+逻辑。"
+ },
+ {
+  "id": "vu13",
+  "module": "vue",
+  "q": "keep-alive 作用？",
+  "a": "**<keep-alive>** 包裹动态组件，**缓存不活跃实例**（不销毁），切回时保状态/避免重渲染。钩子：onActivated（激活）、onDeactivated（停用）。控制：include/exclude/max（正则/名字，max 限缓存数 LRU）。\n用途：Tab 切换、列表→详情返回保滚动/表单。注意：缓存实例不触发 mounted，用 activated 代替。"
+ },
+ {
+  "id": "vu14",
+  "module": "vue",
+  "q": "Vue 的虚拟 DOM 与 Diff？",
+  "a": "用 **VNode**（JS 对象）描述 DOM，状态变生成新 VNode，与旧 Diff 出**最小补丁** patch 到真实 DOM，减少直接操作。Diff（snabbdom 系）：① 同节点才深比（patchVnode）；② 新旧同序列表用**双端比较**（头头/尾尾/头尾/尾头）+ key 复用；③ 静态节点借编译优化跳过。\n代价：超大列表仍重 → 虚拟滚动。"
+ },
+ {
+  "id": "vu15",
+  "module": "vue",
+  "q": "Pinia 与 Vuex 区别？",
+  "a": "**Pinia**（Vue3 官方推荐）无 **mutations**（直接 action 改/或 $patch）、**TS 友好**、类型推断好、无模块嵌套（用 store 组合）、代码量省、devtools 支持。\n**Vuex** state/getters/mutations/actions 四件套，mutations 必须同步（约束但繁琐），模块易命名空间复杂。迁移：新项目直接 Pinia；老项目 Vuex 仍可。"
+ },
+ {
+  "id": "vu16",
+  "module": "vue",
+  "q": "Vue 中 nextTick 原理？",
+  "a": "数据改了 DOM **不会立刻**更新（Vue 异步批量合并更新，同轮只渲染一次）。**nextTick(cb)** 把回调推入**微任务**（Promise.then / MutationObserver 降级），等 DOM 更新完再执行，从而拿到更新后 DOM。\n用途：改数据后立刻读 DOM（如聚焦、量高）。返回 Promise 可 await nextTick()。"
+ },
+ {
+  "id": "vu17",
+  "module": "vue",
+  "q": "Vue 插槽 slot 用法？",
+  "a": "父向子**传入模板片段**：① **默认插槽** <slot/>；② **具名插槽** <slot name=x/> + <template v-slot:header>（简写 #header）；③ **作用域插槽** 子把数据传回 <slot :row=item/>，父 #default={row} 用（列表组件常用）。\n用途：封装灵活组件（表格列自定义、卡片内容可配）。"
+ },
+ {
+  "id": "vu18",
+  "module": "vue",
+  "q": "Vue Router 守卫与懒加载？",
+  "a": "**守卫** 全局 beforeEach（登录鉴权/埋点）、beforeResolve、afterEach；路由独享 beforeEnter；组件内 onBeforeRouteLeave（离开确认）。**懒加载** () => import('./X.vue') 路由级分包，首屏只载当前页。\n**模式** history（需服务端 fallback，URL 干净）/ hash（#，无需服务端）。传参：params（不在 URL 刷新丢）/ query（在 URL）。"
+ },
+ {
+  "id": "vu19",
+  "module": "vue",
+  "q": "Vue3 项目性能优化点？",
+  "a": "① **代码分包**（路由懒加载）；② **v-show** 频繁切换；③ 大列表**虚拟滚动**（vue-virtual-scroller）；④ computed 缓存派生；⑤ 组件 **keep-alive** 缓存；⑥ 图片懒加载；⑦ **shallowRef/shallowReactive** 降深层响应开销；\n⑧ 大对象用 markRaw 跳过代理；⑨ 销毁清定时器/监听；⑩ 生产关 sourcemap/开压缩。"
+ }
+]

@@ -1,0 +1,110 @@
+[
+ {
+  "id": "re1",
+  "module": "react",
+  "q": "class 组件和函数组件 + Hooks 的区别？",
+  "a": "Class 靠 this 与生命周期；Hooks 让**函数组件**也能有状态与副作用。\n优势：① 无 this 绑定困扰；② 逻辑用自定义 Hook **抽取复用**（告别 render props/HOC 嵌套）；③ 按关注点组织；④ 官方推荐。\n注意：Hooks 只能在函数顶层调用，不能在条件/循环里；依赖数组要写全否则有闭包陷阱。"
+ },
+ {
+  "id": "re2",
+  "module": "react",
+  "q": "useEffect 依赖数组为空 / 不传 / 有值分别怎样？",
+  "a": "**[] 空**：挂载时执行一次，卸载走清理（如订阅）。\n**不传**：每次渲染后都执行（含首次）。\n**[a,b] 有值**：仅依赖变化才执行，变化前先跑上次清理。\n常见坑：依赖漏写函数/对象拿到旧值（闭包）；用 useCallback/useMemo 或放进依赖；请求在 effect 里做并用 AbortController 防竞态。"
+ },
+ {
+  "id": "re3",
+  "module": "react",
+  "q": "React 虚拟 DOM 和 Diff 策略？",
+  "a": "用 JS 对象（vnode）描述 UI，**状态变生成新树**，与旧树 Diff 出最小变更再批量更新真实 DOM，避免频繁重排。\nDiff 策略：① **同类型**才递归比，不同类型直接替换整棵；② 列表用 **key** 识别复用，无 key 易错乱；③ 跨层移动开销大。\n代价：极端大列表仍重，可用虚拟滚动。"
+ },
+ {
+  "id": "re4",
+  "module": "react",
+  "q": "React 19 新特性？",
+  "a": "稳定亮点：① **Actions**（useActionState/useFormStatus/useOptimistic）原生处理表单提交+pending+乐观更新；② **use()** 在渲染中读 Promise/Context（支持 suspense）；③ **React Compiler**（自动 memo，减少手写 useMemo）；\n④ **Document Metadata**（<title>/<meta> 直接写组件）；⑤ **ref 可传 props**（ref 作 prop）；⑥ Server Components 稳定。注意：19 起不再需 forwardRef（ref 直接 props）。"
+ },
+ {
+  "id": "re5",
+  "module": "react",
+  "q": "受控组件与非受控组件？",
+  "a": "**受控** value 由 React state 控制，value={state} onChange={set} —— 单一数据源、可实时校验/禁用，推荐。**非受控** 用 **ref** 直接读 DOM（defaultValue），适合一次性提交/文件 input/file。\n权衡：受控灵活但每键重渲；非受控简单、性能略好、难实时控制。文件上传只能用非受控（files）。"
+ },
+ {
+  "id": "re6",
+  "module": "react",
+  "q": "React 中 key 的作用？",
+  "a": "key 帮 React **识别列表项身份**，Diff 时复用同 key 节点、移动而非重建，防状态错乱。**用稳定 id**，不用 index（删中间项 index 漂移→状态错位/性能差）。\n同层同类型比；不同类型直接替换整棵。注意：key 只兄弟间唯一即可，不必全局。"
+ },
+ {
+  "id": "re7",
+  "module": "react",
+  "q": "useMemo 与 useCallback？",
+  "a": "**useMemo(fn,deps)** 缓存**计算结果**，依赖变才重算，避免每次渲染重复算（如大过滤）。**useCallback(fn,deps)** 缓存**函数引用**，依赖变才换新，用于传给子组件 props 防**无谓重渲**（配合 React.memo）。\n坑：依赖写错拿旧值（闭包）；滥用反而增开销——只在重计算/传给 memo 子用。"
+ },
+ {
+  "id": "re8",
+  "module": "react",
+  "q": "useRef 用途？",
+  "a": "**useRef** 返回**可变 ref 对象**（.current 持久存值），改它**不触发重渲**。用途：① 拿 **DOM 实例**（ref={el}）；② 存定时器 id/上一次值等；③ 跨渲染保持可变状态（不引起刷新）。\n对比 useState：state 变会重渲，ref 不变。注意：ref.current 变更**不通知**，别用于需响应的值。"
+ },
+ {
+  "id": "re9",
+  "module": "react",
+  "q": "什么是自定义 Hook？",
+  "a": "以 **use** 开头的函数，内部组合其他 Hook，抽出**可复用逻辑**（状态/副作用），实现逻辑复用而不渲染嵌套。例：useFetch（请求+loading+error）、useLocalStorage、useDebounce。\n规则：只在函数顶层调用（不能条件里）；内部可调用其他 Hook；返回需要的状态/方法。区别于 HOC/render props：更扁平、无嵌套地狱。"
+ },
+ {
+  "id": "re10",
+  "module": "react",
+  "q": "React 状态管理方案？",
+  "a": "局部用 **useState/useReducer/Context**。全局：① **Redux Toolkit**（RTK，官方推荐，createSlice 简化、自带 immer/devtools，适合大复杂）；② **Zustand**（轻量、无 Provider、hook 取用，趋势热）；③ **Jotai/Recoil**（原子化）；④ Context+useReducer（中小）。\n选型：小项目 Context 够；大/多团队协作 Redux/Zustand。"
+ },
+ {
+  "id": "re11",
+  "module": "react",
+  "q": "Context 性能问题？",
+  "a": "Context 值一变，**所有消费组件都重渲**（即使只用到部分），大对象/高频更新会**全树重渲**。优化：① 拆**多个小 Context**（按需订阅）；② 把**频繁变的值**移出 Context（用 ref/外部 store）；\n③ 用 **useMemo** 缓存 Provider value（避免每次新对象）；④ 重组件用 memo；⑤ 换 Zustand 等按订阅更新。"
+ },
+ {
+  "id": "re12",
+  "module": "react",
+  "q": "React Fiber 架构？",
+  "a": "Fiber 是**重构的协调引擎**，把渲染拆成**可中断/可恢复**的小单元（fiber 节点链表）。解决的问题：旧栈调和**同步递归**长列表卡 UI。\n机制：① **可中断渲染**（分片、让出主线程）；② **双缓存**（current/ workInProgress 树切换）；③ 优先级调度（用户交互 > 低优先）；④ 配合 Concurrent（useTransition）。效果：更流畅、不阻塞输入。"
+ },
+ {
+  "id": "re13",
+  "module": "react",
+  "q": "Concurrent 特性（useTransition/useDeferredValue）？",
+  "a": "让**非紧急更新**可被**打断**，保 UI 响应。**useTransition** 把耗时更新标 startTransition，期间用户交互**紧急更新优先**，isPending 显示过渡（如大列表筛选）。\n**useDeferredValue** 返回值的**滞后副本**，渲染先用旧值、后台算新值，避免卡顿（如搜索框输入）。对比节流：更语义化、不丢输入、自动调度。"
+ },
+ {
+  "id": "re14",
+  "module": "react",
+  "q": "React Server Components？",
+  "a": "**RSC** 在服务端渲染组件（无 JS 发到客户端），**直接读后端**（DB/文件），减少包体积与瀑布请求。特点：① 默认服务端组件（零客户端 JS）；② 客户端组件用 'use client' 标；③ 可混用；④ 数据流服务端→客户端。\n边界：服务端组件**不能**用 state/useEffect/DOM；客户端组件可 import 服务端组件。适用：Next.js App Router。"
+ },
+ {
+  "id": "re15",
+  "module": "react",
+  "q": "useReducer 场景？",
+  "a": "useState 的升级：用 **reducer(state,action)** 管理复杂状态（多字段/多动作类型），类似 Redux 的纯函数。适用：① 状态逻辑复杂（如表单多字段）；② 下一个状态依赖上一个；③ 多子组件共享同 dispatch。\nconst [state,dispatch]=useReducer(reducer,init)；dispatch({type:'inc'})。简单状态仍用 useState。"
+ },
+ {
+  "id": "re16",
+  "module": "react",
+  "q": "错误边界（Error Boundary）？",
+  "a": "捕获**子组件渲染期** JS 错误，显示兜底 UI 防整页白屏。实现：**class 组件** + static getDerivedStateFromError / componentDidCatch（Hooks 暂无，需用 class 或 react-error-boundary 库）。\n局限：**不捕获**事件回调/异步/SSR 错误。实践：路由级包一层，配错误页；关键功能加监控（Sentry）。"
+ },
+ {
+  "id": "re17",
+  "module": "react",
+  "q": "React 合成事件（SyntheticEvent）？",
+  "a": "React 把原生事件**统一封装**为 SyntheticEvent（跨浏览器一致、带池化复用）。机制：事件**委托到根容器**（React17 起挂到根而非 document），自动绑定。\n注意：① 异步里取 e.target 需**e.persist()**（旧）/或先存值（新已不池化）；② 原生 stopPropagation 仍可用；③ 想绑原生用 ref.addEventListener（绕过合成）。"
+ },
+ {
+  "id": "re18",
+  "module": "react",
+  "q": "React 性能优化？",
+  "a": "① **React.memo** 缓存组件（props 浅比较跳重渲）；② useMemo/useCallback 防无谓计算/传参；③ **虚拟列表**（react-window）治大列表；④ **代码分割**（React.lazy + Suspense）路由分包；⑤ 派生状态用 useMemo；⑥ 避免内联对象/函数；⑦ **并发** useTransition 保响应；⑧ 生产构建（Terser/DCE）。"
+ }
+]

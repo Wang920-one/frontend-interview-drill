@@ -1,0 +1,122 @@
+[
+ {
+  "id": "js1",
+  "module": "js",
+  "q": "var、let、const 的区别？",
+  "a": "**var**：函数作用域，存在变量提升（声明提到函数顶部，值为 undefined），可重复声明、可重新赋值。\n**let**：块级作用域（{} 内有效），有暂时性死区 TDZ（声明前访问报错），不可重复声明，可重新赋值。\n**const**：同 let 的作用域与 TDZ，区别是**绑定不可变**——基本类型值不能改；对象/数组是引用不能改，但内部属性可改。\n实践：默认用 const，需重新绑定再用 let，避免 var。"
+ },
+ {
+  "id": "js2",
+  "module": "js",
+  "q": "事件循环（Event Loop）是怎么工作的？",
+  "a": "JS 单线程，靠**事件循环**处理异步。\n调用栈执行同步代码；异步回调按类型入队：\n- **宏任务**：script、setTimeout/setInterval、I/O、UI 渲染\n- **微任务**：Promise.then/catch/finally、queueMicrotask、MutationObserver\n每轮：执行一个宏任务 → 栈清空后**一次性清空所有微任务** → 渲染 → 再取下一宏任务。\n例：setTimeout(fn,0) 晚于 Promise.then 执行。"
+ },
+ {
+  "id": "js3",
+  "module": "js",
+  "q": "什么是闭包？有什么用？",
+  "a": "函数与其**词法作用域**的组合——内部函数能访问外部变量，即使外部已返回。\n原理：作用域链在定义时确定并随函数一起保存。\n用途：① 私有变量（模块模式，外部无法直接改）；② 函数工厂/柯里化；③ 防抖节流里保存 timer；④ 循环中用 let 保留每次迭代值。\n注意：不当保留大对象会占内存，用完置 null。"
+ },
+ {
+  "id": "js4",
+  "module": "js",
+  "q": "原型链是什么？继承如何实现？",
+  "a": "每个**函数**有 prototype（显式原型），每个**对象**有 __proto__（隐式原型，指向构造函数的 prototype）。访问属性时沿 __proto__ 向上查找，形成**原型链**，顶端是 Object.prototype → null。\n继承实现：① **原型链继承**（引用属性共享，缺陷大）；② **构造函数继承**（call 父类）；③ **组合继承**（call + 原型，最常用）；④ **寄生组合继承**（Object.create，ES5 最优）；⑤ ES6 **class extends** 语法糖（基于寄生组合）。"
+ },
+ {
+  "id": "js5",
+  "module": "js",
+  "q": "深拷贝和浅拷贝区别？如何实现深拷贝？",
+  "a": "**浅拷贝**只复制第一层，嵌套对象仍共享引用（Object.assign、{...obj}、concat），改嵌套会影响原对象。\n**深拷贝**完全独立。实现：① **JSON.parse(JSON.stringify)** 简单但有坑——丢函数/undefined/Symbol、循环引用报错；② **structuredClone**（现代原生，支持循环引用，不支持函数）；③ 手写递归（WeakMap 缓存破循环）；④ lodash **cloneDeep**。"
+ },
+ {
+  "id": "js6",
+  "module": "js",
+  "q": "this 的指向规则？",
+  "a": "this 取决于**调用方式**而非定义位置：① **普通函数**调用（非严格）→ window；② **对象方法** obj.fn() → obj；③ **new Fn()** → 新建实例；④ **call/apply/bind** 显式绑定 → 指定对象；⑤ **箭头函数**无自身 this，取**外层词法** this（适合回调/定时器）。\n优先级：new > 显式 > 隐式 > 默认。"
+ },
+ {
+  "id": "js7",
+  "module": "js",
+  "q": "new 一个对象发生了什么？",
+  "a": "四步：① 创建空对象，原型指向**构造函数的 prototype**；② 执行构造函数，this 绑定该对象；③ 若构造函数**显式 return 对象**则用它，否则返回新对象；④ 返回实例。\n手写：function _new(Fn,...args){ const o=Object.create(Fn.prototype); const r=Fn.apply(o,args); return r instanceof Object?r:o; } 注意：箭头函数不能作构造函数（无 prototype）。"
+ },
+ {
+  "id": "js8",
+  "module": "js",
+  "q": "Promise 的状态与链式调用？",
+  "a": "三种状态：**pending → fulfilled / rejected**，状态一旦确定**不可逆**。\n**.then(onF,onR)** 返回新 Promise，支持**链式**；异常向下传直到 .catch；.finally 无论成败都执行。**微任务**：.then 回调进微任务队列。\n静态方法：Promise.all（全成功/一失败即败）、allSettled（都要结果）、race（谁先）、any（谁先成功）。避免 **Promise 穿透**（.then() 无回调参数会透传值）。"
+ },
+ {
+  "id": "js9",
+  "module": "js",
+  "q": "async/await 是什么？如何处理错误？",
+  "a": "**async** 函数返回 Promise；**await** 暂停等待 Promise 落地（fulfilled 取值 / rejected 抛错），让异步代码**像同步**书写。\n错误处理：① **try/catch** 包 await（推荐）；② .catch 接在调用后；③ 循环里 await 是串行（需并发用 Promise.all）。注意：await 会**串行阻塞**，大量独立请求用 Promise.all 提速。"
+ },
+ {
+  "id": "js10",
+  "module": "js",
+  "q": "手写防抖 debounce？",
+  "a": "防抖：触发后延迟 N 秒执行，期间再触发**重设计时**。function debounce(fn,delay){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),delay); }; }\n节流（时间戳版）：function throttle(fn,wait){ let last=0; return (...a)=>{ const now=Date.now(); if(now-last>=wait){ fn(...a); last=now; } }; } 防抖用于搜索/resize，节流用于 scroll/拖拽。"
+ },
+ {
+  "id": "js11",
+  "module": "js",
+  "q": "map、filter、reduce 区别？",
+  "a": "**map** 遍历映射，返回**等长新数组**（每个元素转换）。**filter** 按条件**过滤**，返回子数组（保留真值项）。\n**reduce** 累加器，把数组**聚合成任意值**（求和/分组/拍平），reduce((acc,cur,i,arr)=>...,初始值)。注意：map 不应做副作用；forEach 不能 break（需 some/every）。"
+ },
+ {
+  "id": "js12",
+  "module": "js",
+  "q": "for...of 与 forEach 区别？",
+  "a": "**for...of** 可遍历**任何可迭代对象**（Array/Map/Set/String/NodeList），支持 **break/continue/return** 中断，能用 await（串行）。\n**forEach** 是数组方法，回调里 **break 无效**，且**异步回调会并行**、无法 await 顺序等待。遍历对象用 for...in 或 Object.keys/entries。"
+ },
+ {
+  "id": "js13",
+  "module": "js",
+  "q": "typeof、instanceof、Object.prototype.toString 区别？",
+  "a": "**typeof** 返回基础类型字符串；**null → 'object'**（历史 bug）、函数 → 'function'、其余对象 → 'object'，**无法细分**对象。\n**instanceof** 顺着**原型链**判断构造关系（a instanceof Array），**跨 iframe 失效**，不能判原始类型。**Object.prototype.toString.call(x)** 最准，返回 [object Type]（Array/Null/Date 全可辨），是万能判型法。"
+ },
+ {
+  "id": "js14",
+  "module": "js",
+  "q": "== 和 === 区别？",
+  "a": "**=== 严格相等**：类型不同直接 false，不转换（推荐）。**== 宽松相等**：会做**隐式类型转换**再比，规则多易错：NaN≠NaN，'0'==false 为 true，null==undefined 为 true 但都 ≠ 其他。\n实践：**始终用 ===**；仅 null 检查可用 ==（null==undefined）。"
+ },
+ {
+  "id": "js15",
+  "module": "js",
+  "q": "事件委托（事件代理）？",
+  "a": "把子元素事件**委托给父元素**监听，利用事件**冒泡**；点击子元素时冒泡到父，父用 **event.target** 判断实际源。\n优点：① 减少监听器、省内存；② 动态新增子元素**自动生效**（无需重新绑定）；③ 统一逻辑。注意：focus/blur 不冒泡（用 focusin/out）；适合列表/表格。"
+ },
+ {
+  "id": "js16",
+  "module": "js",
+  "q": "以下代码输出顺序是？",
+  "a": "经典题：console.log(1); setTimeout(()=>console.log(2),0); Promise.resolve().then(()=>console.log(3)); console.log(4);\n输出：**1 4 3 2**。原因：同步先跑（1、4）→ 微任务 Promise.then **先于**宏任务 setTimeout 清空 → 最后宏任务（2）。记住：**每轮一个宏任务 + 清空所有微任务**再渲染。"
+ },
+ {
+  "id": "js17",
+  "module": "js",
+  "q": "什么是函数柯里化？",
+  "a": "把**多参函数**转成**依次接收单参**并返回新函数，直到参数齐了才执行。const add=a=>b=>a+b; add(2)(3);\n用途：① **参数复用**（固定部分参数如 tax(rate)）；② 延迟执行；③ 配合 compose 函数式组合。实质是闭包保存已传参数。"
+ },
+ {
+  "id": "js18",
+  "module": "js",
+  "q": "CommonJS 与 ES Module 区别？",
+  "a": "**CommonJS**（Node）：require/module.exports，**运行时**加载、值**拷贝**（缓存后拿导出对象副本），同步。\n**ESM**（前端）：import/export，**编译期**静态分析、支持 Tree-shaking、值**引用**（绑定）、异步加载。互操作：Node 用 ESM 需 .mjs 或 package.json type:module。"
+ },
+ {
+  "id": "js19",
+  "module": "js",
+  "q": "为什么 0.1 + 0.2 !== 0.3？",
+  "a": "JS 数字按 **IEEE 754 双精度浮点**存储，二进制无法精确表示 0.1/0.2（无限循环），计算产生微小误差 → 0.30000000000000004。\n处理：① 转整数运算（(0.1*10+0.2*10)/10）；② toFixed 再 Number；③ 用 **decimal.js** 等精确库；④ 比较用 Math.abs(a-b)<1e-9。"
+ },
+ {
+  "id": "js20",
+  "module": "js",
+  "q": "call、apply、bind 区别？",
+  "a": "三者都是**显式绑定 this**。**call(this,a,b,...)** 参数**逐个**传，立即执行。**apply(this,[arr])** 参数**数组**传，立即执行。**bind(this,...)** 返回**新函数不立即执行**（柯里化/事件监听固定 this）。\n经典用：apply 求数组最大 Math.max.apply(null,arr)、类数组转真数组。"
+ }
+]

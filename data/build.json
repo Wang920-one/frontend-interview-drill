@@ -1,0 +1,86 @@
+[
+ {
+  "id": "bu1",
+  "module": "build",
+  "q": "Tree-shaking 是什么？依赖什么？",
+  "a": "打包时**剔除未被引用的导出代码**，减小产物体积。\n前提：① 用 **ESM（import/export）** 静态结构，打包器能静态分析；② 模块**无副作用**（package.json 的 sideEffects:false）；③ 避免全量引入（如 `import _ from lodash` → 改用 lodash-es 按需）。\nCommonJS 动态 require 难 Tree-shake。"
+ },
+ {
+  "id": "bu2",
+  "module": "build",
+  "q": "Vite 为什么比 Webpack 快？",
+  "a": "**Vite** 开发期基于**原生 ESM**：浏览器直接请求源文件，用 esbuild（Go 写）极快预构建依赖，**不打包整体** → 冷启动秒开、HMR 毫秒级。生产用 Rollup（Tree-shaking/分包）。\n对比 Webpack：先全量打包再起服务，大项目慢。\n代价：生态/loader 不如 Webpack 老牌，特殊场景需插件。"
+ },
+ {
+  "id": "bu3",
+  "module": "build",
+  "q": "Webpack 中 loader 与 plugin 区别？",
+  "a": "**loader** 处理**单个文件**的**转换**（src→dest），如 babel-loader（ES6→ES5）、css-loader、file-loader。链式，自下而上。\n**plugin** 参与**打包全流程**钩子（emit/compile/done），做更宏观事：分包/注入 HTML/定义变量（HtmlWebpackPlugin、DefinePlugin、MiniCssExtract）。记忆：loader 管“文件怎么转”，plugin 管“打包怎么控”。"
+ },
+ {
+  "id": "bu4",
+  "module": "build",
+  "q": "代码分割（Code Splitting）？",
+  "a": "把大包拆小，**按需加载**降首屏体积。方式：① **动态 import()**（自动分包，路由/组件懒加载）；② SplitChunksPlugin（抽公共/第三方到 vendor）；③ entry 多入口。\n效果：首屏只载必需，其余用到再拉。配合 preload/prefetch 预取。注意：分包过多增请求数（HTTP2 下可接受）。"
+ },
+ {
+  "id": "bu5",
+  "module": "build",
+  "q": "hash / chunkhash / contenthash 区别？",
+  "a": "用于文件名指纹，控缓存。**hash** 整个构建同 hash，任一文件变全变（**不推荐**，牵一发动全身）。**chunkhash** 按 **chunk** 变（同 chunk 共享），不同 chunk 独立——JS 分包友好。\n**contenthash** 按**文件内容**变，最精准（CSS 抽离后用，改 CSS 不影响 JS 缓存）。实践：JS 用 chunkhash，CSS 用 contenthash，配长缓存。"
+ },
+ {
+  "id": "bu6",
+  "module": "build",
+  "q": "Source Map 是什么？",
+  "a": "把压缩后代码**映射回源码**的文件（.map），便于线上 **debug / 报错定位**。级别：cheap（仅行）、module（含 loader）、eval（快但简）、source-map（全，慢）、hidden（不暴露）。\n权衡：开发用 cheap-module-eval（快）；生产用 hidden-source-map（报错可定位但不给用户）。安全：生产别暴露 sourcemap 到公网（泄露源码）。"
+ },
+ {
+  "id": "bu7",
+  "module": "build",
+  "q": "前端多环境变量怎么管？",
+  "a": "不同环境（dev/test/prod）用不同配置（API 地址/开关）。**构建期** Vite 用 .env.[mode] + import.meta.env.VITE_X（VITE_ 前缀才暴露）；Webpack 用 DefinePlugin 注入 process.env。\n**运行期** 配置文件/接口下发（利于不改包切换）。注意：密钥**不能**前端硬编码（可被看到），敏感用后端/env 注入。"
+ },
+ {
+  "id": "bu8",
+  "module": "build",
+  "q": "什么是 Monorepo？",
+  "a": "把**多个相关包/项目**放**同一仓库**管理（vs 多仓 multi-repo）。工具：**pnpm workspace**（快、省磁盘、严格依赖）/ **Turborepo**（任务编排/缓存增量构建）/ Nx / Lerna。\n好处：① 代码/类型**共享复用**；② 统一**规范/构建**；③ 跨包改一处全生效；④ 原子提交。代价：仓库大、需工具治理权限/构建。适合中台/组件库/多端同源。"
+ },
+ {
+  "id": "bu9",
+  "module": "build",
+  "q": "ESLint + Prettier + Husky 怎么配合？",
+  "a": "三层保障代码质量：① **ESLint** 查**代码问题/坏味道**（未用变量、规则）；② **Prettier** 统一**格式**（换行/引号），与 ESLint 分工（eslint-config-prettier 关冲突规则）；③ **Husky + lint-staged** **提交前（git hook）** 只对暂存文件跑 lint+format，拦住坏代码。\n配合 **commitlint** 规范 commit 信息。CI 再跑一遍兜底。"
+ },
+ {
+  "id": "bu10",
+  "module": "build",
+  "q": "前端 CI/CD 流程？",
+  "a": "**CI**（持续集成）push/PR 触发 → 安装依赖 → lint → 单测 → 构建 → 产物检查。**CD**（持续交付/部署）构建产物自动**部署**到环境（测试/预发/生产）。工具：GitHub Actions / GitLab CI / Jenkins。\n收益：① 早暴露错误；② 自动化省人工；③ 一键发布可回滚。注意：加**缓存**提速、secrets 存密钥、部署前预览（Preview）。"
+ },
+ {
+  "id": "bu11",
+  "module": "build",
+  "q": "Babel 与 polyfill？",
+  "a": "**Babel** 把新语法（ES6+/JSX/TS）**转译**成目标环境老语法（AST 转换），让旧浏览器跑得动。**polyfill** 补**缺失的 API**（Promise/Array.includes），不是语法（core-js / regenerator-runtime）。\n模式：**@babel/preset-env** + useBuiltIns:'usage'（**按需引入** polyfill，按 targets 浏览器）；或 entry（全引，体积大）。注：语法用 Babel，API 用 polyfill，二者配合。"
+ },
+ {
+  "id": "bu12",
+  "module": "build",
+  "q": "构建中图片/字体如何处理优化？",
+  "a": "① 小图转 **base64/DataURI**（url-loader，限 size 内内联，省请求）；② 大图用 **file-loader/asset** 输出 + CDN；③ **WebP/AVIF** 降体积（需兼容）；④ 雪碧图/字体子集化（font-subset）；⑤ **压缩**（imagemin）；⑥ 用 SVG（矢量、小）；⑦ 图片懒加载（loading=lazy）。\n目的：减请求数 + 减体积 = 提加载。"
+ },
+ {
+  "id": "bu13",
+  "module": "build",
+  "q": "如何分析 / 减小打包体积？",
+  "a": "分析：**webpack-bundle-analyzer** / **rollup-plugin-visualizer** 看各模块占比。减小：① **按需引入**（lodash-es 替 lodash、组件库 babel 按需）；② Tree-shaking（ESM + sideEffects）；③ 分包 + 长缓存；④ **替换大库**（day.js 替 moment）；⑤ 压缩（gzip/brotli）；⑥ 删 console/注释（生产）。"
+ },
+ {
+  "id": "bu14",
+  "module": "build",
+  "q": "微前端是什么？",
+  "a": "把**一个大应用拆成多个独立子应用**（技术栈可不同）组合运行，teams 独立开发部署。方案：① **qiankun**（基于 single-spa，HTML Entry 接入）；② **Module Federation**（Webpack5，运行时共享模块/依赖）；③ iframe（隔离强但通信难）。\n核心难点：① JS/CSS **沙箱隔离**；② 应用**通信**（props/全局状态）；③ 样式隔离；④ 公共依赖去重。适用：巨型后台/多团队。"
+ }
+]

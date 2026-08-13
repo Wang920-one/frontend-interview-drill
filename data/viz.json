@@ -1,0 +1,62 @@
+[
+ {
+  "id": "vi1",
+  "module": "viz",
+  "q": "数据大屏自适应常用方案？",
+  "a": "三方案：\n① **scale 整体缩放**：设计稿固定尺寸（如 1920×1080），transform:scale(屏宽/设计宽) 等比缩放，最简保真、最常用。\n② **vw/vh 百分比**：按视口单位布局，自适应但需算比例。\n③ **rem + postcss-pxtorem**：根字号随屏宽变，px 自动转 rem。\n配合 flex/grid 与媒体查询，注意最小字号与留白。"
+ },
+ {
+  "id": "vi2",
+  "module": "viz",
+  "q": "ECharts 大量数据卡顿怎么优化？",
+  "a": "① 用 **dataset** 统一管理数据；② 关动画（animation:false）；③ **dataZoom** 分片显示；④ 默认 Canvas 渲染（量大优于 SVG）；⑤ 采样 sampling（lttb）降点；⑥ lazyUpdate、增量 setOption；⑦ 及时 dispose 释放实例防内存泄漏；⑧ 地图用精简 GeoJSON。"
+ },
+ {
+  "id": "vi3",
+  "module": "viz",
+  "q": "ECharts / AntV / D3 区别？",
+  "a": "**ECharts** 开箱即用**图表库**，配置项驱动（option），图表多、上手快、大屏常用，Canvas 渲染（量大快）。**AntV**（G2/G6）蚂蚁系，G2 语义化语法、G6 图可视化（关系网），偏分析。\n**D3** 底层**数据驱动 DOM/SVG** 框架，灵活度最高（自定义一切），学习陡、代码多。选型：常规图表 ECharts；高度定制/特殊可视化 D3；关系图 G6。"
+ },
+ {
+  "id": "vi4",
+  "module": "viz",
+  "q": "Canvas 与 SVG 怎么选？",
+  "a": "**SVG** **DOM 节点**（矢量、可事件/选中、小量清晰），节点多（>数千）卡。**Canvas** **位图画布**（JS 指令绘制、不可单独选元素、量大快），适大数据/动画/游戏。\n经验：① 交互少/量大 → Canvas；② 需 hover/选中/可访问 → SVG；③ ECharts 默认 Canvas，>5k 节点切 Canvas；④ 地图大用 WebGL（如 deck.gl）。"
+ },
+ {
+  "id": "vi5",
+  "module": "viz",
+  "q": "可视化大数据量怎么渲染？",
+  "a": "① **降采样**（LTTB 算法保趋势）；② **分片/虚拟**（只渲染视口内）；③ 图层/合批减少 draw call；④ Canvas/WebGL 替代 SVG（几万点 WebGL）；⑤ 增量更新（setOption 增量/appendData）；⑥ 关动画；⑦ Web Worker 算坐标；⑧ 用 **DataZoom/下钻** 减同屏点。经验：>500 节点 Canvas，>5w WebGL。"
+ },
+ {
+  "id": "vi6",
+  "module": "viz",
+  "q": "地图可视化怎么做？",
+  "a": "① ECharts **geo/map**（注册 GeoJSON 画行政区热力/散点/线）；② **高德/Mapbox/Leaflet** 真实底图 + 图层（海量点用聚合 MarkerCluster）；③ Three.js/**deck.gl** WebGL 三维地图（飞线/热力）；④ 热力图（heatmap）。优化：精简 GeoJSON、点聚合、按需缩放加载。\n避坑：**地图合规**（中国边界/审图号，用合规底图）。"
+ },
+ {
+  "id": "vi7",
+  "module": "viz",
+  "q": "数据可视化设计原则？",
+  "a": "① **明确目的**（用户要回答什么问题）；② 选对图表（趋势→折线、占比→饼/环、对比→柱、关系→散点/网络）；③ **少即是多**（删网格/装饰、突出数据）；④ 配色（区分系列、**红涨绿跌**按场景、色盲友好）；⑤ 交互（tooltip/下钻/联动）；⑥ 大屏注意对比度/可读性/实时刷新；⑦ 避免误导（截断轴/双轴误读）。"
+ },
+ {
+  "id": "vi8",
+  "module": "viz",
+  "q": "大屏实时数据怎么更新？",
+  "a": "① **轮询** setInterval 拉（简单，间隔定，有延迟/浪费）；② **WebSocket/SSE** 服务端推送（实时、省请求，大屏首选）；③ 增量更新（只改变化点，不全量 setOption）；④ 节流/批量（高频用 rAF 合帧）；⑤ 断线**重连**+心跳；⑥ 骨架/loading 防空；⑦ 数据量大用 Worker 算。注意：及时清定时器/连接防泄漏。"
+ },
+ {
+  "id": "vi9",
+  "module": "viz",
+  "q": "ECharts tooltip / 自定义系列？",
+  "a": "**tooltip** 悬浮提示，formatter 返回 HTML 自定义内容（多系列/单位）。**series 类型** bar/line/pie/scatter/heatmap/graph（关系）/lines（飞线）/custom（**自定义渲染**，最灵活）。\n**dataset** 统一管理数据（source+encode 映射维度），便于多图共用。**事件** on('click') 做下钻/联动（myChart.on('click',p=>...)）。**legend/visualMap** 图例/视觉映射（连续色）。"
+ },
+ {
+  "id": "vi10",
+  "module": "viz",
+  "q": "WebGL 可视化库？",
+  "a": "WebGL 直接操控 GPU 画 3D/海量点。库：① **Three.js**（通用 3D，deck.gl/echarts-gl 底层）；② **deck.gl**（Uber，海量地理/图层，GPU 渲染百万点）；③ **ECharts GL**（echarts 3D 扩展，地球/3D 柱）；④ **PixiJS**（2D 高性能）；⑤ **regl/raw WebGL**（底层）。\n适用：三维孪生、百万级点、实时。注意：显存/着色器复杂度。"
+ }
+]

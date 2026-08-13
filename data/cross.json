@@ -1,0 +1,56 @@
+[
+ {
+  "id": "cr1",
+  "module": "cross",
+  "q": "UniApp 跨端原理？",
+  "a": "UniApp：**一套 Vue 代码**编译到多端——H5、微信/支付宝等小程序、App。\n原理：编译期把 Vue 模板转各平台代码；小程序侧受平台 API 限制（DOM/BOM 不可用），App 侧用原生渲染或 WebView。\n跨端差异用**条件编译** #ifdef MP-WEIXIN 区分；注意小程序包体积与权限，复杂动画优先 H5/App。"
+ },
+ {
+  "id": "cr2",
+  "module": "cross",
+  "q": "PWA / 离线缓存怎么做？",
+  "a": "PWA = 渐进式 Web 应用，让网页像原生 App。\n核心：① **Service Worker** 拦截请求、缓存静态资源（cache-first）→ 离线可用；② **manifest.json** 配名称/图标/主题 → 可加主屏、全屏；③ 后台同步/推送（可选）。\n实践：用 Workbox 简化 SW；缓存更新用文件 hash 触发；HTTPS 是前提。"
+ },
+ {
+  "id": "cr3",
+  "module": "cross",
+  "q": "小程序（微信）运行原理？",
+  "a": "双线程：① **逻辑层**（JS，跑业务逻辑/数据）；② **渲染层**（WebView，跑 WXML/WXSS 渲染）。两层**隔离**，通过 **Native 中转通信**（setData 下发、事件上传）。原因：WebView 直接操作 DOM 危险，故**无 DOM/BOM**，API 走微信桥。\n特点：setData 频繁会卡（序列化开销）。包：主包+分包（限 2M/总 20M）。"
+ },
+ {
+  "id": "cr4",
+  "module": "cross",
+  "q": "小程序与 H5 差异？",
+  "a": "① **环境** 小程序无 DOM/BOM/window，H5 全有；② **能力** 小程序调原生（相机/定位/支付）更顺，H5 受限；③ **入口** 小程序扫码/搜索/会话，H5 链接；④ **性能** 小程序首屏快（预载），H5 受网络；⑤ **审核** 小程序上架审核，H5 自由；⑥ **跨端** 小程序各平台 API 不同（需 UniApp/Taro 适配）。\n选型：强原生能力用小程序，灵活传播用 H5。"
+ },
+ {
+  "id": "cr5",
+  "module": "cross",
+  "q": "React Native / Flutter 原理？",
+  "a": "**RN** 用 **JS 写 React**，通过 Bridge 把 UI 描述转**原生组件**渲染（近原生体验），逻辑 JS 线程。**Flutter** 自绘引擎（**Skia**），Dart 直接画 UI（不依赖原生控件），一致性高、性能好，但包大。\n对比：RN 生态/JS 熟悉、桥通信有损；Flutter 性能/一致、需学 Dart。H5：WebView 渲染，最跨但性能最低。"
+ },
+ {
+  "id": "cr6",
+  "module": "cross",
+  "q": "移动端 rem 适配方案？",
+  "a": "**flexible 思路** 根字号随屏宽动态设 html{font-size: clientWidth/10}，设计稿 px → px/(设计宽/10) rem，全屏等比缩放。现代：① **vw 直接**（1vw=屏宽1%，px→vw 用 postcss-px-to-viewport），无需 JS；② **postcss-pxtorem** 自动转；③ 配合 max-width（PC 居中）。\n注意：1px 边框、字号最小限制、第三方库 px 需处理。"
+ },
+ {
+  "id": "cr7",
+  "module": "cross",
+  "q": "移动端 300ms 点击延迟 / 点击穿透？",
+  "a": "**300ms 延迟** 旧浏览器等“是否双击缩放”才触发 click，致点按慢。解决：viewport width=device-width + user-scalable=no（现代浏览器已默认去延迟）；用 **touchstart**（但易误触）。\n**点击穿透** 上层遮罩（touch 关）消失后，下层 click 被触发（因 click 晚 300ms）。解决：遮罩延迟隐藏/用 click 关/阻止默认。现代：pointer events + fastclick 已少用。"
+ },
+ {
+  "id": "cr8",
+  "module": "cross",
+  "q": "移动端滚动与惯性？",
+  "a": "**-webkit-overflow-scrolling:touch** 开启 iOS 惯性滚动（已部分默认）。坑：① 滚动中**position:fixed 抖动**（iOS）；② 滚动穿透（弹窗下背景滚）——解决：弹窗时 body{overflow:hidden} 或 position:fixed 锁；③ 回弹（bounce）致下拉刷新；④ 滚动到底加载用 scroll 阈值 + 节流。\n虚拟列表：移动端大列表必用（限 DOM）。"
+ },
+ {
+  "id": "cr9",
+  "module": "cross",
+  "q": "viewport meta 是什么？",
+  "a": "控制移动端**布局视口**与缩放：<meta name=viewport content=width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no>。**width=device-width** 布局宽=设备宽（否则按 980 默认缩）；**initial-scale=1** 初始不缩放。\n作用：让页面按设备宽度排，不缩小整页；配合 rem/vw 适配。"
+ }
+]

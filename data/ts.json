@@ -1,0 +1,86 @@
+[
+ {
+  "id": "ts1",
+  "module": "ts",
+  "q": "interface 和 type 的区别？",
+  "a": "都能定义形状。\n**interface**：可**声明合并**（同名单次合并）、可被 class implements、更适合对象/类契约、报错更友好。\n**type**：更灵活——联合 A|B、交叉 A&B、元祖、条件/映射类型、typeof 推断；**不可合并**（同名冲突报错）。\n实践：对象结构优先 interface；需联合/工具类型用 type。"
+ },
+ {
+  "id": "ts2",
+  "module": "ts",
+  "q": "什么是泛型？有什么用？",
+  "a": "泛型 = 把**类型当参数**，让函数/类/接口在多种类型上复用且保类型安全。\n例：`function identity<T>(v:T):T` 返回同类型。\n用途：容器（Array<T>）、API 返回包裹（Result<T>）、自定义 Hook 返回值、约束 `<T extends Foo>`。避免 any 丢类型。"
+ },
+ {
+  "id": "ts3",
+  "module": "ts",
+  "q": "any、unknown、never、void 区别？",
+  "a": "**any** 关类型检查（逃逸舱），可任意操作——**滥用丢安全**，能用 unknown 就别 any。**unknown** 类型安全版 any，**赋值前必须收窄**（typeof/instanceof）才能用，推荐作“未知输入”。\n**never** 永不存在的值（如抛错函数返回、穷尽检查兜底），用于**穷尽性**判断。**void** 函数无返回值（或 return undefined）。"
+ },
+ {
+  "id": "ts4",
+  "module": "ts",
+  "q": "常用工具类型？",
+  "a": "**Partial<T>** 全可选；**Required<T>** 全必填；**Readonly<T>** 只读；**Pick<T,K>** 选部分键；**Omit<T,K>** 排除部分键；**Record<K,V>** 键值映射表；**Exclude<T,U>** 差集；**Extract<T,U>** 交集；**NonNullable<T>** 去 null/undefined；**ReturnType<F>** 取返回值类型。\n组合：Partial<Pick<User,'a'|'b'>>。"
+ },
+ {
+  "id": "ts5",
+  "module": "ts",
+  "q": "条件类型与 infer？",
+  "a": "条件类型：T extends U ? X : Y（分发条件类型对联合逐成员算）。infer 在条件类型里**推断类型变量**，如 T extends Array<infer U> ? U : T 取数组元素类型；T extends Promise<infer U> 取异步值类型。\n经典：Awaited<T>（解开 Promise）、ReturnType 内部即用 infer。"
+ },
+ {
+  "id": "ts6",
+  "module": "ts",
+  "q": "类型收窄（Narrowing）？",
+  "a": "TS 在**控制流**里自动缩小联合类型范围：① **typeof / instanceof** 判类型；② **in** 判属性；③ **字面量 ===** 判具体值；④ **函数返回**类型谓词 arg is T；⑤ **判别联合**（公共字面量字段 switch）；⑥ 赋值收窄。\n收窄后可使用专属方法（如 string.trim）。用于联合类型安全取值。"
+ },
+ {
+  "id": "ts7",
+  "module": "ts",
+  "q": "keyof、typeof、as const 用法？",
+  "a": "**keyof T** 取 T 的**键的联合类型**（keyof User = 'name'|'age'）。**typeof x** 从**值反推类型**（const obj={a:1}; type T=typeof obj）。\n**as const** 把值标为**只读字面量**（深层 readonly + 具体值而非 widened 类型），常用于配置/枚举元组。组合：keyof typeof CONFIG 取配置 key 集合。"
+ },
+ {
+  "id": "ts8",
+  "module": "ts",
+  "q": "联合类型与交叉类型？",
+  "a": "**联合 A | B** 值是 A**或** B（二选一），配合判别联合收窄。**交叉 A & B** 值**同时具备** A 和 B 的所有（合并），用于混入/扩展（如 & AdditionalProps）。\n坑：对象交叉是 AND（要全有）；同名不同类型交叉成 never。索引：Record 配合交叉做动态字段扩展。"
+ },
+ {
+  "id": "ts9",
+  "module": "ts",
+  "q": "函数重载？",
+  "a": "同一函数**多组参数/返回签名**，TS 按调用匹配。写法：先声明多个 overload 签名（无实现体），再一个**实现签名**（参数常为联合/any，不对外暴露）。\n例：function fn(x:string):string; function fn(x:number):number; function fn(x:any){...}。注意：实现签名须兼容所有重载；运行时只有一份实现。"
+ },
+ {
+  "id": "ts10",
+  "module": "ts",
+  "q": "enum 与 const 对象区别？",
+  "a": "**enum** TS 专属，编译成**真实对象**（可反向映射 num→name），有运行时开销、不是纯类型（tree-shake 不掉）。**as const 常量对象** 纯类型+值，keyof typeof 取联合，无运行时对象生成、可 tree-shake、更轻。\n官方趋势：**优先 const 对象 + union**，少用 enum（尤 const enum 有局限）。"
+ },
+ {
+  "id": "ts11",
+  "module": "ts",
+  "q": "声明文件 .d.ts 作用？",
+  "a": "给**无类型的 JS / 第三方库**补充类型，让 TS 识别。机制：declare 声明（变量/函数/模块），不生成 JS；import 时 TS 找同名 .d.ts 或 @types/包。\n用途：① 写自家 lib 的 index.d.ts；② 第三方缺类型用 declare module 'x'；③ 全局类型放 global.d.ts。注意：ambient 声明不可有具体实现。"
+ },
+ {
+  "id": "ts12",
+  "module": "ts",
+  "q": "什么是类型体操？举例？",
+  "a": "用 TS 类型系统**编程**（非运行时），实现复杂类型变换。例：① DeepReadonly<T>（递归 readonly）；② 元组转联合 UnionToIntersection；③ 字符串模板类型 Trim<` ${T}`>；④ 实现 Partial/Record 自己；⑤ 翻转对象 KeysToValues。\n用途：泛型库（如 Zod、Prisma 推断）；面试常考。练习：type-challenges 题库。提示：infer + 条件 + 映射类型组合。"
+ },
+ {
+  "id": "ts13",
+  "module": "ts",
+  "q": "类型断言与非空断言风险？",
+  "a": "**as**（x as T）告知编译器“我比你知道类型”，**不运行时检查**，错转会运行时崩。**非空断言 !**（x!）断言非 null/undefined，**跳过检查**，若实为 null 直接报错。\n风险：掩盖真实类型、破坏安全；优先用**类型守卫**收窄替代。相对安全：as const（仅窄化字面量）、as unknown as T（实在无解时双重断言，仍危险）。"
+ },
+ {
+  "id": "ts14",
+  "module": "ts",
+  "q": "泛型约束 extends？",
+  "a": "<T extends U> 限制 T 必须是 U 的子类型，**确保 T 有某些属性/方法**再调用。例：function len<T extends {length:number}>(x:T){return x.length} —— 只接受有 length 的（string/数组）。\n配合 keyof：get<T,K extends keyof T>(o:T,k:K):T[K] 保证 k 是 o 的键、返回正确类型。避免 any、保安全。"
+ }
+]

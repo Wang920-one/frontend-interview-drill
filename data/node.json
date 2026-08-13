@@ -1,0 +1,98 @@
+[
+ {
+  "id": "no1",
+  "module": "node",
+  "q": "Node 事件循环与浏览器有何不同？",
+  "a": "Node 也单线程，事件循环**分阶段**：timers → pending → I/O 回调 → idle → **poll** → **check**(setImmediate) → close。\n宏任务按阶段执行，微任务（Promise/process.nextTick）在**阶段切换间**清空（nextTick 优先于 Promise）。\n与浏览器差异：浏览器微任务每宏任务后清空；Node 有 poll/check 阶段，同轮 setImmediate 早于 setTimeout(0)。"
+ },
+ {
+  "id": "no2",
+  "module": "node",
+  "q": "NestJS 的核心概念？",
+  "a": "基于 **TypeScript + 装饰器**的企业级 Node 框架。\n核心：Module（@Module 组织功能）、Controller（@Get/@Post 路由）、Provider/Service（业务逻辑，靠**依赖注入 DI** @Injectable）。\n拦截器链：Pipe（校验/转换）、Guard（鉴权）、Interceptor（切面）、Filter（异常）。\n优点：结构清晰、易测试、TS 友好，适合中大型后端。"
+ },
+ {
+  "id": "no3",
+  "module": "node",
+  "q": "JWT 鉴权流程？",
+  "a": "JWT = JSON Web Token，无状态鉴权。\n流程：登录成功 → 服务端签 token（header.payload.signature，签名用密钥/HMAC 或 RSA）→ 客户端存 localStorage/Cookie → 请求带 `Authorization: Bearer xxx` → 服务端验签名与 exp。\n坑：① 密钥泄露即沦陷；② **无法即时吊销**（短时效+刷新 token/黑名单）；③ 别放敏感信息（payload 仅 base64）；④ 用 HttpOnly Cookie 防 XSS。"
+ },
+ {
+  "id": "no4",
+  "module": "node",
+  "q": "process.nextTick 与 Promise.then 顺序？",
+  "a": "都在微任务阶段，但 **nextTick 队列优先于 Promise**（同轮先清空 nextTick 再清 Promise）。Node 事件循环：每阶段后先跑 **nextTick**（若有）→ 再微任务（Promise）→ 下一阶段。\n注意：nextTick 递归会**饿死** I/O（一直排前面），危险。用途：nextTick 让回调在当前操作后立即、I/O 前执行（如错误优先回调）。"
+ },
+ {
+  "id": "no5",
+  "module": "node",
+  "q": "Node Stream 流？",
+  "a": "**流** 处理**大数据/连续数据**的抽象（边读边处理，不占全内存）。四类：Readable（读）、Writable（写）、Duplex（双）、Transform（改数据）。用途：文件大（createReadStream 分块）、HTTP 请求体、压缩（pipe 串接：read.pipe(gzip).pipe(write)）。\n**背压** 下游慢时上游暂停，pipe 自动处理。对比 Buffer：Buffer 是数据块，Stream 是流动方式。"
+ },
+ {
+  "id": "no6",
+  "module": "node",
+  "q": "Node 内存泄漏排查？",
+  "a": "症状：内存持续涨、重启才好、OOM。原因：① 全局变量/缓存无限增；② **闭包**持大对象；③ 未清的 **定时器/监听**；④ 队列堆积（生产者快于消费者）；⑤ 内存泄漏在第三方。\n排查：① **--inspect** + Chrome DevTools **Memory** 快照对比；② heapdump 抓堆；③ clinic.js；④ 看 RSS 趋势。治理：限缓存（LRU）、清监听、流背压。"
+ },
+ {
+  "id": "no7",
+  "module": "node",
+  "q": "Node 如何利用多核？",
+  "a": "Node 单进程单线程（默认用 1 核）。**cluster 模块** fork 多个**子进程**（=CPU 核数），共享端口、由主进程分发请求，**负载均衡**提吞吐。现代：**PM2**（进程管理，cluster 模式、0 停机重启、监控）更常用；或容器/K8s 多实例。\n注意：多进程间内存不共享（状态用 Redis/DB）；worker 崩溃主可 fork 补。"
+ },
+ {
+  "id": "no8",
+  "module": "node",
+  "q": "Session 与 JWT 鉴权对比？",
+  "a": "**Session** 服务端**存会话**（内存/Redis），客户端拿 sessionId（Cookie）。优点：可即时吊销、存服务端安全；缺点：需存储、扩展性差（分布式要共享）、跨域麻烦。**JWT** 无状态，**token 含信息**客户端存，服务端只验签名。\n优点：易扩展/跨域/移动端友好；缺点：**难即时吊销**（短时效+刷新 token/黑名单）、payload 可被读（别放密）。选型：内部/可控用 JWT；强安全用 Session+Redis。"
+ },
+ {
+  "id": "no9",
+  "module": "node",
+  "q": "Koa/Express 中间件机制？",
+  "a": "**中间件** 一串**处理函数**，对请求/响应做预处理（日志/鉴权/解析）。**Express** 基于**回调队列**（next() 串联），顺序执行，旧式易回调地狱。**Koa** **洋葱模型**（async + await next()），请求进一层、响应出一层（前后都能做事，如计耗时），用 ctx 统一 req/res。\n注意：别忘了调 next()/await，否则挂起；错误用 try/catch 或错误处理中间件。"
+ },
+ {
+  "id": "no10",
+  "module": "node",
+  "q": "ORM 是什么？常见库？",
+  "a": "**ORM**（对象关系映射）用**代码对象**操作数据库（免手写 SQL），TypeScript 类型友好、防注入。Node 系：① **Prisma**（现代、类型安全、Schema 驱动、migrate，趋势热）；② **TypeORM**（装饰器实体）；③ **Sequelize**（老牌）。\n好处：开发快、跨库；代价：复杂查询 ORM 生成 SQL 未必最优（用原生/查询构造器兜底）。注意：ORM 仍可能慢（N+1 查询需预加载）。"
+ },
+ {
+  "id": "no11",
+  "module": "node",
+  "q": "数据库索引与慢查询？",
+  "a": "**索引**（如 B+ 树）加速查询（O(log n)），但占空间、拖慢写。原则：① 高频 WHERE/JOIN/ORDER BY 列建索引；② **最左前缀**（联合索引 a,b 只查 b 用不上）；③ 用 **EXPLAIN** 看执行计划；④ 避免对索引列做函数/隐式转换（失效）；⑤ 分页深 offset 慢（改用游标）。\n慢查询：加索引+优化 SQL+缓存。"
+ },
+ {
+  "id": "no12",
+  "module": "node",
+  "q": "offset 分页与游标分页？",
+  "a": "**offset（limit/offset）** LIMIT 10 OFFSET 1000，实现简单；缺点：深翻**慢**（数据库仍扫前 N 条）、数据变动时**重复/漏**（插入导致偏移错位）。**游标（cursor/keyset）** WHERE id > lastId LIMIT 10，用**有序索引**定位，深翻**快且稳**、无错位。\n用途：无限滚动/大数据用游标；小数据用 offset。注意：游标需唯一有序键（如 created_at+id）。"
+ },
+ {
+  "id": "no13",
+  "module": "node",
+  "q": "接口幂等性是什么？",
+  "a": "**同一请求多次执行效果一致**（不重复副作用），如重复提交订单只下一单。实现：① **唯一 ID**（请求/订单号）+ 去重表/Redis 锁；② **乐观锁**（version 字段）；③ **Token 机制**（提交前发 token，用后即焚）；④ 状态机（已支付则忽略）；⑤ PUT（幂等）vs POST（非幂等）。\n场景：支付/下单/重试必须幂等，防重复扣款。"
+ },
+ {
+  "id": "no14",
+  "module": "node",
+  "q": "消息队列作用？",
+  "a": "**MQ**（Kafka/RabbitMQ/Bull）解耦生产者消费者、异步、削峰。场景：① **异步**（发邮件/通知丢队列，主流程快返回）；② **削峰**（秒杀流量缓冲，worker 按能力消费）；③ **解耦**（服务不直接依赖）；④ **可靠**（持久化防丢）。Node 常用 **Bull**（Redis 基，任务队列）/ BullMQ。\n注意：消费**幂等**（重试不重复）、失败重试/死信、顺序性。"
+ },
+ {
+  "id": "no15",
+  "module": "node",
+  "q": "微服务 vs 单体？",
+  "a": "**单体** 一个应用全功能，部署简单、事务易（本地）；缺点：大了难维护/扩容整包。**微服务** 按业务拆**独立服务**（各自库/部署），独立伸缩/技术栈，容错（一挂不全挂）；缺点：分布式复杂度（网络/事务/运维）、需网关/注册中心/链路追踪。\nNode 实践：NestJS 写服务 + API 网关 + 消息队列 + Docker/K8s。选型：小项目单体；大/多团队微服务。"
+ },
+ {
+  "id": "no16",
+  "module": "node",
+  "q": "限流与熔断？",
+  "a": "**限流** 控单位时间内请求数，防压垮。算法：计数器、滑动窗口、**漏桶**（恒定速率）、**令牌桶**（允许突发）。实现：Redis + 中间件（如 express-rate-limit）。**熔断** 依赖**连续失败**达阈值 → **断开**（快速失败，不雪崩），半开试探恢复（类似电路保险丝）。\n**降级** 熔断时返兜底/缓存。用途：保护核心服务、防级联故障（雪崩）。"
+ }
+]

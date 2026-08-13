@@ -1,0 +1,62 @@
+[
+ {
+  "id": "rs1",
+  "module": "resume",
+  "q": "安全管控平台性能优化你做了什么？",
+  "a": "问题：多数据源实时刷新导致**卡顿/内存涨**。\n做法：① 交互用**防抖**，避免高频刷新重复渲染；② 组件**销毁时释放**实例、定时器、事件监听、ECharts dispose → 消除**内存泄漏**；③ 大数据用**虚拟列表/分片渲染**、requestAnimationFrame 节流；④ 首屏**懒加载**模块、按需拉数据 → 首屏明显提速。"
+ },
+ {
+  "id": "rs2",
+  "module": "resume",
+  "q": "Three.js 3D 巡检的难点你怎么攻克的？",
+  "a": "① **大体积 .gltf 动态加载**：DRACO 压缩 + 分块/按需加载，LoadingManager 控进度，防主线程卡。\n② **多层级坐标转换**：模型局部↔世界↔屏幕，用矩阵（localToWorld/投影）统一避免错位。\n③ **精准点击交互**：Raycaster 发射射线求交，命中设备高亮并**数据下钻**（弹属性/跳详情）。\n④ 性能：实例化、LOD、及时 dispose → 巡检效率 +50%。"
+ },
+ {
+  "id": "rs3",
+  "module": "resume",
+  "q": "心理健康 AI 助手的技术栈与架构？",
+  "a": "前端：Vue3+TypeScript+Pinia 管会话状态；ECharts 做**情绪可视化看板**（按对话情绪打分画趋势）。\n后端：Node.js+NestJS，Provider/Service 封装 LLM 调用，Controller 暴露 /chat；**流式**返回（SSE）打字机。\n安全：**密钥走服务端代理**，前端不直连大模型；对话上下文管理与情绪打标在后端。体现 Vue3 全栈 + AI 应用能力。"
+ },
+ {
+  "id": "rs4",
+  "module": "resume",
+  "q": "简历里的性能优化怎么量化？",
+  "a": "避免空话，给**可度量结果**：① 首屏加载 **FCP/LCP 从 Xs→Ys（-N%）**；② 包体积 **从 XMB→YMB（-N%）**；③ 帧率 **FPS 30→60**；④ 接口 **P95 从 Xms→Yms**；⑤ 内存 **下降 N%**（泄漏消除）；⑥ 巡检效率 **+50%**。\n方法：Chrome Lighthouse/Performance 测、埋点对比、AB。面试：能说清“做了什么→怎么测→提升多少”最加分。"
+ },
+ {
+  "id": "rs5",
+  "module": "resume",
+  "q": "Git 常用与协作流程？",
+  "a": "常用：分支（feature/develop/main）、commit（小粒度）、merge/rebase（变基清历史）、stash（暂存）、cherry-pick（摘提交）。协作：① **feature 分支开发** → PR/MR → Code Review → 合并；② 冲突解决（merge 工具）；③ rebase 保持线性（勿对公共分支 rebase）；④ **git flow / trunk-based**。\n注意：别 force push 公共分支；提交信息规范（Conventional Commits）。"
+ },
+ {
+  "id": "rs6",
+  "module": "resume",
+  "q": "遇到最难的技术问题？",
+  "a": "STAR 法答：① **Situation** 背景；② **Task** 目标；③ **Action** 你做了什么（定位→根因→方案）；④ **Result** 结果。前端常难：① 大屏**内存泄漏**（DevTools 快照对比定位未 dispose 的 ECharts/Three 实例）；② 3D **坐标错位**（矩阵转换统一）；③ 复杂状态错乱（拆 store/用 reducer）；④ 性能卡顿（分包+虚拟列表）。\n关键：体现**独立思考+工具排查**，不只说“问了别人”。"
+ },
+ {
+  "id": "rs7",
+  "module": "resume",
+  "q": "怎么做技术选型？",
+  "a": "维度：① **需求匹配**（功能/性能/体量）；② **团队熟悉度**（降学习成本）；③ **生态/社区**（文档/库/坑少）；④ **可维护性/可测试**；⑤ **长期成本**（维护/招人）；⑥ **风险**（新框架稳定性）。过程：列候选→对比（矩阵）→小验证（PoC）→决策→复盘。\n例：大屏用 ECharts（开箱快）；3D 用 Three.js；全栈用 NestJS（TS 友好）；跨端用 UniApp。注意：别追新，适合最重要。"
+ },
+ {
+  "id": "rs8",
+  "module": "resume",
+  "q": "大屏实时数据结构怎么设计？",
+  "a": "挑战：多数据源高频刷新、实时、不卡。设计：① 数据**分层**（原始/聚合/视图）；② 用 **WebSocket/SSE** 推增量（非全量）；③ 前端**聚合缓存**（按维度存 Map，增量更新对应 key）；④ 渲染**节流/虚拟**（rAF 合帧、虚拟列表）；⑤ ECharts 用 dataset + 增量 setOption；⑥ 异常兜底（断线重连、loading）。\n注意：解耦“数据层”与“视图层”（观察者模式）。"
+ },
+ {
+  "id": "rs9",
+  "module": "resume",
+  "q": "前端测试与质量保障？",
+  "a": "分层：① **单测**（Vitest/Jest，测函数/Hook，覆盖率）；② **组件测**（Testing Library，模拟交互）；③ **E2E**（Playwright/Cypress，跑全流程）；④ **类型检查**（TS tsc）兜底。质量门：CI 跑 lint+test+构建；**Code Review**；监控（Sentry 线上报错）。\n平衡：核心逻辑必测，UI 少测（维护贵）。注意：不是 100% 覆盖才好，测关键路径。"
+ },
+ {
+  "id": "rs10",
+  "module": "resume",
+  "q": "项目复盘与改进？",
+  "a": "复盘：① 回顾目标 vs 结果；② 好的/差的；③ 根因；④ 行动项（怎么改）。前端改进常见：① 抽**公共组件/组合式函数**（降重复）；② 补**类型**（少 bug）；③ 加**监控**（早发现）；④ 性能**常态化**（Lighthouse 卡点）；⑤ 文档/注释（接手快）；⑥ 自动化（部署/测试）。\n体现：**持续迭代意识**——做完不是终点，复盘促成长。"
+ }
+]

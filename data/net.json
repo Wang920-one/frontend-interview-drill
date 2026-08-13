@@ -1,0 +1,86 @@
+[
+ {
+  "id": "ne1",
+  "module": "net",
+  "q": "CORS 跨域是什么？怎么解决？",
+  "a": "CORS = 跨域资源共享，浏览器同源策略的安全例外。\n同源 = 协议+域名+端口全同；跨域响应被拦截，除非服务端返回 **Access-Control-Allow-Origin**。\n流程：简单请求直接发；非简单（自定义头/PUT/JSON）先发 **OPTIONS 预检**，通过才发真实请求。\n解决：后端加白名单头；凭据 withCredentials 需 Allow-Credentials+具体 Origin；或**开发代理**（vite proxy/nginx）绕开；JSONP 仅 GET 且过时。"
+ },
+ {
+  "id": "ne2",
+  "module": "net",
+  "q": "XSS 与 CSRF 区别及防护？",
+  "a": "**XSS**（跨站脚本）：注入脚本盗 cookie/钓鱼。防护：① 输出**转义**；② CSP 限制脚本源；③ Cookie 设 HttpOnly；④ 输入校验/富文本白名单。\n**CSRF**（跨站请求伪造）：借登录态发非本意请求。防护：① **SameSite=Lax/Strict** Cookie；② CSRF Token（服务端校验）；③ 校验 Origin/Referer；④ 关键操作二次确认。"
+ },
+ {
+  "id": "ne3",
+  "module": "net",
+  "q": "HTTP 与 HTTPS 区别？",
+  "a": "**HTTP** 明文传输，无加密、易被窃听/篡改。**HTTPS** = HTTP + **TLS 加密**：① 防窃听（内容加密）；② 防篡改（完整性校验）；③ 身份认证（证书验服务器真伪，防中间人）。过程：TCP 握手 → **TLS 握手**（证书校验+密钥协商）→ 加密通信。\n代价：略慢（握手开销，HTTP2 缓解）、需证书（Let's Encrypt 免费）。前端：混合内容（HTTPS 页引 HTTP 资源）被拦。"
+ },
+ {
+  "id": "ne4",
+  "module": "net",
+  "q": "TCP 三次握手 / 四次挥手？",
+  "a": "**三次握手**（建连）① 客户端 SYN；② 服务端 SYN+ACK；③ 客户端 ACK → 双方确认收发能力，防历史连接。**四次挥手**（断连）① 客户端 FIN；② 服务端 ACK（还可发）；③ 服务端 FIN；④ 客户端 ACK → 因 TCP **全双工**，关闭需双向各一次。\n**TIME_WAIT** 主动关方等 2MSL 防最后 ACK 丢失。注意：握手 3 次、挥手 4 次（服务端 ACK 与 FIN 分开）。"
+ },
+ {
+  "id": "ne5",
+  "module": "net",
+  "q": "GET 与 POST 区别？",
+  "a": "语义：GET 取数据（安全/幂等）、POST 提交（可能改状态）。参数：GET 在 **URL**（可见、长度限、可收藏/缓存）；POST 在 **请求体**（可大数据/二进制、相对隐蔽）。缓存：GET 可缓存、POST 一般不。\n安全：都不安全（明文），敏感必须 HTTPS；POST 非加密只是不在 URL。幂等：GET 幂等、POST 非幂等（重复提交副作用）。现代 REST：GET 查、POST 建、PUT 改、DELETE 删。"
+ },
+ {
+  "id": "ne6",
+  "module": "net",
+  "q": "常见 HTTP 状态码？",
+  "a": "**2xx 成功** 200 OK、201 已创建、204 无内容。**3xx 重定向** 301 永久、302 临时、304 未改（用缓存）、307/308 强制方法。**4xx 客户端错** 400 参数错、401 未认证、403 禁止、404 无、405 方法不被允许、429 限流。\n**5xx 服务端错** 500 内部、502 网关坏、503 不可用、504 网关超时。实践：401 跳登录、429 退避重试、5xx 告警。"
+ },
+ {
+  "id": "ne7",
+  "module": "net",
+  "q": "Cookie / Session / Token 区别？",
+  "a": "**Cookie** 浏览器存的小文本（随请求自动带），可设 HttpOnly/SameSite/Secure/过期。**Session** 服务端会话（存 Cookie 里的 sessionId 映射），状态在服务端。**Token**（JWT）无状态，令牌含信息客户端存，请求头带。\n关系：Session 靠 Cookie 传 id；Token 可放 Cookie/Authorization 头。注意：敏感用 HttpOnly Cookie 防 XSS 盗。"
+ },
+ {
+  "id": "ne8",
+  "module": "net",
+  "q": "HTTP/1.1、2、3 区别？",
+  "a": "**1.1** 默认持久连接（keep-alive）、管道化（队头阻塞）、文本协议。**2（HTTP2）** **多路复用**（一连接并行多请求，治队头阻塞）、**二进制帧**、**头部压缩 HPACK**、服务端推送（已弃用）、单连接。**3（HTTP3）** 基于 **QUIC（UDP）**，0-RTT、连接迁移、无 TCP 队头阻塞，弱网更稳。\n实践：2 已成主流，3 在推；域名分片在 2 下没必要。"
+ },
+ {
+  "id": "ne9",
+  "module": "net",
+  "q": "前端缓存策略整体？",
+  "a": "多层：① **HTTP 缓存**（强缓存 Cache-Control + 协商 ETag/Last-Modified）；② **Service Worker**（离线/自定义）；③ **localStorage/sessionStorage**（小数据）；④ **IndexedDB**（大量结构化）；⑤ **Memory 缓存**（运行时）。资源策略：HTML no-cache（每次问）、JS/CSS 长缓存+hash、图片长缓存。\n注意：缓存更新用文件 hash 破缓存。"
+ },
+ {
+  "id": "ne10",
+  "module": "net",
+  "q": "CSP 是什么？",
+  "a": "**Content-Security-Policy** 白名单声明**允许加载的资源来源**（脚本/样式/连接），从根上防 XSS/注入（非法源被拦）。示例：default-src 'self'; script-src 'self' https://cdn。好处：即使有注入脚本，非白名单域也不执行。\n配合：Nonce/Hash 放行内联脚本；report-only 模式先监控。注意：配置过严会误伤，需测试。是 XSS 的纵深防御。"
+ },
+ {
+  "id": "ne11",
+  "module": "net",
+  "q": "点击劫持（Clickjacking）？",
+  "a": "攻击者用**透明 iframe 覆盖**在正常按钮上，用户点了看不见的层（如悄悄关注/转账）。防护：① **X-Frame-Options: DENY/SAMEORIGIN**（禁止/同域被嵌套）；② **CSP frame-ancestors**（更细）；③ JS 防嵌套（top!==self 跳走）；④ 关键操作二次确认。\n注意：自身页想被嵌需显式允许来源。"
+ },
+ {
+  "id": "ne12",
+  "module": "net",
+  "q": "SQL 注入及防护？",
+  "a": "注入：把恶意 SQL 拼进查询（' OR 1=1 --）篡改逻辑/拖库。防护：① **参数化查询/预编译**（? 占位，最根治，ORM/Prepared Statement）；② **ORM** 用防注入 API；③ 输入校验/白名单；④ 最小权限 DB 账号；⑤ 不拼 SQL 字符串。\n前端：校验输入长度/格式（辅助，真防护在服务端）。"
+ },
+ {
+  "id": "ne13",
+  "module": "net",
+  "q": "中间人攻击（MITM）与证书？",
+  "a": "攻击者在你与服务器间**窃听/篡改**（公共 WiFi 下）。防护：① **HTTPS/TLS** 加密+证书验身；② 校验证书链（防伪造）；③ HSTS（强制 HTTPS，防降级的 TLS）；④ 证书固定（Pinning，App 内）；⑤ 不连不可信 WiFi。\n前端：混合内容（HTTPS 页引 HTTP 资源）被拦——全站 HTTPS；警惕自签证书。"
+ },
+ {
+  "id": "ne14",
+  "module": "net",
+  "q": "DNS 解析过程？",
+  "a": "把域名 → IP：① 查**浏览器缓存**；② 查**系统/ hosts**；③ **本地 DNS（递归）** 问根域（.）→ 顶级域（.com）→ 权威 DNS（拿到 IP）；④ 返回并缓存。记录：A（IPv4）、AAAA（IPv6）、CNAME（别名）、MX（邮件）。\n优化：① DNS **预解析** <link rel=dns-prefetch>；② 用 CDN（就近解析）；③ TTL 控缓存时长。注意：DNS 解析耗时影响首屏。"
+ }
+]

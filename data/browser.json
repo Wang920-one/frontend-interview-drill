@@ -1,0 +1,92 @@
+[
+ {
+  "id": "br1",
+  "module": "browser",
+  "q": "重排(reflow)与重绘(repaint)区别？",
+  "a": "**重排 Reflow**：几何属性变（宽高/位置/增删节点）→ 浏览器重算布局，开销大。\n**重绘 Repaint**：仅外观变（color/visibility）→ 跳过布局直接画。触发重排必重绘。\n优化：① 用 transform/opacity 走 GPU 合成层，避免重排；② 读写分离防布局抖动；③ 批量改样式（加 class）；④ 离屏操作用 DocumentFragment；⑤ 动画加 will-change。"
+ },
+ {
+  "id": "br2",
+  "module": "browser",
+  "q": "防抖(debounce)和节流(throttle)区别？",
+  "a": "**防抖 debounce**：触发后等 N 秒**无新触发**才执行；期间又触发则重新计时。适用搜索输入、resize 结束、防重复提交。\n**节流 throttle**：每 N 秒**最多执行一次**，固定节奏。适用 scroll、mousemove、拖拽。\n实现：防抖用定时器清除重设；节流用时间戳或定时器（首尾都触发用时间戳+定时器组合）。"
+ },
+ {
+  "id": "br3",
+  "module": "browser",
+  "q": "首屏加载如何优化？",
+  "a": "目标：尽快看到可交互内容。\n路由级：路由懒加载（import()）、组件按需。\n资源：图片懒加载（loading=lazy / IntersectionObserver）、WebP、CDN、gzip/brotli、HTTP 缓存。\n渲染：关键 CSS 内联、非关键 JS 用 defer、preconnect 预连接、骨架屏、减少长任务（Web Worker）、SSR/预渲染。"
+ },
+ {
+  "id": "br4",
+  "module": "browser",
+  "q": "浏览器渲染主流程？",
+  "a": "① **解析** HTML → DOM 树，CSS → CSSOM；② 合并成 **Render Tree**（只含可见节点）；③ **Layout/Reflow** 算几何位置；④ **Paint** 转绘制指令；⑤ **Composite** 分层合成送 GPU。\nJS 会阻塞解析（放底部/defer/async）。改动几何走 2-4，改外观走 4，transform/opacity 仅 5（合成层，最快）。"
+ },
+ {
+  "id": "br5",
+  "module": "browser",
+  "q": "输入 URL 到页面显示全过程？",
+  "a": "① DNS 解析域名 → IP（缓存→本地→根→顶级→权威）；② **TCP 三次握手**建连；③ 发 **HTTP 请求**；④ 服务器响应（可能重定向/304）；⑤ 浏览器**解析渲染**；⑥ 加载子资源（并行受限 6 个/域）；⑦ **TCP 四次挥手**断开（HTTP1.1 keep-alive 复用）。HTTPS 多了 TLS 握手。"
+ },
+ {
+  "id": "br6",
+  "module": "browser",
+  "q": "强缓存与协商缓存区别？",
+  "a": "**强缓存** 未过期直接读本地，**不请求**服务器。头：Expires（时间）/ **Cache-Control: max-age**（优先级高，相对秒）。\n**协商缓存** 过期后带**校验字段**问服务器是否变。ETag（内容哈希，精确）/ **Last-Modified**（时间，精度秒、可能误判）。304 = 未变用缓存；200 = 新内容。流程：强缓存优先，过期走协商。"
+ },
+ {
+  "id": "br7",
+  "module": "browser",
+  "q": "常见 HTTP 缓存响应头？",
+  "a": "**Cache-Control**：max-age（秒）、no-cache（走协商）、no-store（不缓存）、public/private、must-revalidate。**Expires** 绝对时间（HTTP1，已被 max-age 取代）。\n**ETag** / **If-None-Match** 内容校验（配对用）。**Last-Modified** / **If-Modified-Since** 时间校验。实践：静态资源加 hash + 长缓存（max-age=1y, immutable）；HTML 用 no-cache。"
+ },
+ {
+  "id": "br8",
+  "module": "browser",
+  "q": "前端内存泄漏常见原因？",
+  "a": "① **意外的全局变量**（未声明变量）；② 闭包**长期持有大对象**；③ **未清理的定时器** setInterval；④ 遗忘的 **事件监听** addEventListener 没 removeEventListener；\n⑤ **DOM 引用**未置 null（remove 后 JS 还持有）；⑥ 遗忘的 **ECharts/Three 实例**没 dispose；⑦ 第三方库订阅。排查：Chrome DevTools **Memory** 快照对比。"
+ },
+ {
+  "id": "br9",
+  "module": "browser",
+  "q": "Web Worker 是什么？",
+  "a": "在**后台线程**跑 JS，**不阻塞主线程**（UI 流畅）。限制：① **无 DOM/Window**（不能操作页面）；② 通过 **postMessage** 与主线程通信（结构化克隆传数据）；③ 同源；④ 引入脚本用 importScripts。\n用途：大计算（加密/解析/排序）、图片处理。注：密集任务优先 Worker；小任务用 rAF 分片即可。"
+ },
+ {
+  "id": "br10",
+  "module": "browser",
+  "q": "Service Worker 作用？",
+  "a": "运行在**浏览器与网络间**的代理脚本（独立线程），**离线缓存**核心。能力：① 拦截 fetch，缓存静态资源 → 离线可用（PWA）；② 推送通知；③ 后台同步。\n特点：HTTPS、生命周期（install/activate）、**无 DOM**、用 Cache API。注：与 Web Worker 不同（SW 持久、可离线）；调试用 Chrome Application 面板。"
+ },
+ {
+  "id": "br11",
+  "module": "browser",
+  "q": "同源策略限制了什么？",
+  "a": "同源 = **协议+域名+端口**全同。限制：① 一个源的 JS **不能读**另一源的 DOM/Cookie；② **不能发**跨域 AJAX（除非 CORS）；③ 不能拿 localStorage。\n允许：img/script/link 等**标签**引用跨域资源（但读不到内容）。目的：防 XSS/CSRF 跨站数据窃取。跨域方案：CORS、postMessage、代理。"
+ },
+ {
+  "id": "br12",
+  "module": "browser",
+  "q": "JS 垃圾回收机制？",
+  "a": "自动 GC，主算法：① **标记-清除**（主流）：从根对象（window/全局）可达的标记存活，不可达清除；解决循环引用。② **引用计数**（旧，已弃）：计数 0 回收，循环引用**漏**（A↔B 永不回收）。\nV8 分代：新生代（Scavenge 复制）频繁快、老生代（Mark-Sweep/Compact）慢。手动：断引用（置 null）、消大闭包，助回收。"
+ },
+ {
+  "id": "br13",
+  "module": "browser",
+  "q": "requestAnimationFrame 与 setTimeout 区别？",
+  "a": "**rAF** 在**每次重绘前**调用（约 60fps 同步刷新），页面隐藏时**自动暂停**省电，动画更流畅不丢帧。\n**setTimeout(fn,16)** 按计时器排队，**不一定对齐刷新**新，后台也跑（费电），易卡顿/掉帧。动画/需视觉同步用 rAF；分片大计算用 rAF 防长任务。"
+ },
+ {
+  "id": "br14",
+  "module": "browser",
+  "q": "长任务（Long Task）怎么优化？",
+  "a": "**长任务** > 50ms 阻塞主线程，导致卡顿、INP 差（交互到响应延迟）。优化：① **拆分**大循环（rAF/setTimeout 分片、或 scheduler.yield）；② 重计算移 **Web Worker**；\n③ 减少**重排**（读写分离、批改样式）；④ 虚拟列表限 DOM；⑤ 防抖高频；⑥ 代码分包按需加载。测量：Performance 面板看 Long Tasks 红条。"
+ },
+ {
+  "id": "br15",
+  "module": "browser",
+  "q": "懒加载与预加载？",
+  "a": "**懒加载** 用到的才加载，省流量提首屏。图片 loading=lazy / IntersectionObserver；路由 import() 分包；组件 v-if 延迟建。\n**预加载** 提前加载可能要用的，提速后续。<link rel=prefetch>（空闲预取下一页）、preload（当前页关键资源）、DNS prefetch / preconnect。权衡：首屏用懒加载，关键链路用预加载。"
+ }
+]

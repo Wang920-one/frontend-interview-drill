@@ -1,0 +1,74 @@
+[
+ {
+  "id": "th1",
+  "module": "three",
+  "q": "Three.js 渲染一帧的基本流程？",
+  "a": "每帧：① 更新物体 transform/动画；② **Renderer.render(scene,camera)** 把 3D 场景投影到 2D canvas；③ GPU 光栅化。\n核心对象：Scene（场景）、Camera（Perspective/Orthographic）、Mesh（Geometry+Material）、WebGLRenderer、Light。\n可选 Raycaster 做拾取；用 requestAnimationFrame 驱动循环控帧率。"
+ },
+ {
+  "id": "th2",
+  "module": "three",
+  "q": "Raycaster 做什么？怎么实现 3D 点击？",
+  "a": "Raycaster 从相机经鼠标位置发射**射线**，与场景物体求交，返回命中对象与交点。\n步骤：① 屏幕坐标 → NDC（-1~1）；② setFromCamera(ndc,camera)；③ intersectObjects(scene.children,true) 得交点（按距离排序）；④ 取第一个做高亮/弹窗/数据下钻。\n注意只对 Mesh 有效，点多用 BVH 加速；交点在世界空间。"
+ },
+ {
+  "id": "th3",
+  "module": "three",
+  "q": "大体积 .gltf 模型怎么优化加载？",
+  "a": "① **Draco/Meshopt** 几何压缩 + KTX2 纹理压缩；② 实例化 InstancedMesh 复用相同网格；③ 按需/分块加载（按楼层/区域）；④ **LOD** 远近换精度；⑤ LoadingManager 控进度；⑥ 显存不够 dispose 释放旧资源；⑦ 预编译材质、合并 draw call。"
+ },
+ {
+  "id": "th4",
+  "module": "three",
+  "q": "Three.js 中的坐标系？",
+  "a": "四类：① **局部/模型空间**（物体自身）；② **世界空间**（场景统一）；③ **相机/视图空间**（相对相机）；④ **裁剪/NDC**（投影后 -1~1，用于射线）。转换：localToWorld/worldToLocal；modelViewMatrix；project（世界→NDC，用于标签定位：vector.project(camera) 再映射屏幕）。\n射线：屏幕→NDC（setFromCamera）→世界。注意：缩放/旋转会影响矩阵，取坐标前 updateMatrixWorld。"
+ },
+ {
+  "id": "th5",
+  "module": "three",
+  "q": "Three.js 几何体 / 材质 / 灯光？",
+  "a": "**Geometry** 形状数据（Box/Sphere/Plane/自定义 BufferGeometry 顶点）。**Material** 外观（MeshStandard/PBR 物理、MeshBasic 无光、Phong/Lambert 旧式）；材质引贴图/颜色/透明度。**Light** 环境光 Ambient（均亮无影）、方向光 Directional（太阳）、点光 Point、聚光 Spot。\nMesh = Geometry + Material。注意：PBR 材质需环境贴图（envMap）才真实；共享材质省内存。"
+ },
+ {
+  "id": "th6",
+  "module": "three",
+  "q": "纹理贴图（Texture）？",
+  "a": "把图片**贴到几何体表面**（map/normalMap/roughnessMap 等）。加载：TextureLoader/GLTF 自带；格式 **KTX2/Basis**（压缩纹理，显存小、加载快）优于 PNG/JPG。\n注意：① 贴图需 **power-of-two**（2 的幂）尺寸才 mipmap 正常（或设 wrapping）；② UV 展开正确才不变形；③ 大图用压缩纹理；④ colorSpace 设 SRGB 防偏色；⑤ 用完 dispose 释放。"
+ },
+ {
+  "id": "th7",
+  "module": "three",
+  "q": "Three.js 阴影怎么开？",
+  "a": "① renderer.**shadowMap.enabled=true**（PCFSoft 软阴影）；② 光 **castShadow**（设 shadow.mapSize/相机范围）；③ 物体 **castShadow/receiveShadow**。代价：阴影**开销大**（每帧多一遍深度渲染），大场景卡。\n优化：降 shadowMapSize、限阴影相机范围、或用假阴影（贴图/接触阴影）、仅关键物体投影。注意：方向光阴影用正交相机，范围要包住场景。"
+ },
+ {
+  "id": "th8",
+  "module": "three",
+  "q": "InstancedMesh 是什么？",
+  "a": "**一次 draw call 渲染大量相同网格**（如森林/人群/粒子），性能飞跃。原理：一个几何体 + 多组 **matrix**（每实例位置/旋转/缩放）+ 可选 instanceColor。对比普通 Mesh：N 个实例普通写法 N 次 draw call（慢）；InstancedMesh 1 次。\n用法：mesh.setMatrixAt(i, matrix)。注意：实例间不能单独改几何；数量极大配合 BVH/LOD。"
+ },
+ {
+  "id": "th9",
+  "module": "three",
+  "q": "LOD（细节层次）？",
+  "a": "**Level of Detail** 远处用**低精度模型**、近处用高精度，按相机距离切换，省 GPU。Three.js：THREE.LOD 加多个层级 mesh，addLevel(mesh, distance)。适用：大场景（城市/地形/树木），海量物体时显著提帧。\n配合：InstancedMesh（同类群）、合批（静态合为一个）、视锥剔除（自动，只渲可见）。注意：切换距离留缓冲防忽闪。"
+ },
+ {
+  "id": "th10",
+  "module": "three",
+  "q": "Three.js 动画方式？",
+  "a": "① **关键帧**（AnimationMixer + gltf.animations，骨骼/角色动画）；② **逐帧更新**（render 循环里改 position/rotation，适合程序化）；③ **Tween.js**（补间，平滑过渡）；④ **顶点动画/Shader**（GPU 顶点变换，水流/旗帜）；⑤ 物理引擎（cannon/ammo 刚体）。\n驱动：requestAnimationFrame 循环；clock.getDelta() 控速（帧率无关）。注意：大动画用骨骼/蒙皮。"
+ },
+ {
+  "id": "th11",
+  "module": "three",
+  "q": "Three.js 性能优化总览？",
+  "a": "① 减 **draw call**：合批/InstancedMesh/共享材质；② **LOD** + 视锥剔除；③ 纹理压缩（KTX2）+ 限尺寸；④ 关阴影/降精度；⑤ 几何体简化（减顶点）；⑥ **dispose** 释放（geometry/material/texture/renderTarget）防泄漏；⑦ 限 pixelRatio（Math.min(devicePixelRatio,2)）；⑧ 用 **GPU Instancing**；⑨ 懒加载分块。\n排查：stats.js 看 FPS、Chrome 看 GPU。"
+ },
+ {
+  "id": "th12",
+  "module": "three",
+  "q": "后处理（Post-processing）？",
+  "a": "渲染后再对画面加特效（辉光/景深/抗锯齿）。Three.js：EffectComposer + Pass（RenderPass + UnrealBloomPass 辉光 + ShaderPass 自定义）。代价：多一遍全屏渲染，**开销随分辨率增**，移动端慎用。\n常用：Bloom（发光）、FXAA/SMAA（抗锯齿）、OutlinePass（选中描边）、SSR（反射）。注意：PixelRatio 高时后处理更卡；可降分辨率后处理再放大。"
+ }
+]

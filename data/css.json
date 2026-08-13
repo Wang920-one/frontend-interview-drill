@@ -1,0 +1,98 @@
+[
+ {
+  "id": "css1",
+  "module": "css",
+  "q": "盒模型有哪两种？如何切换？",
+  "a": "**content-box（标准/W3C）**：width 只算内容，总宽 = width + padding + border。\n**border-box（IE）**：width 包含 content+padding+border，总宽 = width。\n切换：box-sizing: content-box | border-box。\n实践：全局 `*{box-sizing:border-box}` 更直觉，布局更好算。"
+ },
+ {
+  "id": "css2",
+  "module": "css",
+  "q": "BFC 是什么？能解决什么问题？",
+  "a": "BFC = 块级格式化上下文，一块**独立渲染区域**，内部布局不影响外部。\n触发：overflow≠visible、float、position absolute/fixed、display:flow-root/flex/grid、根元素。\n解决：① 相邻块**外边距塌陷**（包一层 BFC）；② **清除浮动**（父加 overflow:hidden 或 flow-root 包住浮动子）；③ 阻止文字环绕浮动元素。"
+ },
+ {
+  "id": "css3",
+  "module": "css",
+  "q": "flex:1 各子属性含义？",
+  "a": "flex 是 flex-grow / shrink / basis 缩写。\n**flex-grow** 放大比例（分配剩余空间），**flex-shrink** 缩小比例，**flex-basis** 主轴基准尺寸（优先于 width）。\n`flex:1` = `1 1 0%`：等比例占满剩余空间，常用于导航/卡片均分。\n`flex:0 0 auto`：不伸缩、按内容。注意 basis:0% 会忽略内容尺寸。"
+ },
+ {
+  "id": "css4",
+  "module": "css",
+  "q": "元素水平垂直居中有哪些方法？",
+  "a": "① **flex**：父 display:flex; align-items:center; justify-content:center（最常用）。② **grid**：父 display:grid; place-items:center。\n③ **absolute + transform**：子 position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)（不依赖尺寸）。④ **absolute + margin auto**（需定宽高）。⑤ 行内用 text-align:center + line-height 等于高。"
+ },
+ {
+  "id": "css5",
+  "module": "css",
+  "q": "CSS 选择器优先级如何计算？",
+  "a": "权重（从低到高）：① **通配/继承** 0；② **元素/伪元素** 1；③ **类/属性/伪类** 10；④ **ID** 100；⑤ **行内 style** 1000；⑥ **!important** 最高（覆盖一切，慎用）。\n同权重**后者覆盖**前者。比较：按 (a,b,c) 逐位比（ID 数, 类数, 元素数）。实践：少用 ID 选择器降耦合；!important 仅兜底。"
+ },
+ {
+  "id": "css6",
+  "module": "css",
+  "q": "CSS 模块化方案？",
+  "a": "解决**全局污染/命名冲突**：① **BEM**：命名约定 .block__elem--mod（无编译，靠规范）；② **CSS Modules**：编译期生成**唯一类名**（:local），作用域隔离；\n③ **Scoped**（Vue）：给元素加 data-v-hash 属性选择器隔离；④ **CSS-in-JS**（styled-components）。实践：Vue 用 scoped，React 用 CSS Modules / Tailwind。"
+ },
+ {
+  "id": "css7",
+  "module": "css",
+  "q": "什么是层叠上下文？z-index 不生效？",
+  "a": "**层叠上下文**是元素在 z 轴上的局部堆叠环境；同上下文内才比 z-index。触发：position+z-index、opacity<1、transform、filter、flex 子项、will-change 等。\nz-index 不生效常见原因：① 元素 **position:static**（z-index 对静态无效）；② 父创建了新层叠上下文，子 z-index 只在父内排；③ 比较对象不在同一上下文。"
+ },
+ {
+  "id": "css8",
+  "module": "css",
+  "q": "伪类与伪元素区别？",
+  "a": "**伪类**（:hover/:nth-child/:focus）**选择元素的特定状态**，单冒号，可加在多个元素。\n**伪元素**（::before/::after/::first-line）**创建虚拟元素**并设样式，双冒号；一个元素最多 ::before/::after 各一个，content 必填。记忆：伪类=状态筛选；伪元素=新增节点（如清除浮动用 ::after）。"
+ },
+ {
+  "id": "css9",
+  "module": "css",
+  "q": "position 各取值？",
+  "a": "**static** 默认，不定位。**relative** 相对自身偏移，**占原位置**（不脱文档流），常作绝对定位父。**absolute** 相对**最近非 static 祖先**定位，**脱流**（不占空间）。\n**fixed** 相对**视口**定位（移动端有兼容坑），脱流。**sticky** 滚动到阈值变 fixed（吸顶），混合 relative+fixed。脱流元素不撑开父高，需父清浮动/定高。"
+ },
+ {
+  "id": "css10",
+  "module": "css",
+  "q": "Grid 与 Flex 区别？",
+  "a": "**Flex** 一维（行**或**列），适合**线性分布**的组件/导航。**Grid** 二维（行**和**列），适合**整体页面布局**、卡片网格。\n关系：Grid 处理宏观布局，Flex 处理微观对齐，常搭配。常用：grid-template-columns: repeat(auto-fill, minmax(200px,1fr)) 自适应栅格；flex:1 让子均分。"
+ },
+ {
+  "id": "css11",
+  "module": "css",
+  "q": "响应式布局方案？",
+  "a": "① **媒体查询** @media 断点切换样式；② **流体网格**（% / fr / flex 不固定宽）；③ **相对单位** rem/vw 随视口缩放（配合 postcss-pxtorem 或 clamp()）；\n④ **响应式图片** srcset / picture；⑤ 移动优先（base 小屏，min-width 向上增强）；⑥ CSS 框架（Tailwind 断点）。"
+ },
+ {
+  "id": "css12",
+  "module": "css",
+  "q": "单行 / 多行文本溢出省略号？",
+  "a": "**单行**：white-space:nowrap; overflow:hidden; text-overflow:ellipsis;（需定宽 + block/inline-block）。\n**多行**（WebKit）：-webkit-line-clamp:N; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;（仅 WebKit 系，移动端可用）。跨浏览器多行用 JS 测行高截断。"
+ },
+ {
+  "id": "css13",
+  "module": "css",
+  "q": "CSS animation 与 transition 区别？",
+  "a": "**transition** 属性值**变化时的过渡**（A→B），需状态触发（hover/类切换），无 keyframe，不能自动循环。\n**animation** 用 **@keyframes** 定义关键帧，**自动播放**、可循环/反向/延迟，独立于状态。性能：优先 **transform/opacity**（走合成层，GPU 加速，不重排）；position/width 触发重排，卡。"
+ },
+ {
+  "id": "css14",
+  "module": "css",
+  "q": "移动端 1px 边框（高清屏）怎么画？",
+  "a": "高清屏 devicePixelRatio>1 时，border:1px 实际显示偏粗。方案：① **transform scale**：伪元素 border + transform:scaleY(.5)，缩放成物理 0.5px；\n② **border-image** 渐变；③ **viewport meta** 设 initial-scale=0.5 整体缩放（影响全局）；④ 直接用 box-shadow 模拟细线。"
+ },
+ {
+  "id": "css15",
+  "module": "css",
+  "q": "rem、em、vh 区别？",
+  "a": "**em** 相对**自身或父**字体大小（嵌套会累积，坑多）。**rem** 相对**根 html** 字体大小（统一基准，常用）。**vw/vh** 相对**视口**宽/高的 1%（100vw = 屏宽）。\n适配：根字号随屏宽动态设 html{font-size:屏宽/10}，px 用 px/根字号 rem；或 vw 直接布局；clamp(min,val,max) 做流式。"
+ },
+ {
+  "id": "css16",
+  "module": "css",
+  "q": "HTML5 语义化标签有哪些？为什么用？",
+  "a": "语义标签：header/nav/main/article/section/aside/footer/figure/time 等。好处：① **可读性/可维护**；② **SEO** 友好（爬虫懂结构）；③ **无障碍**（屏幕阅读器按语义导航）。\n注意：section/article 可单独成篇；布局用 main，别全 div；img 必写 alt。"
+ }
+]
