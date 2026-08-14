@@ -181,6 +181,47 @@
   .qt{ flex:1; }
 
   .mode{ transition:transform .15s ease, background .2s; }
+
+  /* 记忆曲线复习 */
+  .rev-badge{ display:inline-block; min-width:20px; background:var(--red); color:#fff; border-radius:10px; padding:0 6px; font-size:16px; line-height:1.4; }
+  #revBanner{ display:none; padding:10px 14px; margin-bottom:8px; background:#fff8e1; border:2.5px solid var(--ink);
+    border-radius:14px 5px 14px 5px; box-shadow:var(--shadow); font-size:19px; color:#7a5b00; text-align:center; transform:rotate(-.3deg); }
+  #revBanner .n{ color:var(--red); font-weight:bold; font-size:22px; }
+  .a{ min-height:0; }
+  .rev-info{ flex:none; margin-top:8px; font-size:16px; color:#5c524a; border-top:2px dashed var(--line);
+    padding-top:6px; display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
+  .rev-info .rev-curve{ display:block; }
+
+  /* 复习每日配额 + 备份浮层 */
+  .rev-quota{ display:none; align-items:center; gap:8px; font-size:18px; margin:0 0 12px; color:#5c524a; }
+  .rev-quota.on{ display:flex; }
+  .rev-quota input{ width:64px; font-family:inherit; font-size:19px; text-align:center; background:#fffdf7;
+    border:2.5px solid var(--ink); border-radius:10px 4px 10px 4px; padding:3px 5px; color:var(--ink); }
+  #revPlan{ display:none; padding:10px 14px; margin-bottom:10px; background:#eef6ff; border:2.5px solid var(--ink);
+    border-radius:14px 5px 14px 5px; box-shadow:var(--shadow); }
+  #revPlan.on{ display:block; }
+  #revPlan .rp-row{ display:flex; justify-content:space-between; gap:6px; margin:5px 0 2px; font-size:17px; }
+  #revPlan .rp-row .rp-mod{ color:var(--ink); }
+  #revPlan .rp-row.full .rp-cnt{ color:var(--green); font-weight:bold; }
+  #revPlan .rp-bar{ height:9px; background:#fff; border:2px solid var(--ink); border-radius:6px; margin-bottom:4px; padding:1px; }
+  #revPlan .rp-bar > i{ display:block; height:100%; background:repeating-linear-gradient(90deg,var(--blue) 0 6px,#bcd8f2 6px 8px); border-radius:4px; transition:width .4s; }
+  #revPlan .rp-mod{ display:flex; align-items:center; gap:6px; }
+  #revPlan .rp-q{ width:48px; font-family:inherit; font-size:15px; text-align:center; background:#fffdf7;
+    border:2px solid var(--ink); border-radius:8px 3px 8px 3px; padding:2px 3px; color:var(--ink); }
+  #revPlan .rp-def{ font-size:14px; color:#9a8f80; }
+  .imp-row{ display:flex; gap:10px; margin-top:12px; }
+  .imp-row .btn{ flex:1; }
+  .imp-tip{ font-size:16px; color:#5c524a; margin-top:10px; line-height:1.5; }
+  .imp-tip b{ color:var(--red); }
+
+  /* 弱项自动识别 + 必刷下限 */
+  #revPlan .rp-row.weak .rp-mod{ color:var(--red); font-weight:bold; }
+  #revPlan .rp-def.weak{ color:var(--red); font-weight:bold; }
+  #revPlan .rp-min{ width:42px; font-family:inherit; font-size:14px; text-align:center; background:#fffdf7;
+    border:2px solid var(--ink); border-radius:8px 3px 8px 3px; padding:2px 3px; color:var(--ink); }
+  #revPlan .rp-minwrap{ font-size:12px; color:#9a8f80; margin-left:4px; }
+  .drawer-item .weaktag{ color:#fff; background:var(--red); border-radius:8px; padding:1px 6px; font-size:13px; margin-left:6px; }
+  .row .name.weak span:first-child{ color:var(--red); font-weight:bold; }
 </style>
 </head>
 <body>
@@ -211,15 +252,24 @@
     <div class="cd-sub" id="cdSub"></div>
   </div>
 
+  <div id="revBanner">🔔 今天有 <span class="n">0</span> 题该复习啦，点「复习」开始 ✦</div>
+
   <div class="section-label">选择模块</div>
   <div class="modbtn" id="modBtn">📂 模块：<span class="cur" id="modCur">全部模块</span></div>
 
-  <div class="section-label">复习模式</div>
+  <div class="section-label">练习模式</div>
   <div class="modes" id="modes">
     <div class="mode on" data-mode="seq">顺序</div>
     <div class="mode" data-mode="rand">抽背</div>
     <div class="mode" data-mode="wrong">错题本</div>
+    <div class="mode" data-mode="review" id="reviewMode">复习 <span class="rev-badge">0</span></div>
   </div>
+
+  <div class="rev-quota" id="revQuotaWrap">
+    <span>每模块每日复习配额</span>
+    <input id="revQuotaInput" type="number" min="1" max="200" value="10" />
+  </div>
+  <div id="revPlan"></div>
 
   <div class="stage">
     <div class="card" id="card">
@@ -232,6 +282,7 @@
       <div class="face back">
         <div class="face-tag" id="aTag">ANSWER</div>
         <div class="a" id="aText">—</div>
+        <div class="rev-info" id="revInfo"></div>
         <div class="hint">👈 点卡片收起</div>
       </div>
     </div>
@@ -249,7 +300,7 @@
     <div class="btn" id="nextBtn">下一题 ▶</div>
   </div>
 
-  <div class="foot"><a id="statsLink">▣ 看模块统计</a></div>
+  <div class="foot"><a id="statsLink">▣ 看模块统计</a> · <a id="backupLink">⇅ 备份/恢复</a></div>
 </div>
 
 <div class="overlay" id="overlay">
@@ -258,6 +309,41 @@
     <div class="total" id="statsTotal">—</div>
     <div id="statsBody"></div>
     <div class="closebtn" id="closeStats">关闭 ✕</div>
+  </div>
+</div>
+
+<!-- 备份 / 恢复 / 通知浮层 -->
+<div class="overlay" id="backupOverlay">
+  <div class="stats">
+    <h2>📦 数据与提醒</h2>
+    <div class="brow">进度备份（掌握度 · 复习排期 · 设置）</div>
+    <div class="nav" style="margin-top:10px">
+      <div class="btn" id="exportBtn">⬇ 导出 JSON</div>
+      <div class="btn" id="importBtn">⬆ 导入 JSON</div>
+    </div>
+    <div class="brow" style="margin-top:16px">🔔 复习到期 · 浏览器通知</div>
+    <div class="nav" style="margin-top:10px">
+      <div class="btn" id="notifBtn">开启通知</div>
+    </div>
+    <div class="brow" id="notifState" style="margin-top:8px;color:#9a8f80;font-size:16px">当前：未开启（仅页面打开时提醒）</div>
+    <div class="closebtn" id="closeBackup">关闭 ✕</div>
+  </div>
+</div>
+
+<!-- 导入方式选择浮层 -->
+<div class="overlay" id="importOverlay">
+  <div class="stats">
+    <h2>╲ 导入方式</h2>
+    <div class="imp-tip">检测到进度文件，请选择导入方式：</div>
+    <div class="imp-tip">
+      <b>合并</b>：按题目 id 合并，文件里的同 id 进度覆盖当前、其余保留；设置项（目标/倒计时/配额）保留当前。<br>
+      <b>覆盖</b>：用文件里的所有数据直接替换当前（含设置项）。
+    </div>
+    <div class="imp-row">
+      <div class="btn" id="importMergeBtn">合并</div>
+      <div class="btn" id="importOverwriteBtn">覆盖</div>
+    </div>
+    <div class="closebtn" id="closeImport">取消 ✕</div>
   </div>
 </div>
 
@@ -283,12 +369,45 @@ let QUESTIONS = []; // 题目数据改为从 ./data/<module>.json 按需加载�
 
 
 /* ====== 状态 ====== */
-const LS_PROG='drill-progress-v1', LS_TODAY='drill-today', LS_GOAL='drill-goal';
+const LS_PROG='drill-progress-v1', LS_TODAY='drill-today', LS_GOAL='drill-goal', LS_REVIEW='drill-review-v1', LS_REV_SEED='drill-review-seeded';
 let progress = JSON.parse(localStorage.getItem(LS_PROG)||'{}');
 let goal = parseInt(localStorage.getItem(LS_GOAL))||20;
 let today = JSON.parse(localStorage.getItem(LS_TODAY)||'{}');
+let reviews = JSON.parse(localStorage.getItem(LS_REVIEW)||'{}');
 let curModule='all', curMode='seq', list=[], pos=0, pool=[];
 let drawerView='modules', drawerMod='all';
+
+/* 复习通知 / 每日配额 / 每日复习计数 */
+const LS_NOTIF='drill-notif-on', LS_REV_QUOTA='drill-rev-quota', LS_REV_TODAY='drill-rev-today';
+let revQuota = parseInt(localStorage.getItem(LS_REV_QUOTA))||10;
+let notifEnabled = localStorage.getItem(LS_NOTIF)==='1';
+let revToday = JSON.parse(localStorage.getItem(LS_REV_TODAY)||'{}');
+let lastNotif = 0;
+const LS_REV_QUOTA_MOD='drill-rev-quota-mod';
+let revQuotaMod = JSON.parse(localStorage.getItem(LS_REV_QUOTA_MOD)||'{}'); // 弱项模块单独配额 {modId:number}
+const LS_REV_MIN_MOD='drill-rev-min-mod';
+let revMinMod = JSON.parse(localStorage.getItem(LS_REV_MIN_MOD)||'{}'); // 强制必刷下限 {modId:number}
+const WEAK_THRESHOLD=0.6;   // 掌握率低于此值视为弱项
+const WEAK_BOOST=5;         // 弱项模块每日配额自动 +N
+function masteryRate(mod){
+  const arr=QUESTIONS.filter(q=>q.module===mod);
+  const rated=arr.filter(q=>progress[q.id]).length;
+  const known=arr.filter(q=>progress[q.id]==='know').length;
+  return { rated, known, rate: rated? known/rated : -1 }; // rate=-1 表示还没评过
+}
+function isWeak(mod){
+  const {rated, rate}=masteryRate(mod);
+  return rated>=3 && rate>=0 && rate<WEAK_THRESHOLD;
+}
+function effQuota(mod){
+  let q = revQuotaMod[mod] || revQuota;
+  if(isWeak(mod)) q = Math.max(q, revQuota+WEAK_BOOST); // 弱项自动抬高配额
+  return q;
+}
+
+/* 记忆曲线（艾宾浩斯）间隔复习：掌握后按 1→2→4→7→15→30→60 天递增；模糊隔天；不会立即重来 */
+const DAY=86400000;
+const SR_LEVELS=[1,2,4,7,15,30,60];
 
 const $ = s=>document.querySelector(s);
 const elCard=$('#card');
@@ -327,7 +446,8 @@ function renderDrawer(){
   let h=`<div class="drawer-item ${curModule==='all'?'on':''}" data-m="all">全部模块 <span class="cnt">${QUESTIONS.length}</span></div>`;
   for(const m of MODULES){
     const n=QUESTIONS.filter(q=>q.module===m.id).length;
-    h+=`<div class="drawer-item ${curModule===m.id?'on':''}" data-m="${m.id}">${m.name} <span class="cnt">${n}</span></div>`;
+    const weak=isWeak(m.id) ? '<span class="weaktag">弱项</span>' : '';
+    h+=`<div class="drawer-item ${curModule===m.id?'on':''}" data-m="${m.id}">${m.name}${weak} <span class="cnt">${n}</span></div>`;
   }
   dl.innerHTML=h;
   dl.querySelectorAll('.drawer-item').forEach(it=>it.onclick=()=>{
@@ -343,12 +463,64 @@ $('#drawerMask').onclick=closeDrawer;
 
 function buildList(){
   const base = curModule==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===curModule);
-  list = curMode==='wrong'? base.filter(q=>progress[q.id]&&progress[q.id]!=='know') : base.slice();
+  if(curMode==='review'){
+    const now=Date.now();
+    const due = base.filter(q=> reviews[q.id] && reviews[q.id].due<=now)
+                  .sort((a,b)=> reviews[a.id].due - reviews[b.id].due);
+    if(curModule==='all'){
+      ensureRevToday();
+      list=[];
+      const seen=new Set(revToday.seen||[]);
+      const byMod={};
+      due.forEach(q=>{ (byMod[q.module]=byMod[q.module]||[]).push(q); seen.add(q.id); });
+      MODULES.forEach(m=>{
+        const tgt=revTarget(m.id);
+        const done=revToday.per[m.id]||0;
+        const room=Math.max(0, tgt-done);
+        if(room<=0) return;
+        let take=(byMod[m.id]||[]).slice(0,room);
+        // 强制必刷下限：到期题不足时用非到期弱题补满
+        const min=revMinMod[m.id]||0;
+        const need=Math.min(room, Math.max(0, min-done)) - take.length;
+        if(need>0){
+          const fill=reviewCandidatesFor(m.id, seen).slice(0,need);
+          fill.forEach(q=>seen.add(q.id));
+          take=take.concat(fill);
+        }
+        list=list.concat(take);
+      });
+    } else {
+      ensureRevToday();
+      const m=curModule;
+      const seen=new Set(revToday.seen||[]);
+      due.forEach(q=>seen.add(q.id));
+      const tgt=revTarget(m);
+      const done=revToday.per[m]||0;
+      const room=Math.max(0, tgt-done);
+      let take=due.slice(0,room);
+      const min=revMinMod[m]||0;
+      const need=Math.min(room, Math.max(0, min-done)) - take.length;
+      if(need>0) take=take.concat(reviewCandidatesFor(m, seen).slice(0,need));
+      list=take; // 指定模块时也应用必刷下限
+    }
+    renderRevPlan();
+  } else {
+    list = curMode==='wrong'? base.filter(q=>progress[q.id]&&progress[q.id]!=='know') : base.slice();
+  }
   pos=0; pool=list.slice();
+  updateRevUI();
   if(list.length===0){ showEmpty(); updateProgress(); return; }
   showCard(); updateProgress();
 }
-function showEmpty(){ elCard.querySelector('.front').innerHTML=`<div class="face-tag">EMPTY</div><div class="empty">本题库暂无题目\n换个模块或去「抽背」试试 ✦</div>`; elCard.classList.remove('flip'); }
+function showEmpty(){
+  let msg='本题库暂无题目\n换个模块或去「抽背」试试 ✦';
+  if(curMode==='review'){
+    const base = curModule==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===curModule);
+    const stillDue = base.filter(q=> reviews[q.id] && reviews[q.id].due<=Date.now()).length;
+    msg = stillDue>0 ? '📅 今日复习配额已用完！\n还差 '+stillDue+' 题没背完，明天按曲线继续 ✦' : '🎉 待复习队列已清空！\n已掌握的题目会在记忆曲线到期时自动回来';
+  }
+  elCard.querySelector('.front').innerHTML=`<div class="face-tag">EMPTY</div><div class="empty">${msg}</div>`; elCard.classList.remove('flip');
+}
 function hl(a){
   // 先占位 **bold**，再转义 < > & 防止代码里的尖括号破坏 HTML，最后还原为 <b>
   a = a.replace(/\*\*(.+?)\*\*/g,'\x01$1\x02');
@@ -364,6 +536,7 @@ function showCard(){
   qEl.style.animation='none'; void qEl.offsetWidth; qEl.style.animation='fadeUp .35s ease';
   $('#aTag').textContent='解析 · '+(MOD_NAME[q.module]||q.module);
   $('#aText').innerHTML=hl(q.a);
+  $('#revInfo').innerHTML=reviewInfoText(q);
   elCard.classList.remove('flip');
   document.querySelectorAll('.rate').forEach(r=>r.classList.toggle('picked', progress[q.id]===r.dataset.rate));
   $('#prevBtn').disabled=(pos===0); $('#nextBtn').disabled=(pos===n-1);
@@ -407,6 +580,237 @@ function updateCountdown(){
 }
 $('#cdTarget').onchange=()=>{ cdTarget=$('#cdTarget').value||'2026-11-15'; localStorage.setItem(LS_CD,cdTarget); updateCountdown(); };
 
+/* ===== 记忆曲线复习 ===== */
+function recordReview(id, v){
+  const now=Date.now();
+  let r = reviews[id] || {level:-1, due:0, last:0};
+  if(v==='know'){ r.level=Math.min(r.level+1, SR_LEVELS.length-1); r.due=now + SR_LEVELS[r.level]*DAY; }
+  else if(v==='fuzzy'){ r.level=0; r.due=now + 1*DAY; }
+  else { r.level=0; r.due=now; } // 不会：立即重来
+  r.last=now;
+  reviews[id]=r;
+  localStorage.setItem(LS_REVIEW, JSON.stringify(reviews));
+}
+function dueCount(){ const now=Date.now(); let n=0; for(const id in reviews){ if(reviews[id].due<=now) n++; } return n; }
+function updateRevUI(){
+  const n=dueCount();
+  const rm=$('#reviewMode'); if(rm) rm.innerHTML=`复习 <span class="rev-badge">${n}</span>`;
+  const banner=$('#revBanner');
+  if(banner){ if(n>0){ banner.style.display=''; banner.querySelector('.n').textContent=n; } else banner.style.display='none'; }
+}
+function forgetCurveSVG(level){
+  const iv = level>=0 ? SR_LEVELS[Math.min(level,SR_LEVELS.length-1)] : 1;
+  const W=150,H=46,pad=4;
+  const X=t=>pad+(t/(iv*1.3))*(W-2*pad), Y=R=>(H-pad)-R*(H-2*pad);
+  let d=''; for(let i=0;i<=20;i++){ const t=iv*1.3*i/20, R=Math.pow(2,-t/iv); d+=(i?'L':'M')+X(t).toFixed(1)+' '+Y(R).toFixed(1)+' '; }
+  const dx=X(iv), dy=Y(0.5);
+  return `<svg class="rev-curve" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    <path d="${d}" fill="none" stroke="#2e86d6" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="${dx.toFixed(1)}" y1="${pad}" x2="${dx.toFixed(1)}" y2="${H-pad}" stroke="#e4572e" stroke-width="1.6" stroke-dasharray="3 3"/>
+    <circle cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" r="3.4" fill="#e4572e"/>
+  </svg>`;
+}
+function reviewInfoText(q){
+  const r=reviews[q.id];
+  if(!r) return '📌 还没排期，先点下方「掌握 / 模糊 / 不会」开启记忆曲线复习';
+  const days=Math.round((r.due-Date.now())/DAY);
+  let txt;
+  if(days<=0) txt='🔔 现在就该复习（已到期）';
+  else if(days===1) txt='⏭ 明天复习';
+  else txt=`⏭ ${days} 天后复习（第 ${r.level+1} 轮）`;
+  return txt + forgetCurveSVG(r.level);
+}
+function seedReviewsOnce(){
+  if(localStorage.getItem(LS_REV_SEED)) return;
+  const now=Date.now();
+  for(const id in progress){ reviews[id]={ level:-1, due: now, last:0 }; }
+  localStorage.setItem(LS_REVIEW, JSON.stringify(reviews));
+  localStorage.setItem(LS_REV_SEED,'1');
+}
+
+/* 每日复习计数（按模块） */
+function ensureRevToday(){ const d=todayStr(); if(revToday.date!==d){ revToday={date:d, per:{}, seen:[]}; } }
+function bumpRevToday(mod, id){ ensureRevToday(); revToday.per[mod]=(revToday.per[mod]||0)+1; if(id && revToday.seen.indexOf(id)<0) revToday.seen.push(id); localStorage.setItem(LS_REV_TODAY, JSON.stringify(revToday)); }
+function unbumpRevToday(mod, id){ ensureRevToday(); revToday.per[mod]=Math.max(0,(revToday.per[mod]||0)-1); if(id){ const i=revToday.seen.indexOf(id); if(i>=0) revToday.seen.splice(i,1); } localStorage.setItem(LS_REV_TODAY, JSON.stringify(revToday)); }
+
+/* 复习模式：按模块拆分的每日配额面板（含弱项标红 + 必刷下限） */
+function renderRevPlan(){
+  const wrap=$('#revPlan');
+  if(curMode!=='review' || curModule!=='all'){ wrap.classList.remove('on'); wrap.innerHTML=''; return; }
+  ensureRevToday();
+  let rows='';
+  MODULES.forEach(m=>{
+    const done=revToday.per[m.id]||0;
+    const dueN = QUESTIONS.filter(q=>q.module===m.id && reviews[q.id] && reviews[q.id].due<=Date.now()).length;
+    if(dueN===0 && done===0 && !isWeak(m.id)) return;
+    const q=effQuota(m.id);
+    const weak=isWeak(m.id);
+    const full = done>=q ? ' full':'';
+    const cnt = done>=q ? `已完成 ${done}/${q} ✓` : `${done}/${q}`;
+    const pct=Math.min(100, q?done/q*100:0);
+    const min=revMinMod[m.id]||0;
+    const weakTag = weak ? ' <span class="rp-def weak">弱项🔴</span>' : (revQuotaMod[m.id] ? ' <span class="rp-def">手动↑</span>' : '');
+    const minWrap = min>0 ? `<span class="rp-minwrap">必刷<input class="rp-min" data-mod="${m.id}" value="${min}"></span>` : `<span class="rp-minwrap">必刷<input class="rp-min" data-mod="${m.id}" value="0"></span>`;
+    rows+=`<div class="rp-row${full}${weak?' weak':''}"><span class="rp-mod">${m.name}${weakTag} <input class="rp-q" data-mod="${m.id}" value="${q}">${minWrap}</span><span class="rp-cnt">${cnt}</span></div><div class="rp-bar"><i style="width:${pct}%"></i></div>`;
+  });
+  if(!rows){ wrap.classList.remove('on'); wrap.innerHTML=''; return; }
+  wrap.classList.add('on');
+  const weakNames = MODULES.filter(m=>isWeak(m.id)).map(m=>m.name);
+  const weakNote = weakNames.length ? ` · 弱项[${weakNames.join('、')}]已自动加 ${WEAK_BOOST} 题/天` : '';
+  wrap.innerHTML=`<div class="brow" style="margin-bottom:6px">📋 今日复习配额 <span class="rp-def">（默认每模块 ${revQuota} 题${weakNote}）</span></div>`+rows;
+  wrap.querySelectorAll('.rp-q').forEach(inp=>inp.onchange=()=>{
+    const mod=inp.dataset.mod; const v=Math.max(1, parseInt(inp.value)||revQuota);
+    if(v===revQuota) delete revQuotaMod[mod]; else revQuotaMod[mod]=v;
+    localStorage.setItem(LS_REV_QUOTA_MOD, JSON.stringify(revQuotaMod));
+    buildList(); renderRevPlan();
+  });
+  wrap.querySelectorAll('.rp-min').forEach(inp=>inp.onchange=()=>{
+    const mod=inp.dataset.mod; const v=Math.max(0, parseInt(inp.value)||0);
+    if(v===0) delete revMinMod[mod]; else revMinMod[mod]=v;
+    localStorage.setItem(LS_REV_MIN_MOD, JSON.stringify(revMinMod));
+    buildList(); renderRevPlan();
+  });
+}
+function todayReviewStats(){
+  ensureRevToday();
+  let total=0, done=0; const now=Date.now();
+  MODULES.forEach(m=>{
+    const dueN = QUESTIONS.filter(q=>q.module===m.id && reviews[q.id] && reviews[q.id].due<=now).length;
+    if(dueN>0) total += Math.min(dueN, effQuota(m.id));
+    done += revToday.per[m.id]||0;
+  });
+  return {done, total};
+}
+
+/* 复习目标 = max(模块配额, 必刷下限)；强制必刷下限的候选补题 */
+function revTarget(mod){ return Math.max(effQuota(mod), revMinMod[mod]||0); }
+function prioOf(q){
+  const p=progress[q.id];
+  return p==='unknown'?0 : p==='fuzzy'?1 : p==='know'?3 : 2; // 未评过的排中间，优先补弱项
+}
+function dueVal(q){ const r=reviews[q.id]; return r? r.due : 0; }
+function reviewCandidatesFor(mod, exclude){
+  let c = QUESTIONS.filter(q=>q.module===mod && !exclude.has(q.id));
+  c.sort((a,b)=> prioOf(a)-prioOf(b) || dueVal(a)-dueVal(b)); // 越弱/越久未复习越靠前
+  return c;
+}
+function dueByModule(){
+  const now=Date.now(); const o={}; MODULES.forEach(m=>o[m.id]=0);
+  QUESTIONS.forEach(q=>{ const r=reviews[q.id]; if(r && r.due<=now) o[q.module]++; });
+  return o;
+}
+
+/* 复习到期浏览器通知（需 HTTPS 或 localhost 等安全上下文） */
+function notifSupported(){ return ('Notification' in window); }
+let notifTimer=null;
+function checkNotif(){
+  if(!notifEnabled || !notifSupported() || Notification.permission!=='granted') return;
+  const n=dueCount(); const now=Date.now();
+  if(n>0 && now-lastNotif > 30*60000){
+    lastNotif=now;
+    const {done,total}=todayReviewStats();
+    const left=Math.max(0,total-done);
+    const dbm=dueByModule();
+    const top=MODULES.map(m=>({m, c:dbm[m.id]})).filter(x=>x.c>0).sort((a,b)=>b.c-a.c).slice(0,3).map(x=>x.m.name);
+    let body = total>0 ? `今日复习配额 ${done}/${total} · 还差 ${left} 题，按计划刷一下吧 ✦` : '打开来按计划复习一下吧 ✦';
+    if(top.length) body += '\n最该先背：'+top.join(' · ');
+    try{
+      const ntf=new Notification('八股抽背 · '+n+' 题该复习', { body:body, tag:'drill-review' });
+      ntf.onclick=()=>{ window.focus(); ntf.close(); };
+    }catch(e){}
+  }
+}
+function schedNotif(){ if(notifTimer) clearInterval(notifTimer); checkNotif(); notifTimer=setInterval(checkNotif, 60000); }
+function startNotif(){
+  if(!notifSupported()){ $('#notifState').textContent='当前浏览器不支持通知'; return; }
+  if(Notification.permission==='granted'){
+    notifEnabled=true; localStorage.setItem(LS_NOTIF,'1');
+    $('#notifState').textContent='当前：已开启（页面打开时到期会提醒）'; $('#notifBtn').textContent='关闭通知';
+    schedNotif();
+  } else if(Notification.permission!=='denied'){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){ notifEnabled=true; localStorage.setItem(LS_NOTIF,'1'); $('#notifState').textContent='当前：已开启（页面打开时到期会提醒）'; $('#notifBtn').textContent='关闭通知'; schedNotif(); }
+      else { $('#notifState').textContent='已拒绝，请在浏览器地址栏允许通知后刷新'; }
+    });
+  } else { $('#notifState').textContent='已拒绝，请在浏览器地址栏允许通知后刷新'; }
+}
+function stopNotif(){
+  notifEnabled=false; localStorage.setItem(LS_NOTIF,'0');
+  $('#notifState').textContent='当前：未开启'; $('#notifBtn').textContent='开启通知';
+  if(notifTimer) clearInterval(notifTimer);
+}
+$('#notifBtn').onclick=()=>{ if(notifEnabled && Notification.permission==='granted') stopNotif(); else startNotif(); };
+
+/* 备份 / 恢复 / 通知浮层 */
+$('#backupLink').onclick=()=>{ $('#backupOverlay').classList.add('show'); refreshBackupUI(); };
+$('#closeBackup').onclick=()=>$('#backupOverlay').classList.remove('show');
+$('#backupOverlay').onclick=e=>{ if(e.target.id==='backupOverlay') $('#backupOverlay').classList.remove('show'); };
+function refreshBackupUI(){
+  if(!notifSupported()){ $('#notifState').textContent='当前浏览器不支持通知'; $('#notifBtn').textContent='不可用'; return; }
+  if(Notification.permission==='granted'){ $('#notifState').textContent = notifEnabled?'当前：已开启（页面打开时到期会提醒）':'当前：未开启'; $('#notifBtn').textContent = notifEnabled?'关闭通知':'开启通知'; }
+  else if(Notification.permission==='denied'){ $('#notifState').textContent='已拒绝，请在浏览器地址栏允许通知后刷新'; $('#notifBtn').textContent='开启通知'; }
+  else { $('#notifState').textContent='当前：未开启（仅页面打开时提醒）'; $('#notifBtn').textContent='开启通知'; }
+}
+$('#exportBtn').onclick=()=>{
+  const data={ app:'frontend-interview-drill', version:4, exportedAt:new Date().toISOString(), progress:progress, reviews:reviews, goal:goal, cdTarget:cdTarget, revQuota:revQuota, revQuotaMod:revQuotaMod, revMinMod:revMinMod };
+  const blob=new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='八股抽背进度_'+todayStr()+'.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  $('#notifState').textContent='已导出进度文件 ✔'; setTimeout(refreshBackupUI,1500);
+};
+let importInput=null, pendingImport=null;
+$('#importBtn').onclick=()=>{
+  if(!importInput){
+    importInput=document.createElement('input'); importInput.type='file'; importInput.accept='application/json,.json';
+    importInput.onchange=()=>{
+      const f=importInput.files[0]; if(!f) return;
+      const rd=new FileReader();
+      rd.onload=()=>{
+        try{
+          const d=JSON.parse(rd.result);
+          if(!d.progress && !d.reviews){ $('#notifState').textContent='导入失败：不是有效的进度文件'; return; }
+          pendingImport=d;
+          $('#backupOverlay').classList.remove('show');
+          $('#importOverlay').classList.add('show');
+        }catch(err){ $('#notifState').textContent='导入失败：文件格式不对'; }
+      };
+      rd.readAsText(f);
+    };
+  }
+  importInput.value=''; importInput.click();
+};
+function applyImport(mode){
+  const d=pendingImport; if(!d) return;
+  if(mode==='overwrite'){
+    if(d.progress && typeof d.progress==='object') progress=d.progress;
+    if(d.reviews && typeof d.reviews==='object') reviews=d.reviews;
+    if(typeof d.goal==='number'){ goal=d.goal; $('#goalInput').value=goal; localStorage.setItem(LS_GOAL,goal); }
+    if(typeof d.cdTarget==='string'){ cdTarget=d.cdTarget; localStorage.setItem(LS_CD,cdTarget); }
+    if(typeof d.revQuota==='number'){ revQuota=d.revQuota; $('#revQuotaInput').value=revQuota; localStorage.setItem(LS_REV_QUOTA,revQuota); }
+    if(d.revQuotaMod && typeof d.revQuotaMod==='object'){ revQuotaMod=d.revQuotaMod; localStorage.setItem(LS_REV_QUOTA_MOD, JSON.stringify(revQuotaMod)); }
+    if(d.revMinMod && typeof d.revMinMod==='object'){ revMinMod=d.revMinMod; localStorage.setItem(LS_REV_MIN_MOD, JSON.stringify(revMinMod)); }
+    localStorage.setItem(LS_NOTIF, notifEnabled?'1':'0');
+  } else { // 合并：题目进度按 id 合并，设置项保留当前
+    if(d.progress && typeof d.progress==='object'){ for(const k in d.progress) progress[k]=d.progress[k]; }
+    if(d.reviews && typeof d.reviews==='object'){ for(const k in d.reviews) reviews[k]=d.reviews[k]; }
+    if(d.revQuotaMod && typeof d.revQuotaMod==='object'){ for(const k in d.revQuotaMod) revQuotaMod[k]=d.revQuotaMod[k]; localStorage.setItem(LS_REV_QUOTA_MOD, JSON.stringify(revQuotaMod)); }
+    if(d.revMinMod && typeof d.revMinMod==='object'){ for(const k in d.revMinMod) revMinMod[k]=d.revMinMod[k]; localStorage.setItem(LS_REV_MIN_MOD, JSON.stringify(revMinMod)); }
+  }
+  revToday={date:todayStr(), per:{}}; localStorage.setItem(LS_REV_TODAY, JSON.stringify(revToday));
+  localStorage.setItem(LS_PROG, JSON.stringify(progress));
+  localStorage.setItem(LS_REVIEW, JSON.stringify(reviews));
+  pendingImport=null;
+  $('#importOverlay').classList.remove('show');
+  renderDrawer(); buildList(); updatePlan(); updateCountdown(); updateRevUI(); renderRevPlan();
+  $('#notifState').textContent = mode==='overwrite' ? '已覆盖导入进度 ✔' : '已合并导入进度 ✔'; setTimeout(refreshBackupUI,1500);
+}
+$('#importMergeBtn').onclick=()=>applyImport('merge');
+$('#importOverwriteBtn').onclick=()=>applyImport('overwrite');
+$('#closeImport').onclick=()=>{ pendingImport=null; $('#importOverlay').classList.remove('show'); };
+$('#importOverlay').onclick=e=>{ if(e.target.id==='importOverlay'){ pendingImport=null; $('#importOverlay').classList.remove('show'); } };
+$('#revQuotaInput').onchange=()=>{ revQuota=Math.max(1,parseInt($('#revQuotaInput').value)||10); localStorage.setItem(LS_REV_QUOTA,revQuota); if(curMode==='review'){ buildList(); renderRevPlan(); } };
+
 /* 翻牌 */
 elCard.onclick=()=>{
   const wasFlipped=elCard.classList.contains('flip');
@@ -417,15 +821,20 @@ elCard.onclick=()=>{
 /* 评分 */
 document.querySelectorAll('.rate').forEach(r=>r.onclick=()=>{
   const q=list[pos]; if(!q) return; const v=r.dataset.rate;
-  if(progress[q.id]===v){ delete progress[q.id]; bumpToday(q.id,false); }
-  else { progress[q.id]=v; bumpToday(q.id,true); }
-  localStorage.setItem(LS_PROG, JSON.stringify(progress)); showCard(); updateProgress();
+  if(progress[q.id]===v){ delete progress[q.id]; bumpToday(q.id,false); if(curMode==='review') unbumpRevToday(q.module, q.id); }
+  else { progress[q.id]=v; bumpToday(q.id,true); if(curMode==='review') bumpRevToday(q.module, q.id); }
+  localStorage.setItem(LS_PROG, JSON.stringify(progress));
+  recordReview(q.id, v);
+  if(curMode==='review'){ buildList(); } else { showCard(); }
+  updateProgress(); updateRevUI();
 });
 
 /* 模式 */
 document.querySelectorAll('.mode').forEach(m=>m.onclick=()=>{
   document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on')); m.classList.add('on');
-  curMode=m.dataset.mode; buildList();
+  curMode=m.dataset.mode;
+  $('#revQuotaWrap').classList.toggle('on', curMode==='review');
+  buildList(); renderRevPlan();
 });
 
 $('#prevBtn').onclick=()=>{ if(pos>0){ pos--; showCard(); } };
@@ -446,7 +855,10 @@ function openStats(){
     const rv=arr.filter(q=>progress[q.id]).length, kn=arr.filter(q=>progress[q.id]==='know').length;
     reviewed+=rv; known+=kn;
     const pct=rv?Math.round(kn/rv*100):0;
-    body+=`<div class="row"><div class="name"><span>${m.name}</span><span>${kn}/${arr.length}</span></div><div class="sbar"><i style="width:${arr.length?rv/arr.length*100:0}%"></i></div></div>`;
+    const {rate}=masteryRate(m.id);
+    const weak=isWeak(m.id);
+    const rateTxt = rate>=0 ? `（掌握率 ${Math.round(rate*100)}%）` : '';
+    body+=`<div class="row"><div class="name${weak?' weak':''}"><span>${m.name}${rateTxt}</span><span>${kn}/${arr.length}</span></div><div class="sbar"><i style="width:${arr.length?rv/arr.length*100:0}%"></i></div></div>`;
   }
   $('#statsTotal').textContent=`已评 ${reviewed}/${QUESTIONS.length} 题 · 掌握 ${known}`;
   $('#statsBody').innerHTML=body; $('#overlay').classList.add('show');
@@ -470,7 +882,12 @@ async function boot(){
     tip.textContent='题目数据加载失败：请通过 GitHub Pages 或本地服务器访问（直接双击打开 file:// 无法加载数据）。';
     document.body.appendChild(tip);
   }
-  renderDrawer(); buildList(); updatePlan(); updateCountdown();
+  seedReviewsOnce();
+  renderDrawer(); buildList(); updatePlan(); updateCountdown(); updateRevUI(); renderRevPlan();
+  $('#revQuotaInput').value=revQuota;
+  // 通知初始化：之前开启过且已授权则自动启用
+  if(notifEnabled && notifSupported() && Notification.permission==='granted'){ $('#notifBtn').textContent='关闭通知'; $('#notifState').textContent='当前：已开启（页面打开时到期会提醒）'; schedNotif(); }
+  else if(notifEnabled){ notifEnabled=false; localStorage.setItem(LS_NOTIF,'0'); }
 }
 
 </script>
