@@ -157,6 +157,29 @@
   @keyframes glow{ from{ filter:brightness(1); } to{ filter:brightness(1.2); } }
   .tbar.full > i{ animation: glow 1s ease-in-out infinite alternate; }
   .drawer-item:hover{ transform:translateX(4px); }
+  /* 日期倒计时 */
+  .cd{ padding:14px 16px; margin-bottom:6px; }
+  .cd h3{ font-family:'Ma Shan Zheng',cursive; font-size:24px; margin:0 0 8px; }
+  .cd-today{ font-size:19px; color:#5c524a; }
+  .cd-today b{ color:var(--blue); font-size:21px; }
+  .cd-big{ font-size:21px; margin:6px 0; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .cd-big input{ font-family:inherit; font-size:20px; width:140px; text-align:center; background:#fffdf7;
+    border:2.5px solid var(--ink); border-radius:10px 4px 10px 4px; padding:3px 5px; color:var(--ink); }
+  .cd-big b{ color:var(--red); font-size:26px; }
+  .cd-sub{ font-size:17px; color:#9a8f80; margin-top:4px; }
+
+  /* 题单列表（抽屉二级） */
+  .drawer-subtitle{ font-size:18px; color:#7a7066; margin:2px 2px 8px; }
+  .qitem{ font-size:18px; padding:11px 12px; margin:5px 0; background:var(--paper2);
+    border:2.5px solid var(--ink); border-radius:12px 4px 12px 4px; box-shadow:var(--shadow);
+    cursor:pointer; display:flex; gap:8px; align-items:flex-start; line-height:1.32; transform:rotate(-.2deg); }
+  .qitem:nth-child(even){ transform:rotate(.25deg); }
+  .qitem:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.15); }
+  .qitem.know{ background:#eaf7ee; } .qitem.fuzzy{ background:#fff8e1; } .qitem.unknown{ background:#fdecea; }
+  .qmark{ font-weight:bold; flex:none; }
+  .qmark.mknow{ color:var(--green); } .qmark.mfuzzy{ color:var(--orange); } .qmark.munknown{ color:var(--red); }
+  .qt{ flex:1; }
+
   .mode{ transition:transform .15s ease, background .2s; }
 </style>
 </head>
@@ -178,6 +201,14 @@
       <div class="tbar"><i id="todayBar"></i></div>
       还差 <span id="todayLeft">20</span> 题达标 ✦
     </div>
+  </div>
+
+  <!-- 求职倒计时 -->
+  <div class="cd sketch">
+    <h3>⏰ 求职倒计时</h3>
+    <div class="cd-today">今天 <b id="cdToday">—</b></div>
+    <div class="cd-big">距 <input id="cdTarget" type="date" /> 还有 <b id="cdLeft">—</b> 天</div>
+    <div class="cd-sub" id="cdSub"></div>
   </div>
 
   <div class="section-label">选择模块</div>
@@ -257,6 +288,7 @@ let progress = JSON.parse(localStorage.getItem(LS_PROG)||'{}');
 let goal = parseInt(localStorage.getItem(LS_GOAL))||20;
 let today = JSON.parse(localStorage.getItem(LS_TODAY)||'{}');
 let curModule='all', curMode='seq', list=[], pos=0, pool=[];
+let drawerView='modules', drawerMod='all';
 
 const $ = s=>document.querySelector(s);
 const elCard=$('#card');
@@ -267,18 +299,43 @@ function bumpToday(id, on){ ensureToday(); const i=today.ids.indexOf(id); if(on)
 
 /* 模块抽屉 */
 function renderDrawer(){
+  const dl=$('#drawerList');
+  if(drawerView==='questions'){
+    const arr = drawerMod==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===drawerMod);
+    let h=`<div class="drawer-item back" data-back="1">← 返回模块</div>`;
+    const name = drawerMod==='all'?'全部题目':MOD_NAME[drawerMod];
+    h+=`<div class="drawer-subtitle">${name} · 共 ${arr.length} 题（点击跳到该题）</div>`;
+    arr.forEach((q,i)=>{
+      const st=progress[q.id];
+      const mark = st==='know'?'✓':st==='fuzzy'?'~':st==='unknown'?'✗':'';
+      const cls = st?(' '+st):'';
+      const mk = mark?`<span class="qmark m${st}">${mark}</span>`:'';
+      h+=`<div class="qitem${cls}" data-idx="${i}">${mk}<span class="qt">${q.q}</span></div>`;
+    });
+    dl.innerHTML=h;
+    dl.querySelector('[data-back]').onclick=()=>{ drawerView='modules'; renderDrawer(); };
+    dl.querySelectorAll('.qitem').forEach(it=>it.onclick=()=>{
+      const i=+it.dataset.idx;
+      curModule=drawerMod; curMode='seq';
+      buildList();
+      pos = list.findIndex(q=>q.id===arr[i].id);
+      if(pos<0) pos=0;
+      showCard(); closeDrawer();
+    });
+    return;
+  }
   let h=`<div class="drawer-item ${curModule==='all'?'on':''}" data-m="all">全部模块 <span class="cnt">${QUESTIONS.length}</span></div>`;
   for(const m of MODULES){
     const n=QUESTIONS.filter(q=>q.module===m.id).length;
     h+=`<div class="drawer-item ${curModule===m.id?'on':''}" data-m="${m.id}">${m.name} <span class="cnt">${n}</span></div>`;
   }
-  const dl=$('#drawerList'); dl.innerHTML=h;
+  dl.innerHTML=h;
   dl.querySelectorAll('.drawer-item').forEach(it=>it.onclick=()=>{
-    curModule=it.dataset.m; renderDrawer(); closeDrawer(); buildList();
+    if(it.dataset.m){ drawerMod=it.dataset.m; drawerView='questions'; renderDrawer(); }
   });
   $('#modCur').textContent = curModule==='all'?'全部模块':MOD_NAME[curModule];
 }
-function openDrawer(){ $('#drawer').classList.add('show'); $('#drawerMask').classList.add('show'); }
+function openDrawer(){ drawerView='modules'; $('#drawer').classList.add('show'); $('#drawerMask').classList.add('show'); }
 function closeDrawer(){ $('#drawer').classList.remove('show'); $('#drawerMask').classList.remove('show'); }
 $('#modBtn').onclick=openDrawer;
 $('#drawerClose').onclick=closeDrawer;
@@ -292,7 +349,13 @@ function buildList(){
   showCard(); updateProgress();
 }
 function showEmpty(){ elCard.querySelector('.front').innerHTML=`<div class="face-tag">EMPTY</div><div class="empty">本题库暂无题目\n换个模块或去「抽背」试试 ✦</div>`; elCard.classList.remove('flip'); }
-function hl(a){ return a.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'); }
+function hl(a){
+  // 先占位 **bold**，再转义 < > & 防止代码里的尖括号破坏 HTML，最后还原为 <b>
+  a = a.replace(/\*\*(.+?)\*\*/g,'\x01$1\x02');
+  a = a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  a = a.replace(/\x01(.+?)\x02/g,'<b>$1</b>');
+  return a;
+}
 function showCard(){
   const q=list[pos]; if(!q){ showEmpty(); return; }
   const n=list.length;
@@ -328,6 +391,21 @@ function updatePlan(){
   $('#todayBar').style.width=Math.min(100, goal?done/goal*100:0)+'%';
   $('#todayBar').parentElement.classList.toggle('full', done>=goal && goal>0);
 }
+
+/* 求职倒计时 */
+const LS_CD='drill-countdown';
+let cdTarget = localStorage.getItem(LS_CD) || '2026-11-15';
+function updateCountdown(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  $('#cdToday').textContent = `${now.getMonth()+1}/${now.getDate()}`;
+  const t=$('#cdTarget'); if(t) t.value=cdTarget;
+  const target=new Date(cdTarget+'T00:00:00');
+  const diff=Math.round((target-now)/86400000);
+  if(diff>0){ $('#cdLeft').textContent=diff; $('#cdSub').textContent=`目标 ${cdTarget} · 约 ${Math.ceil(diff/7)} 周后`; }
+  else if(diff===0){ $('#cdLeft').textContent='0'; $('#cdSub').textContent='就是今天，加油！'; }
+  else { $('#cdLeft').textContent=Math.abs(diff); $('#cdSub').textContent=`已过目标日 ${Math.abs(diff)} 天`; }
+}
+$('#cdTarget').onchange=()=>{ cdTarget=$('#cdTarget').value||'2026-11-15'; localStorage.setItem(LS_CD,cdTarget); updateCountdown(); };
 
 /* 翻牌 */
 elCard.onclick=()=>{
@@ -392,7 +470,7 @@ async function boot(){
     tip.textContent='题目数据加载失败：请通过 GitHub Pages 或本地服务器访问（直接双击打开 file:// 无法加载数据）。';
     document.body.appendChild(tip);
   }
-  renderDrawer(); buildList(); updatePlan();
+  renderDrawer(); buildList(); updatePlan(); updateCountdown();
 }
 
 </script>

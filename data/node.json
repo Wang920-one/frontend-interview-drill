@@ -1,98 +1,266 @@
 [
  {
-  "id": "no1",
+  "id": "node001",
   "module": "node",
   "q": "Node 事件循环与浏览器有何不同？",
   "a": "Node 也单线程，事件循环**分阶段**：timers → pending → I/O 回调 → idle → **poll** → **check**(setImmediate) → close。\n宏任务按阶段执行，微任务（Promise/process.nextTick）在**阶段切换间**清空（nextTick 优先于 Promise）。\n与浏览器差异：浏览器微任务每宏任务后清空；Node 有 poll/check 阶段，同轮 setImmediate 早于 setTimeout(0)。"
  },
  {
-  "id": "no2",
+  "id": "node002",
   "module": "node",
   "q": "NestJS 的核心概念？",
   "a": "基于 **TypeScript + 装饰器**的企业级 Node 框架。\n核心：Module（@Module 组织功能）、Controller（@Get/@Post 路由）、Provider/Service（业务逻辑，靠**依赖注入 DI** @Injectable）。\n拦截器链：Pipe（校验/转换）、Guard（鉴权）、Interceptor（切面）、Filter（异常）。\n优点：结构清晰、易测试、TS 友好，适合中大型后端。"
  },
  {
-  "id": "no3",
+  "id": "node003",
   "module": "node",
   "q": "JWT 鉴权流程？",
   "a": "JWT = JSON Web Token，无状态鉴权。\n流程：登录成功 → 服务端签 token（header.payload.signature，签名用密钥/HMAC 或 RSA）→ 客户端存 localStorage/Cookie → 请求带 `Authorization: Bearer xxx` → 服务端验签名与 exp。\n坑：① 密钥泄露即沦陷；② **无法即时吊销**（短时效+刷新 token/黑名单）；③ 别放敏感信息（payload 仅 base64）；④ 用 HttpOnly Cookie 防 XSS。"
  },
  {
-  "id": "no4",
+  "id": "node004",
   "module": "node",
   "q": "process.nextTick 与 Promise.then 顺序？",
   "a": "都在微任务阶段，但 **nextTick 队列优先于 Promise**（同轮先清空 nextTick 再清 Promise）。Node 事件循环：每阶段后先跑 **nextTick**（若有）→ 再微任务（Promise）→ 下一阶段。\n注意：nextTick 递归会**饿死** I/O（一直排前面），危险。用途：nextTick 让回调在当前操作后立即、I/O 前执行（如错误优先回调）。"
  },
  {
-  "id": "no5",
+  "id": "node005",
   "module": "node",
   "q": "Node Stream 流？",
   "a": "**流** 处理**大数据/连续数据**的抽象（边读边处理，不占全内存）。四类：Readable（读）、Writable（写）、Duplex（双）、Transform（改数据）。用途：文件大（createReadStream 分块）、HTTP 请求体、压缩（pipe 串接：read.pipe(gzip).pipe(write)）。\n**背压** 下游慢时上游暂停，pipe 自动处理。对比 Buffer：Buffer 是数据块，Stream 是流动方式。"
  },
  {
-  "id": "no6",
+  "id": "node006",
   "module": "node",
   "q": "Node 内存泄漏排查？",
   "a": "症状：内存持续涨、重启才好、OOM。原因：① 全局变量/缓存无限增；② **闭包**持大对象；③ 未清的 **定时器/监听**；④ 队列堆积（生产者快于消费者）；⑤ 内存泄漏在第三方。\n排查：① **--inspect** + Chrome DevTools **Memory** 快照对比；② heapdump 抓堆；③ clinic.js；④ 看 RSS 趋势。治理：限缓存（LRU）、清监听、流背压。"
  },
  {
-  "id": "no7",
+  "id": "node007",
   "module": "node",
   "q": "Node 如何利用多核？",
   "a": "Node 单进程单线程（默认用 1 核）。**cluster 模块** fork 多个**子进程**（=CPU 核数），共享端口、由主进程分发请求，**负载均衡**提吞吐。现代：**PM2**（进程管理，cluster 模式、0 停机重启、监控）更常用；或容器/K8s 多实例。\n注意：多进程间内存不共享（状态用 Redis/DB）；worker 崩溃主可 fork 补。"
  },
  {
-  "id": "no8",
+  "id": "node008",
   "module": "node",
   "q": "Session 与 JWT 鉴权对比？",
   "a": "**Session** 服务端**存会话**（内存/Redis），客户端拿 sessionId（Cookie）。优点：可即时吊销、存服务端安全；缺点：需存储、扩展性差（分布式要共享）、跨域麻烦。**JWT** 无状态，**token 含信息**客户端存，服务端只验签名。\n优点：易扩展/跨域/移动端友好；缺点：**难即时吊销**（短时效+刷新 token/黑名单）、payload 可被读（别放密）。选型：内部/可控用 JWT；强安全用 Session+Redis。"
  },
  {
-  "id": "no9",
+  "id": "node009",
   "module": "node",
   "q": "Koa/Express 中间件机制？",
   "a": "**中间件** 一串**处理函数**，对请求/响应做预处理（日志/鉴权/解析）。**Express** 基于**回调队列**（next() 串联），顺序执行，旧式易回调地狱。**Koa** **洋葱模型**（async + await next()），请求进一层、响应出一层（前后都能做事，如计耗时），用 ctx 统一 req/res。\n注意：别忘了调 next()/await，否则挂起；错误用 try/catch 或错误处理中间件。"
  },
  {
-  "id": "no10",
+  "id": "node010",
   "module": "node",
   "q": "ORM 是什么？常见库？",
   "a": "**ORM**（对象关系映射）用**代码对象**操作数据库（免手写 SQL），TypeScript 类型友好、防注入。Node 系：① **Prisma**（现代、类型安全、Schema 驱动、migrate，趋势热）；② **TypeORM**（装饰器实体）；③ **Sequelize**（老牌）。\n好处：开发快、跨库；代价：复杂查询 ORM 生成 SQL 未必最优（用原生/查询构造器兜底）。注意：ORM 仍可能慢（N+1 查询需预加载）。"
  },
  {
-  "id": "no11",
+  "id": "node011",
   "module": "node",
   "q": "数据库索引与慢查询？",
   "a": "**索引**（如 B+ 树）加速查询（O(log n)），但占空间、拖慢写。原则：① 高频 WHERE/JOIN/ORDER BY 列建索引；② **最左前缀**（联合索引 a,b 只查 b 用不上）；③ 用 **EXPLAIN** 看执行计划；④ 避免对索引列做函数/隐式转换（失效）；⑤ 分页深 offset 慢（改用游标）。\n慢查询：加索引+优化 SQL+缓存。"
  },
  {
-  "id": "no12",
+  "id": "node012",
   "module": "node",
   "q": "offset 分页与游标分页？",
   "a": "**offset（limit/offset）** LIMIT 10 OFFSET 1000，实现简单；缺点：深翻**慢**（数据库仍扫前 N 条）、数据变动时**重复/漏**（插入导致偏移错位）。**游标（cursor/keyset）** WHERE id > lastId LIMIT 10，用**有序索引**定位，深翻**快且稳**、无错位。\n用途：无限滚动/大数据用游标；小数据用 offset。注意：游标需唯一有序键（如 created_at+id）。"
  },
  {
-  "id": "no13",
+  "id": "node013",
   "module": "node",
   "q": "接口幂等性是什么？",
   "a": "**同一请求多次执行效果一致**（不重复副作用），如重复提交订单只下一单。实现：① **唯一 ID**（请求/订单号）+ 去重表/Redis 锁；② **乐观锁**（version 字段）；③ **Token 机制**（提交前发 token，用后即焚）；④ 状态机（已支付则忽略）；⑤ PUT（幂等）vs POST（非幂等）。\n场景：支付/下单/重试必须幂等，防重复扣款。"
  },
  {
-  "id": "no14",
+  "id": "node014",
   "module": "node",
   "q": "消息队列作用？",
   "a": "**MQ**（Kafka/RabbitMQ/Bull）解耦生产者消费者、异步、削峰。场景：① **异步**（发邮件/通知丢队列，主流程快返回）；② **削峰**（秒杀流量缓冲，worker 按能力消费）；③ **解耦**（服务不直接依赖）；④ **可靠**（持久化防丢）。Node 常用 **Bull**（Redis 基，任务队列）/ BullMQ。\n注意：消费**幂等**（重试不重复）、失败重试/死信、顺序性。"
  },
  {
-  "id": "no15",
+  "id": "node015",
   "module": "node",
   "q": "微服务 vs 单体？",
   "a": "**单体** 一个应用全功能，部署简单、事务易（本地）；缺点：大了难维护/扩容整包。**微服务** 按业务拆**独立服务**（各自库/部署），独立伸缩/技术栈，容错（一挂不全挂）；缺点：分布式复杂度（网络/事务/运维）、需网关/注册中心/链路追踪。\nNode 实践：NestJS 写服务 + API 网关 + 消息队列 + Docker/K8s。选型：小项目单体；大/多团队微服务。"
  },
  {
-  "id": "no16",
+  "id": "node016",
   "module": "node",
   "q": "限流与熔断？",
   "a": "**限流** 控单位时间内请求数，防压垮。算法：计数器、滑动窗口、**漏桶**（恒定速率）、**令牌桶**（允许突发）。实现：Redis + 中间件（如 express-rate-limit）。**熔断** 依赖**连续失败**达阈值 → **断开**（快速失败，不雪崩），半开试探恢复（类似电路保险丝）。\n**降级** 熔断时返兜底/缓存。用途：保护核心服务、防级联故障（雪崩）。"
+ },
+ {
+  "id": "node017",
+  "module": "node",
+  "q": "什么是 Node.js？它的主要特点是什么？",
+  "a": "**参考答案：**\n\nNode.js 是一个基于 Chrome V8 引擎的 JavaScript 运行时环境，让 JavaScript 可以在服务器端运行。\n\n主要特点：\n\n- **单线程事件循环**：基于事件驱动的非阻塞 I/O 模型\n- **高并发**：适合处理大量并发连接\n- **跨平台**：支持 Windows、Linux、macOS\n- **NPM 生态**：拥有丰富的第三方模块\n- **轻量高效**：内存占用小，启动速度快\n\n**2. 解释 Node.js 的事件循环机制**\n\n**参考答案：**\n\n事件循环是 Node.js 处理非阻塞 I/O 操作的核心机制。\n\n执行阶段：\n\n1. **Timer 阶段**：执行 setTimeout 和 setInterval 回调\n2. **Pending callbacks 阶段**：执行延迟到下一个循环的 I/O 回调\n3. **Idle, prepare 阶段**：内部使用\n4. **Poll 阶段**：获取新的 I/O 事件，执行相关回调\n5. **Check 阶段**：执行 setImmediate 回调\n6. **Close callbacks 阶段**：执行关闭事件回调"
+ },
+ {
+  "id": "node018",
+  "module": "node",
+  "q": "Node.js 中的模块系统是如何工作的？",
+  "a": "**参考答案：**\n\nNode.js 使用 CommonJS 模块系统：\n\n```JavaScript\n// 导出模块\nmodule.exports = {\n  name: 'example',\n  getValue: () => 'value'\n};\n\n// 或者\nexports.name = 'example';\n\n// 导入模块\nconst module = require('./module');\nconst { name } = require('./module');\n```\n\n模块加载过程：\n\n1. **路径解析**：解析模块路径\n2. **缓存检查**：检查模块缓存\n3. **文件定位**：找到对应文件\n4. **编译执行**：包装并执行模块代码\n5. **缓存模块**：将模块缓存起来"
+ },
+ {
+  "id": "node019",
+  "module": "node",
+  "q": "什么是 Buffer？它的作用是什么？",
+  "a": "**参考答案：**\n\nBuffer 是 Node.js 中处理二进制数据的类，类似于整数数组。\n\n主要用途：\n\n- 处理文件 I/O 操作\n- 网络通信中的数据传输\n- 加密解密操作\n- 图片、音频等二进制文件处理\n\n```JavaScript\n// 创建 Buffer\nconst buf1 = Buffer.alloc(10);\nconst buf2 = Buffer.from('hello', 'utf8');\nconst buf3 = Buffer.from([1, 2, 3, 4]);\n\n// Buffer 操作\nbuf2.toString(); // 'hello'\nbuf2.length; // 5\n```"
+ },
+ {
+  "id": "node020",
+  "module": "node",
+  "q": "Stream 是什么？有哪些类型？",
+  "a": "**参考答案：**\n\nStream 是处理流式数据的抽象接口，用于高效处理大量数据。\n\n四种基本类型：\n\n1. **Readable**：可读流（如 fs.createReadStream）\n2. **Writable**：可写流（如 fs.createWriteStream）\n3. **Duplex**：双工流（如 TCP socket）\n4. **Transform**：转换流（如 zlib.createGzip）\n\n```JavaScript\nconst fs = require('fs');\nconst readStream = fs.createReadStream('input.txt');\nconst writeStream = fs.createWriteStream('output.txt');\n\nreadStream.pipe(writeStream);\n```\n\n**6. 解释 Node.js 中的异步编程模式**\n\n**参考答案：**\n\nNode.js 支持多种异步编程模式：\n\n1. **回调函数（Callback）**\n\n```JavaScript\nfs.readFile('file.txt', (err, data) => {\n  if (err) throw err;\n  console.log(data);\n});\n```\n\n1. **Promise**\n\n```JavaScript\nconst readFilePromise = util.promisify(fs.readFile);\nreadFilePromise('file.txt').then(data => console.log(data));\n```\n\n1. **async/await**\n\n```JavaScript\nasync function readFile() {\n  try {\n    const data = await readFilePromise('file.txt');\n    console.log(data);\n  } catch (err) {\n    console.error(err);\n  }\n}\n```"
+ },
+ {
+  "id": "node021",
+  "module": "node",
+  "q": "什么是中间件？在 Express 中如何使用？",
+  "a": "**参考答案：**\n\n中间件是在请求-响应循环中执行的函数，可以访问请求对象（req）、响应对象（res）和下一个中间件函数（next）。\n\n```JavaScript\nconst express = require('express');\nconst app = express();\n\n// 应用级中间件\napp.use((req, res, next) => {\n  console.log('Time:', Date.now());\n  next();\n});\n\n// 路由级中间件\napp.get('/user/:id', (req, res, next) => {\n  res.send('User ID: ' + req.params.id);\n});\n\n// 错误处理中间件\napp.use((err, req, res, next) => {\n  console.error(err.stack);\n  res.status(500).send('Something broke!');\n});\n```"
+ },
+ {
+  "id": "node022",
+  "module": "node",
+  "q": "Node.js 如何处理错误？",
+  "a": "**参考答案：**\n\nNode.js 错误处理方式：\n\n1. **同步代码**：使用 try-catch\n\n```JavaScript\ntry {\n  const data = fs.readFileSync('file.txt');\n} catch (err) {\n  console.error(err);\n}\n```\n\n1. **异步回调**：错误优先回调\n\n```JavaScript\nfs.readFile('file.txt', (err, data) => {\n  if (err) {\n    console.error(err);\n    return;\n  }\n  console.log(data);\n});\n```\n\n1. **Promise**：使用 catch\n\n```JavaScript\nreadFilePromise('file.txt')\n  .then(data => console.log(data))\n  .catch(err => console.error(err));\n```\n\n1. **全局错误处理**\n\n```JavaScript\nprocess.on('uncaughtException', (err) => {\n  console.error('Uncaught Exception:', err);\n  process.exit(1);\n});\n```"
+ },
+ {
+  "id": "node023",
+  "module": "node",
+  "q": "什么是 EventEmitter？如何使用？",
+  "a": "**参考答案：**\n\nEventEmitter 是 Node.js 事件驱动架构的核心，用于处理事件的发布和订阅。\n\n```JavaScript\nconst EventEmitter = require('events');\n\nclass MyEmitter extends EventEmitter {}\nconst myEmitter = new MyEmitter();\n\n// 监听事件\nmyEmitter.on('event', (data) => {\n  console.log('事件触发:', data);\n});\n\n// 触发事件\nmyEmitter.emit('event', 'hello world');\n\n// 一次性监听\nmyEmitter.once('event', () => {\n  console.log('只执行一次');\n});\n\n// 移除监听器\nmyEmitter.removeAllListeners('event');\n```\n\n**10. 解释 Node.js 中的集群（Cluster）模式**\n\n**参考答案：**\n\nCluster 模块允许创建子进程来共享服务器端口，充分利用多核 CPU。\n\n```JavaScript\nconst cluster = require('cluster');\nconst http = require('http');\nconst numCPUs = require('os').cpus().length;\n\nif (cluster.isMaster) {\n  console.log(`主进程 ${process.pid} 正在运行`);\n\n  // 衍生工作进程\n  for (let i = 0; i < numCPUs; i++) {\n    cluster.fork();\n  }\n\n  cluster.on('exit', (worker, code, signal) => {\n    console.log(`工作进程 ${worker.process.pid} 已退出`);\n    cluster.fork(); // 重启进程\n  });\n} else {\n  // 工作进程可以共享任何 TCP 连接\n  http.createServer((req, res) => {\n    res.writeHead(200);\n    res.end('hello world\\n');\n  }).listen(8000);\n}\n```"
+ },
+ {
+  "id": "node024",
+  "module": "node",
+  "q": "什么是 npm？package.json 的作用是什么？",
+  "a": "**参考答案：**\n\nnpm（Node Package Manager）是 Node.js 的包管理器。\n\npackage.json 作用：\n\n- **项目信息**：名称、版本、描述\n- **依赖管理**：dependencies、devDependencies\n- **脚本定义**：npm scripts\n- **项目配置**：入口文件、仓库地址等\n\n```JSON\n{\n  \"name\": \"my-project\",\n  \"version\": \"1.0.0\",\n  \"description\": \"项目描述\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"start\": \"node index.js\",\n    \"test\": \"jest\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.0\"\n  },\n  \"devDependencies\": {\n    \"jest\": \"^28.0.0\"\n  }\n}\n```\n\n**12. 解释 Node.js 中的内存管理和垃圾回收**\n\n**参考答案：**\n\nNode.js 使用 V8 引擎的垃圾回收机制：\n\n**内存结构：**\n\n- **新生代**：存储生存时间短的对象\n- **老生代**：存储生存时间长的对象\n\n**垃圾回收算法：**\n\n- **Scavenge**：处理新生代，采用 Cheney 算法\n- **Mark-Sweep**：标记清除，处理老生代\n- **Mark-Compact**：标记整理，解决内存碎片\n\n**内存泄漏常见原因：**\n\n- 全局变量\n- 闭包引用\n- 事件监听器未移除\n- 定时器未清除"
+ },
+ {
+  "id": "node025",
+  "module": "node",
+  "q": "什么是 Worker Threads？与 Cluster 的区别？",
+  "a": "**参考答案：**\n\nWorker Threads 是 Node.js 中的多线程解决方案，用于 CPU 密集型任务。\n\n**与 Cluster 的区别：**\n\n| 特性 | Worker Threads | Cluster |\n|-|-|-|\n| 用途 | CPU 密集型任务 | I/O 密集型任务 |\n| 内存 | 共享内存 | 独立内存空间 |\n| 通信 | MessagePort | IPC |\n| 开销 | 较小 | 较大 |\n\n```JavaScript\n// Worker Threads 示例\nconst { Worker, isMainThread, parentPort } = require('worker_threads');\n\nif (isMainThread) {\n  const worker = new Worker(__filename);\n  worker.postMessage(42);\n  worker.on('message', (data) => {\n    console.log('收到:', data);\n  });\n} else {\n  parentPort.on('message', (data) => {\n    parentPort.postMessage(data * 2);\n  });\n}\n```"
+ },
+ {
+  "id": "node026",
+  "module": "node",
+  "q": "如何在 Node.js 中处理文件操作？",
+  "a": "**参考答案：**\n\nNode.js 提供 fs 模块处理文件系统操作：\n\n```JavaScript\nconst fs = require('fs');\nconst path = require('path');\n\n// 同步读取\nconst data = fs.readFileSync('file.txt', 'utf8');\n\n// 异步读取\nfs.readFile('file.txt', 'utf8', (err, data) => {\n  if (err) throw err;\n  console.log(data);\n});\n\n// Promise 版本\nconst fsPromises = require('fs').promises;\nasync function readFile() {\n  try {\n    const data = await fsPromises.readFile('file.txt', 'utf8');\n    console.log(data);\n  } catch (err) {\n    console.error(err);\n  }\n}\n\n// 流式读取（大文件）\nconst readStream = fs.createReadStream('large-file.txt');\nreadStream.on('data', (chunk) => {\n  console.log(chunk);\n});\n```"
+ },
+ {
+  "id": "node027",
+  "module": "node",
+  "q": "什么是 Express.js？它的核心特性有哪些？",
+  "a": "**参考答案：**\n\nExpress.js 是基于 Node.js 的 Web 应用框架，提供了一系列强大的特性。\n\n**核心特性：**\n\n- **路由系统**：灵活的路由定义\n- **中间件**：可插拔的中间件架构\n- **模板引擎**：支持多种模板引擎\n- **静态文件服务**：内置静态文件服务\n- **错误处理**：统一的错误处理机制\n\n```JavaScript\nconst express = require('express');\nconst app = express();\n\n// 中间件\napp.use(express.json());\napp.use(express.static('public'));\n\n// 路由\napp.get('/', (req, res) => {\n  res.send('Hello World!');\n});\n\napp.post('/users', (req, res) => {\n  const user = req.body;\n  res.json({ success: true, user });\n});\n\napp.listen(3000, () => {\n  console.log('Server running on port 3000');\n});\n```"
+ },
+ {
+  "id": "node028",
+  "module": "node",
+  "q": "Node.js 中如何实现身份验证和授权？",
+  "a": "**参考答案：**\n\n常见的身份验证方案：\n\n**1. JWT（JSON Web Token）**\n\n```JavaScript\nconst jwt = require('jsonwebtoken');\n\n// 生成 token\nconst token = jwt.sign(\n  { userId: user.id },\n  process.env.JWT_SECRET,\n  { expiresIn: '1h' }\n);\n\n// 验证中间件\nconst authenticateToken = (req, res, next) => {\n  const token = req.headers['authorization']?.split(' ')[1];\n\n  if (!token) {\n    return res.sendStatus(401);\n  }\n\n  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {\n    if (err) return res.sendStatus(403);\n    req.user = user;\n    next();\n  });\n};\n```\n\n**2. Session 认证**\n\n```JavaScript\nconst session = require('express-session');\n\napp.use(session({\n  secret: 'your-secret-key',\n  resave: false,\n  saveUninitialized: true,\n  cookie: { secure: false }\n}));\n```"
+ },
+ {
+  "id": "node029",
+  "module": "node",
+  "q": "如何在 Node.js 中连接和操作数据库？",
+  "a": "**参考答案：**\n\n**MongoDB（使用 Mongoose）：**\n\n```JavaScript\nconst mongoose = require('mongoose');\n\nmongoose.connect('mongodb://localhost/mydb', {\n  useNewUrlParser: true,\n  useUnifiedTopology: true\n});\n\nconst userSchema = new mongoose.Schema({\n  name: String,\n  email: String\n});\n\nconst User = mongoose.model('User', userSchema);\n\n// 创建用户\nconst user = new User({ name: 'John', email: 'john@example.com' });\nawait user.save();\n\n// 查询用户\nconst users = await User.find({ name: 'John' });\n```\n\n**MySQL（使用 mysql2）：**\n\n```JavaScript\nconst mysql = require('mysql2/promise');\n\nconst connection = await mysql.createConnection({\n  host: 'localhost',\n  user: 'root',\n  password: 'password',\n  database: 'mydb'\n});\n\nconst [rows] = await connection.execute(\n  'SELECT * FROM users WHERE name = ?',\n  ['John']\n);\n```"
+ },
+ {
+  "id": "node030",
+  "module": "node",
+  "q": "什么是 RESTful API？如何在 Node.js 中实现？",
+  "a": "**参考答案：**\n\nRESTful API 是基于 REST 架构风格的 Web API 设计规范。\n\n**REST 原则：**\n\n- 统一接口\n- 无状态\n- 可缓存\n- 客户端-服务器分离\n- 分层系统\n\n```JavaScript\nconst express = require('express');\nconst app = express();\n\napp.use(express.json());\n\n// GET /users - 获取所有用户\napp.get('/users', async (req, res) => {\n  const users = await User.find();\n  res.json(users);\n});\n\n// GET /users/:id - 获取特定用户\napp.get('/users/:id', async (req, res) => {\n  const user = await User.findById(req.params.id);\n  if (!user) return res.status(404).json({ error: 'User not found' });\n  res.json(user);\n});\n\n// POST /users - 创建用户\napp.post('/users', async (req, res) => {\n  const user = new User(req.body);\n  await user.save();\n  res.status(201).json(user);\n});\n\n// PUT /users/:id - 更新用户\napp.put('/users/:id', async (req, res) => {\n  const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });\n  res.json(user);\n});\n\n// DELETE /users/:id - 删除用户\napp.delete('/users/:id', async (req, res) => {\n  await User.findByIdAndDelete(req.params.id);\n  res.status(204).send();\n});\n```"
+ },
+ {
+  "id": "node031",
+  "module": "node",
+  "q": "如何在 Node.js 中处理跨域问题？",
+  "a": "**参考答案：**\n\n跨域问题可以通过 CORS（Cross-Origin Resource Sharing）解决：\n\n**1. 使用 cors 中间件：**\n\n```JavaScript\nconst cors = require('cors');\n\n// 允许所有域名\napp.use(cors());\n\n// 配置特定选项\napp.use(cors({\n  origin: ['http://localhost:3000', 'https://example.com'],\n  methods: ['GET', 'POST', 'PUT', 'DELETE'],\n  allowedHeaders: ['Content-Type', 'Authorization'],\n  credentials: true\n}));\n```\n\n**2. 手动设置响应头：**\n\n```JavaScript\napp.use((req, res, next) => {\n  res.header('Access-Control-Allow-Origin', '*');\n  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');\n  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');\n\n  if (req.method === 'OPTIONS') {\n    res.sendStatus(200);\n  } else {\n    next();\n  }\n});\n```"
+ },
+ {
+  "id": "node032",
+  "module": "node",
+  "q": "Node.js 中如何实现缓存？",
+  "a": "**参考答案：**\n\n**1. 内存缓存：**\n\n```JavaScript\nconst cache = new Map();\n\nfunction getFromCache(key) {\n  return cache.get(key);\n}\n\nfunction setCache(key, value, ttl = 3600000) {\n  cache.set(key, value);\n  setTimeout(() => cache.delete(key), ttl);\n}\n```\n\n**2. Redis 缓存：**\n\n```JavaScript\nconst redis = require('redis');\nconst client = redis.createClient();\n\nasync function getFromRedis(key) {\n  return await client.get(key);\n}\n\nasync function setToRedis(key, value, expireTime = 3600) {\n  await client.setex(key, expireTime, JSON.stringify(value));\n}\n```\n\n**3. HTTP 缓存：**\n\n```JavaScript\napp.get('/api/data', (req, res) => {\n  res.set({\n    'Cache-Control': 'public, max-age=3600',\n    'ETag': '\"123456\"'\n  });\n  res.json(data);\n});\n```"
+ },
+ {
+  "id": "node033",
+  "module": "node",
+  "q": "如何在 Node.js 中实现日志记录？",
+  "a": "**参考答案：**\n\n**使用 Winston 日志库：**\n\n```JavaScript\nconst winston = require('winston');\n\nconst logger = winston.createLogger({\n  level: 'info',\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.errors({ stack: true }),\n    winston.format.json()\n  ),\n  defaultMeta: { service: 'user-service' },\n  transports: [\n    new winston.transports.File({ filename: 'error.log', level: 'error' }),\n    new winston.transports.File({ filename: 'combined.log' }),\n    new winston.transports.Console({\n      format: winston.format.simple()\n    })\n  ]\n});\n\n// 使用日志\nlogger.info('用户登录', { userId: 123 });\nlogger.error('数据库连接失败', { error: err.message });\n```\n\n**Express 请求日志：**\n\n```JavaScript\nconst morgan = require('morgan');\n\napp.use(morgan('combined', {\n  stream: {\n    write: (message) => logger.info(message.trim())\n  }\n}));\n```"
+ },
+ {
+  "id": "node034",
+  "module": "node",
+  "q": "Node.js 中如何处理文件上传？",
+  "a": "**参考答案：**\n\n**使用 multer 中间件：**\n\n```JavaScript\nconst multer = require('multer');\nconst path = require('path');\n\n// 配置存储\nconst storage = multer.diskStorage({\n  destination: (req, file, cb) => {\n    cb(null, 'uploads/');\n  },\n  filename: (req, file, cb) => {\n    cb(null, Date.now() + path.extname(file.originalname));\n  }\n});\n\nconst upload = multer({\n  storage: storage,\n  limits: {\n    fileSize: 5 * 1024 * 1024 // 5MB\n  },\n  fileFilter: (req, file, cb) => {\n    if (file.mimetype.startsWith('image/')) {\n      cb(null, true);\n    } else {\n      cb(new Error('只允许上传图片文件'));\n    }\n  }\n});\n\n// 单文件上传\napp.post('/upload', upload.single('avatar'), (req, res) => {\n  res.json({\n    message: '文件上传成功',\n    file: req.file\n  });\n});\n\n// 多文件上传\napp.post('/uploads', upload.array('photos', 5), (req, res) => {\n  res.json({\n    message: '文件上传成功',\n    files: req.files\n  });\n});\n```"
+ },
+ {
+  "id": "node035",
+  "module": "node",
+  "q": "如何在 Node.js 中实现 WebSocket 通信？",
+  "a": "**参考答案：**\n\n**使用 ws 库：**\n\n```JavaScript\nconst WebSocket = require('ws');\nconst wss = new WebSocket.Server({ port: 8080 });\n\nwss.on('connection', (ws) => {\n  console.log('新的连接建立');\n\n  ws.on('message', (message) => {\n    console.log('收到消息:', message);\n\n    // 广播给所有客户端\n    wss.clients.forEach((client) => {\n      if (client.readyState === WebSocket.OPEN) {\n        client.send(`广播: ${message}`);\n      }\n    });\n  });\n\n  ws.on('close', () => {\n    console.log('连接关闭');\n  });\n\n  // 发送欢迎消息\n  ws.send('欢迎连接到 WebSocket 服务器');\n});\n```\n\n**使用 Socket.io：**\n\n```JavaScript\nconst io = require('socket.io')(server);\n\nio.on('connection', (socket) => {\n  console.log('用户连接:', socket.id);\n\n  socket.on('chat message', (msg) => {\n    io.emit('chat message', msg);\n  });\n\n  socket.on('disconnect', () => {\n    console.log('用户断开连接:', socket.id);\n  });\n});\n```"
+ },
+ {
+  "id": "node036",
+  "module": "node",
+  "q": "Node.js 中如何实现定时任务？",
+  "a": "**参考答案：**\n\n**1. 使用 node-cron：**\n\n```JavaScript\nconst cron = require('node-cron');\n\n// 每分钟执行\ncron.schedule('* * * * *', () => {\n  console.log('每分钟执行的任务');\n});\n\n// 每天凌晨 2 点执行\ncron.schedule('0 2 * * *', () => {\n  console.log('每天凌晨 2 点执行数据备份');\n});\n\n// 每周一上午 9 点执行\ncron.schedule('0 9 * * 1', () => {\n  console.log('每周一上午 9 点发送周报');\n});\n```\n\n**2. 使用 node-schedule：**\n\n```JavaScript\nconst schedule = require('node-schedule');\n\n// 在特定时间执行\nconst date = new Date(2024, 11, 21, 5, 30, 0);\nschedule.scheduleJob(date, () => {\n  console.log('在指定时间执行');\n});\n\n// 使用规则对象\nconst rule = new schedule.RecurrenceRule();\nrule.minute = 30;\nschedule.scheduleJob(rule, () => {\n  console.log('每小时的 30 分执行');\n});\n```"
+ },
+ {
+  "id": "node037",
+  "module": "node",
+  "q": "如何在 Node.js 中实现数据验证？",
+  "a": "**参考答案：**\n\n**使用 Joi 进行数据验证：**\n\n```JavaScript\nconst Joi = require('joi');\n\nconst userSchema = Joi.object({\n  name: Joi.string().min(2).max(30).required(),\n  email: Joi.string().email().required(),\n  age: Joi.number().integer().min(18).max(100),\n  password: Joi.string().min(6).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/)\n});\n\n// 验证中间件\nconst validateUser = (req, res, next) => {\n  const { error, value } = userSchema.validate(req.body);\n\n  if (error) {\n    return res.status(400).json({\n      error: error.details[0].message\n    });\n  }\n\n  req.body = value;\n  next();\n};\n\napp.post('/users', validateUser, (req, res) => {\n  // 处理已验证的数据\n  res.json({ message: '用户创建成功' });\n});\n```\n\n**使用 express-validator：**\n\n```JavaScript\nconst { body, validationResult } = require('express-validator');\n\napp.post('/users',\n  body('email').isEmail().normalizeEmail(),\n  body('password').isLength({ min: 6 }),\n  (req, res) => {\n    const errors = validationResult(req);\n    if (!errors.isEmpty()) {\n      return res.status(400).json({ errors: errors.array() });\n    }\n\n    // 处理请求\n  }\n);\n```"
+ },
+ {
+  "id": "node038",
+  "module": "node",
+  "q": "Node.js 中如何实现安全性最佳实践？",
+  "a": "**参考答案：**\n\n**1. 使用 Helmet 设置安全头：**\n\n```JavaScript\nconst helmet = require('helmet');\napp.use(helmet());\n```\n\n**2. 输入验证和清理：**\n\n```JavaScript\nconst validator = require('validator');\nconst xss = require('xss');\n\n// 清理用户输入\nconst cleanInput = (input) => {\n  return xss(validator.escape(input));\n};\n```\n\n**3. 速率限制：**\n\n```JavaScript\nconst rateLimit = require('express-rate-limit');\n\nconst limiter = rateLimit({\n  windowMs: 15 * 60 * 1000, // 15 分钟\n  max: 100, // 限制每个 IP 100 次请求\n  message: '请求过于频繁，请稍后再试'\n});\n\napp.use(limiter);\n```\n\n**4. 环境变量管理：**\n\n```JavaScript\nrequire('dotenv').config();\n\nconst dbPassword = process.env.DB_PASSWORD;\nconst jwtSecret = process.env.JWT_SECRET;\n```\n\n**5. HTTPS 重定向：**\n\n```JavaScript\napp.use((req, res, next) => {\n  if (req.header('x-forwarded-proto') !== 'https') {\n    res.redirect(`https://${req.header('host')}${req.url}`);\n  } else {\n    next();\n  }\n});\n```"
+ },
+ {
+  "id": "node039",
+  "module": "node",
+  "q": "如何在 Node.js 中实现单元测试？",
+  "a": "**参考答案：**\n\n**使用 Jest 进行测试：**\n\n```JavaScript\n// math.js\nfunction add(a, b) {\n  return a + b;\n}\n\nfunction multiply(a, b) {\n  return a * b;\n}\n\nmodule.exports = { add, multiply };\n\n// math.test.js\nconst { add, multiply } = require('./math');\n\ndescribe('Math functions', () => {\n  test('adds 1 + 2 to equal 3', () => {\n    expect(add(1, 2)).toBe(3);\n  });\n\n  test('multiplies 3 * 4 to equal 12', () => {\n    expect(multiply(3, 4)).toBe(12);\n  });\n});\n```\n\n**测试 Express 应用：**\n\n```JavaScript\nconst request = require('supertest');\nconst app = require('./app');\n\ndescribe('GET /users', () => {\n  test('should return users list', async () => {\n    const response = await request(app)\n      .get('/users')\n      .expect(200);\n\n    expect(response.body).toHaveProperty('users');\n    expect(Array.isArray(response.body.users)).toBe(true);\n  });\n});\n```\n\n**异步函数测试：**\n\n```JavaScript\ntest('async function test', async () => {\n  const data = await fetchUserData(1);\n  expect(data).toEqual({\n    id: 1,\n    name: 'John Doe'\n  });\n});\n```"
+ },
+ {
+  "id": "node040",
+  "module": "node",
+  "q": "Node.js 中的性能优化策略有哪些？",
+  "a": "**参考答案：**\n\n**1. 使用集群模式：**\n\n```JavaScript\nconst cluster = require('cluster');\nconst numCPUs = require('os').cpus().length;\n\nif (cluster.isMaster) {\n  for (let i = 0; i < numCPUs; i++) {\n    cluster.fork();\n  }\n} else {\n  require('./app.js');\n}\n```\n\n**2. 启用 Gzip 压缩：**\n\n```JavaScript\nconst compression = require('compression');\napp.use(compression());\n```\n\n**3. 数据库连接池：**\n\n```JavaScript\nconst mysql = require('mysql2');\nconst pool = mysql.createPool({\n  host: 'localhost',\n  user: 'root',\n  password: 'password',\n  database: 'mydb',\n  connectionLimit: 10\n});\n```\n\n**4. 缓存策略：**\n\n```JavaScript\nconst NodeCache = require('node-cache');\nconst cache = new NodeCache({ stdTTL: 600 });\n\napp.get('/api/data/:id', (req, res) => {\n  const key = `data_${req.params.id}`;\n  let data = cache.get(key);\n\n  if (!data) {\n    data = fetchDataFromDB(req.params.id);\n    cache.set(key, data);\n  }\n\n  res.json(data);\n});\n```\n\n**5. 异步操作优化：**\n\n```JavaScript\n// 避免阻塞事件循环\nsetImmediate(() => {\n  // CPU 密集型操作\n  heavyComputation();\n});\n\n// 使用 Worker Threads 处理 CPU 密集型任务\nconst { Worker } = require('worker_threads');\nconst worker = new Worker('./cpu-intensive-task.js');\n```"
+ },
+ {
+  "id": "node041",
+  "module": "node",
+  "q": "如何在 Node.js 中实现微服务架构？",
+  "a": "**参考答案：**\n\n**1. 服务拆分：**\n\n```JavaScript\n// 用户服务\nconst express = require('express');\nconst app = express();\n\napp.get('/users/:id', async (req, res) => {\n  const user = await getUserById(req.params.id);\n  res.json(user);\n});\n\napp.listen(3001, () => {\n  console.log('用户服务运行在端口 3001');\n});\n```\n\n**2. 服务间通信：**\n\n```JavaScript\n// HTTP 调用其他服务\nconst axios = require('axios');\n\nasync function getOrdersByUserId(userId) {\n  try {\n    const response = await axios.get(`http://order-service:3002/orders/user/${userId}`);\n    return response.data;\n  } catch (error) {\n    console.error('调用订单服务失败:', error);\n    throw error;\n  }\n}\n```\n\n**3. 服务发现：**\n\n```JavaScript\nconst consul = require('consul')();\n\n// 注册服务\nconsul.agent.service.register({\n  name: 'user-service',\n  port: 3001,\n  check: {\n    http: 'http://localhost:3001/health',\n    interval: '10s'\n  }\n});\n\n// 发现服务\nconst services = await consul.health.service('order-service');\n```\n\n**4. API 网关：**\n\n```JavaScript\nconst express = require('express');\nconst { createProxyMiddleware } = require('http-proxy-middleware');\n\nconst app = express();\n\n// 路由到不同的微服务\napp.use('/api/users', createProxyMiddleware({\n  target: 'http://user-service:3001',\n  changeOrigin: true\n}));\n\napp.use('/api/orders', createProxyMiddleware({\n  target: 'http://order-service:3002',\n  changeOrigin: true\n}));\n```"
+ },
+ {
+  "id": "node042",
+  "module": "node",
+  "q": "Node.js 应用的部署和监控最佳实践是什么？",
+  "a": "**参考答案：**\n\n**1. 使用 PM2 进行进程管理：**\n\n```JavaScript\n// ecosystem.config.js\nmodule.exports = {\n  apps: [{\n    name: 'my-app',\n    script: './app.js',\n    instances: 'max',\n    exec_mode: 'cluster',\n    env: {\n      NODE_ENV: 'production',\n      PORT: 3000\n    },\n    error_file: './logs/err.log',\n    out_file: './logs/out.log',\n    log_file: './logs/combined.log'\n  }]\n};\n\n// 部署命令\n// pm2 start ecosystem.config.js\n// pm2 reload my-app\n// pm2 monit\n```\n\n**2. Docker 容器化：**\n\n```Dockerfile\nFROM node:16-alpine\n\nWORKDIR /app\n\nCOPY package*.json ./\nRUN npm ci --only=production\n\nCOPY . .\n\nEXPOSE 3000\n\nUSER node\n\nCMD [\"npm\", \"start\"]\n```\n\n**3. 健康检查：**\n\n```JavaScript\napp.get('/health', (req, res) => {\n  res.status(200).json({\n    status: 'OK',\n    timestamp: new Date().toISOString(),\n    uptime: process.uptime()\n  });\n});\n```\n\n**4. 应用监控：**\n\n```JavaScript\n// 使用 New Relic 或 DataDog\nrequire('newrelic');\n\n// 自定义指标收集\nconst client = require('prom-client');\nconst httpRequestDuration = new client.Histogram({\n  name: 'http_request_duration_seconds',\n  help: 'Duration of HTTP requests in seconds',\n  labelNames: ['method', 'route', 'status_code']\n});\n```\n\n**5. 日志聚合：**\n\n```JavaScript\n// 使用 ELK Stack 或 Fluentd\nconst winston = require('winston');\nrequire('winston-elasticsearch');\n\nconst logger = winston.createLogger({\n  transports: [\n    new winston.transports.Elasticsearch({\n      level: 'info',\n      clientOpts: { host: 'http://elasticsearch:9200' }\n    })\n  ]\n});\n```\n\n---\n\n这 30 道 Node.js 八股文涵盖了从基础概念到高级应用的各个方面，包括核心模块、异步编程、Web 框架、数据库操作、安全性、性能优化、微服务和部署等重要主题。"
+ },
+ {
+  "id": "node043",
+  "module": "node",
+  "q": "Node 的 process.nextTick 和微任务的执行顺序？和浏览器事件循环有何差异？",
+  "a": "**简要回答：**\nNode 一轮事件循环中：同步代码 → **process.nextTick 队列**（独立于微任务，优先级更高）→ **Promise 微任务** → 再去取一个宏任务（timer/I/O…）。浏览器没有 nextTick，只有微任务（Promise/queueMicrotask）。\n\n**拆解：**\n- Node 把 nextTick 队列叫「微任务之前」，每处理完一个阶段都会**先清空 nextTick，再清 Promise 微任务**，然后才进下一阶段。\n- 浏览器：宏任务（一个）→ 清空所有微任务 → 下一个宏任务。\n- `setImmediate` 在 Node 的 check 阶段，比 timer 晚；`setTimeout(fn,0)` 在 timer 阶段。\n\n**注意：** 在 nextTick 里无限递归会**饿死** I/O（永远轮不到宏任务），慎用。\n\n**追问：** 为什么 Node 要单独分 nextTick？（让 API 调用后能「立刻、同步感」地回调，又不等到下一轮。）"
+ },
+ {
+  "id": "node044",
+  "module": "node",
+  "q": "什么是 BFF 层？前端为什么需要它？",
+  "a": "**简要回答：**\nBFF（Backend For Frontend）是**专为前端服务的后端聚合层**（常由 Node 写），前端只和 BFF 打交道，BFF 再去调多个下游微服务。\n\n**拆解：**\n- **聚合**：一个页面要 3 个接口？BFF 一次合并返回，前端少请求、少水合。\n- **裁剪/整形**：下游返回大而全，BFF 只给前端要的字段，降传输。\n- **鉴权/SSR**：token 校验、Cookie 处理、服务端渲染都在这一层，前端不触敏感密钥。\n- **适配多端**：Web/小程序/App 各一个 BFF，后端服务不变。\n\n**追问：** BFF 的代价？（多一跳延迟、多一个要维护的服务；小项目可用 serverless/云函数代替。）"
  }
 ]
