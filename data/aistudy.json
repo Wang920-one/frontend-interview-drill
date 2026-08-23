@@ -196,5 +196,89 @@
     "module": "aistudy",
     "q": "框架的 `ConversationBufferMemory` 和你之前手写的 ReAct 历史数组，本质区别是什么？什么场景该用框架、什么场景手写？",
     "a": "**考察点**：是否真正做过 Agent，而不只是调库；能否对比「抽象层级」与「可控性」的权衡——这是高级前端/Agent 岗高频题。\n\n**标准解答**：- 手写 ReAct（本工作区 week3）：自己维护一个 `history` 数组，每轮把 `Thought/Action/Observation` 拼进 prompt，自己控制截断、自己解析工具调用。可控性最高，但样板代码多、易出错。\n  - 框架记忆（如 `ConversationBufferMemory` / LangGraph checkpoint）：把「状态管理」下沉到组件/图里，自动持久化、自动注入，开发快、可运维（LangSmith 可追踪）。代价是抽象变厚，遇到非标准流程要绕。\n  - 怎么选：标准多轮问答 → 框架记忆足够；需要自定义推理循环、工具编排、条件分支、人工介入 → 用 LangGraph 图 + checkpoint，或保留手写循环。本工作区正是这个演进路径：week3 手写 ReAct → 08-17 装了 LangGraph + checkpoint → 下一步评估用图重写。\n\n**项目实践**：`week3-Agent/react-agent/agent_core.py` 是手写 ReAct 循环（自己拼 history、自己截断）；`week6/day4.py` 是用 `ConversationChain` 把同样的「多轮记忆」交给框架。面试时可以说：「我们早期为完全可控用手写循环，后来接 LangChain/LangGraph 是为了把状态管理交给图 + checkpoint，减少样板、并获得 LangSmith 链路追踪」——这就是一个真实的演进故事，比背概念有说服力。\n\n---"
+  },
+  {
+    "id": "aistudy-20260822-1",
+    "module": "aistudy",
+    "q": "`ConversationBufferMemory` 与 `ConversationSummaryMemory` 的本质区别？什么场景该用 Summary？",
+    "a": "**考察点**：是否理解「记忆压缩」这一层抽象，能否讲清 token 成本与信息保真度的权衡（这是长对话治理的核心题，和后端 token 截断是同一矛盾）。\n\n**标准解答**：- **Buffer**：把历史消息**原样堆叠**，每次对话把整段缓冲拼进 prompt。保真度最高，但 token 随轮次**线性膨胀**，长对话必爆上下文。\n  - **Summary**：额外引入一个 LLM，把旧历史**压成一段持续更新的摘要**，token 占用**近似恒定**，但摘要是**有损**的（细节会丢）。\n  - 怎么选：对话短、且需要精确回忆细节（如用户刚说的名字）→ Buffer；对话很长、且只关心「大意」→ Summary；也可组合（近期 Buffer + 远期 Summary）。\n\n**项目实践**：`week6/day4.py` 同文件演示两种——先用 `ConversationBufferMemory(return_messages=True)` 跑「我叫小明」→「我叫什么」能精确答出；再切 `ConversationSummaryMemory(llm=llm, return_messages=True)` 跑同样流程。这正好对应 `week4/backend` 里 `tokenService.js` 的 token 截断痛点：都在解决「历史太长怎么塞进上下文」。"
+  },
+  {
+    "id": "aistudy-20260822-10",
+    "module": "aistudy",
+    "q": "改别人的 `index.html` 注入模块时，CRLF 和「行内锚点」各带来什么坑？",
+    "a": "**考察点**：真实踩坑细节——写文件类脚本最容易被「看不见的字节」坑。\n\n**标准解答**：- **坑 A（CRLF）**：别人的 `index.html` 是 Windows 换行（`\\r\\n`），Python 读进来每行带 `\\r`，正则/字符串匹配全部失配。→ 读取后统一 `.replace(\"\\r\\n\", \"\\n\")` 再处理。\n  - **坑 B（行内锚点）**：像 `},{id:'resume',name:'项目深挖'}\\n];` 这种**行内写法**，锚点字符串**不能带前导两个空格**，否则匹配不到。→ 改之前先 `grep` 出真实字节形态再写死锚点。\n\n**项目实践**：`docs/面试题/sync_to_drill.py` 注册 `aistudy` 模块时踩过这两处；脚本里读取即做 `\\r\\n→\\n` 归一，锚点用 `grep` 实扫出的精确字符串。"
+  },
+  {
+    "id": "aistudy-20260822-11",
+    "module": "aistudy",
+    "q": "跑 week6 脚本为什么必须用 `week6/langchain_env/Scripts/python.exe`？用错解释器报什么错？",
+    "a": "**考察点**：本地多环境排查——Python 多 venv 并存是常态，能一句话定位「缺模块」的真因。\n\n**标准解答**：- 不同 venv 装了不同依赖。`langchain_classic` 只装在 `week6/langchain_env` 里；用系统/其他 Python 跑就会 `ModuleNotFoundError`。\n  - 用错解释器典型报错：`ModuleNotFoundError: No module named 'langchain_classic'`（或 `langchain_core`/`langchain_openai`）。\n  - 跑法：先 `set DEEPSEEK_API_KEY=sk-xxx`，再 `.\\langchain_env\\Scripts\\python.exe day5-6.py`；VS Code 把解释器选成 `./week6/langchain_env/Scripts/python.exe`。\n\n**项目实践**：用户曾直跑 `week6/day5-6.py` 报 `ModuleNotFoundError: langchain_classic`；根因是没用 `langchain_env` 解释器。本工作区两套 venv 并存（`part1/.venv`：langchain 1.3.15 + openai 2.52.0；`week6/langchain_env`：pydantic 2.13.4 + langchain-core/openai 1.6.0 + langchain-classic 1.0.8），跑前务必确认用哪个。"
+  },
+  {
+    "id": "aistudy-20260822-12",
+    "module": "aistudy",
+    "q": "你在本工作区怎么处理 API Key 安全？为什么 `os.getenv` 还不够、必须去后台轮换？",
+    "a": "**考察点**：最高频安全题 + 本工作区真实事故，讲「我踩过、怎么修的」极其加分。\n\n**标准解答**：- **错误写法**：把 `sk-xxx` 明文写进源码（如 `os.environ[\"OPENAI_API_KEY\"] = \"sk-...\"`）。源码进 git 历史就永久泄露，且 `.env` 也常被误提交。\n  - **正确写法**：`os.environ[\"OPENAI_API_KEY\"] = os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 `raise` 提示；`.env` 必须被 `.gitignore` 覆盖，用 `python-dotenv` 的 `load_dotenv()` 读。\n  - **为什么 `os.getenv` 不够**：它只解决「不再硬编码到工作区文件」，但**已经泄露过的 Key 还在生效**。只要历史里、或曾 push 出去过，别人照样能用。所以必须去 DeepSeek 后台「API Keys」页面**轮换作废**（1 分钟清零），若确认推过 GitHub 再 `git filter-repo` 擦历史 + force push。\n\n**项目实践**：`week6/day4.py:7`、`week6/test_langchain.py:8` 原来明文写 `sk-5a32...7724`（已清洗，今日提交 `1c7f89dc` 入库的是干净版）；历史上 `part1/week2/.env` 曾入库（Initial `8a955988`，后删除）。当前 P0 待办：**真 Key 仍未轮换**，且需自查是否 push 过 GitHub。"
+  },
+  {
+    "id": "aistudy-20260822-13",
+    "module": "aistudy",
+    "q": "RAG 的基本链路是什么？（week2 存量巩固，非本窗口新学）",
+    "a": "**考察点**：RAG 基础概念是否扎实（本题沿用 week2-RAG 存量能力，本期 08-20~22 未新增 RAG 学习）。\n\n**标准解答**：- 离线建库：文档切分（chunk）→ embedding 向量化 → 存入向量库（如 FAISS / Chroma / Milvus）。\n  - 在线检索：用户 query → embedding → 在向量库做**相似度检索**取 top-k 相关 chunk。\n  - 生成：把检索到的 chunk 拼进 prompt 作为上下文，交给 LLM 生成带引用的答案。\n  - 关键在「检索质量」：切分粒度、embedding 模型、相似度算法共同决定召回准不准。\n\n**项目实践**：本工作区 `week2-RAG/` 即 RAG 学习主线；它和 week6 的 Agent 可衔接——Agent 的 `search_web`/`retriever` 工具本质就是 RAG 检索能力的封装。"
+  },
+  {
+    "id": "aistudy-20260822-14",
+    "module": "aistudy",
+    "q": "向量检索里「相似度」怎么算？为什么不同 embedding 模型结果差异大？（week2 存量巩固）",
+    "a": "**考察点**：是否理解 embedding 是「模型相关」的，而非通用距离。\n\n**标准解答**：- 相似度通常用语义向量的**余弦相似度**（或内积 / 欧氏距离）衡量：两个文本向量夹角越小越相似。\n  - 差异大的根因：embedding 是**特定模型训练出来的映射**，不同模型的向量空间不同——同一句话在模型 A 和模型 B 下的向量不可直接比较，检索准确率也因模型而异。所以不能混用不同模型的 embedding 做检索。\n\n**项目实践**：`week2-RAG/` 的向量库与 `week4/backend` 的检索链路若换 embedding 模型，必须**重建索引**，否则相似度计算无意义。\n\n---"
+  },
+  {
+    "id": "aistudy-20260822-2",
+    "module": "aistudy",
+    "q": "`ConversationSummaryMemory` 为什么必须传入 `llm`？它会「丢」什么信息？",
+    "a": "**考察点**：是否真跑过 Summary Memory、观察到它的有损行为，而不是只背定义。\n\n**标准解答**：- 它要靠一个 LLM 把旧历史**重写/摘要**成一段文字，所以构造时必须传 `llm` 给它当「压缩器」用。\n  - 丢信息是必然的：**摘要只保留它认为重要的内容**，那些没有显式说出口、却隐含在对话里的信息推不出来。\n  - 例子：用户说「我喜欢打篮球」，摘要可能记成「用户喜欢篮球」；但后续问「我最喜欢的球星是谁」，模型答不上——因为「最喜欢哪个球星」从来没在对话里出现过，摘要也压不出这个没说过的事实。\n\n**项目实践**：`week6/day4.py` 的 `conversation_summary.predict(\"我最喜欢的球星是谁？\")` 就是这条踩坑演示；`summary_memory.buffer` 可直接打印压缩后的摘要，肉眼能看到细节被抹平。"
+  },
+  {
+    "id": "aistudy-20260822-3",
+    "module": "aistudy",
+    "q": "`ConversationChain` 相比手写 history 数组，自动替你做了哪几件事？",
+    "a": "**考察点**：是否理解「框架把状态管理下沉」这件事，能否对比 week3 手写 ReAct 的样板代码。\n\n**标准解答**：- 手写（week3）：自己维护 history 数组、自己把 `Thought/Action/Observation` 拼进 prompt、自己截断、自己把本轮问答写回。样板多、易错，但完全可控。\n  - `ConversationChain(llm=llm, memory=memory)`：自动在每轮把 memory 里的历史注入 prompt、把本轮 human/AI 消息写回 memory、按 memory 类型决定注入格式（消息对象 vs 纯文本）。你只写「对话内容」，状态管理交给 memory 组件。\n  - 代价：抽象变厚，非标准流程要绕。标准多轮问答用它最快。\n\n**项目实践**：`week3-Agent/react-agent/agent_core.py` 是手写循环；`week6/day4.py` 把同样的「多轮记忆」交给 `ConversationChain`。演进路径：week3 手写（完全可控）→ 接 LangChain/LangGraph（状态管理交给图 + checkpoint，获得 LangSmith 追踪）。面试讲这个真实故事比背概念有说服力。"
+  },
+  {
+    "id": "aistudy-20260822-4",
+    "module": "aistudy",
+    "q": "`create_react_agent` 与 `create_openai_tools_agent` 本质区别？什么场景选哪个？",
+    "a": "**考察点**：是否真正踩过 ReAct 的坑、做过范式选型，而不是只会调一个 API。\n\n**标准解答**：- **文本解析式 ReAct**（`create_react_agent`）：靠 Prompt 约定 `Thought/Action/Action Input/Observation` 文本格式，再用**正则**解析模型输出拿到工具调用。强依赖模型的**格式跟随能力**，弱模型极易跑偏。\n  - **原生工具调用式**（`create_openai_tools_agent`）：走 OpenAI 兼容的 **function calling**，模型以**结构化字段**返回「调哪个工具、传什么参数」，无需文本解析。\n  - 怎么选：模型支持 function calling（如 DeepSeek-chat）→ 优先 tools agent，稳且不死循环；ReAct 文本式留给不支持 function calling 的模型。\n\n**项目实践**：`week6/day5-6.py` 最初想用 ReAct，但 DeepSeek 没严格按格式停笔，每轮重发 `Action: calculator`、5 轮烧光被强停（见第 7 题）。最终切 `create_openai_tools_agent(llm, tools, prompt)`，Prompt 改成 `ChatPromptTemplate` + `MessagesPlaceholder(\"agent_scratchpad\")`，工具与测试用例原样不动即根治。"
+  },
+  {
+    "id": "aistudy-20260822-5",
+    "module": "aistudy",
+    "q": "`MessagesPlaceholder(variable_name=\"agent_scratchpad\")` 起什么作用？装的是什么？",
+    "a": "**考察点**：是否理解 tools agent 的 Prompt 骨架，而不是照抄模板。\n\n**标准解答**：- tools agent 需要在 Prompt 里预留一段「动态区」，承载**多轮工具调用 + 工具返回结果**的消息序列。\n  - `MessagesPlaceholder` 就是这个占位：在 `ChatPromptTemplate.from_messages([system, human, placeholder])` 里，它会被替换成**消息对象列表**（不是拼接字符串），列表内容由 AgentExecutor 在运行时填充（`AIMessage(tool_calls=...)` + `ToolMessage(...)`）。\n  - 变量名必须和 Agent 约定的 scratchpad 名一致（这里 `\"agent_scratchpad\"`）。\n\n**项目实践**：`week6/day5-6.py` 第 68–72 行就是这套骨架；`verbose=True` 运行时能在日志里看到 scratchpad 里逐步累积的「工具调用消息 + 工具结果消息」。"
+  },
+  {
+    "id": "aistudy-20260822-6",
+    "module": "aistudy",
+    "q": "`Tool(name, func, description)` 三个参数各如何影响模型？`description` 写差了会怎样？",
+    "a": "**考察点**：是否理解「工具描述就是给模型的说明书」，这是 Agent 能不能选对工具的关键。\n\n**标准解答**：- `name`：工具在 function calling 里的标识，模型按它决定调谁。\n  - `func`：真正执行的 Python 函数，模型不关心内部实现。\n  - `description`：**给模型的自然语言说明书**，模型靠它判断「什么情况下该调这个工具、传什么参数」。写得好 → 选对工具、参数对；写得含糊/错 → 模型选错工具或传错参。\n  - 反面：若 calculator 的 description 写成「处理数学」，模型可能把「查时间」也塞给它。要写清「输入是数学表达式字符串」这类约束。\n\n**项目实践**：`week6/day5-6.py` 给三个工具各写了精准 description（`get_current_time`：「当用户问'现在几点'时使用」等）。这直接决定了第 7 题里复合问题「现在几点 + 算 100 平方根」能正确拆成两次工具调用。"
+  },
+  {
+    "id": "aistudy-20260822-7",
+    "module": "aistudy",
+    "q": "文本解析式 ReAct 为什么容易「卡迭代上限 / 死循环」？你在本工作区怎么根治的？",
+    "a": "**考察点**：满分题——既讲清根因（格式解析脆弱），又拿出本工作区的真实修复（换 tools agent），还能举一反三。\n\n**标准解答**：- 根因：ReAct 靠正则从模型文本里抠 `Action`/`Action Input`。一旦模型没严格按格式停笔（比如 `Action Input` 后黏了下一轮 `Thought`），解析器拿不到干净的 Action，就会重复发同一工具，5 轮（`max_iterations`）烧光后被强停，报 `Agent stopped due to iteration limit`。\n  - `handle_parsing_errors=True` 只是「不崩」，并**不能纠正行为**。\n  - 根治：换 `create_openai_tools_agent` 走 function calling，模型结构化返回工具调用，从根本上消灭「文本解析失败」这条死路。\n\n**项目实践**：`week6/day5-6.py` 的 `verbose` 日志曾显示模型每轮重发 `Action: calculator` 从不给 `Final Answer`；改用 tools agent 后，`max_iterations=5` 内稳定收敛。验证技巧：设 `DEEPSEEK_API_KEY=dummy` 用 `importlib` 加载模块，确认 `agent` 是 `RunnableSequence`、`executor` 是 `AgentExecutor`、3 工具注册正常且**不触发真实 API 调用**（省 token）。"
+  },
+  {
+    "id": "aistudy-20260822-8",
+    "module": "aistudy",
+    "q": "把 `eval` 当 Agent 工具时，最低安全线怎么写？为什么不能直接 `eval(expr)`？",
+    "a": "**考察点**：安全素养——Agent 工具本质是在执行模型生成的字符串，绝不能直接交给 `eval`。\n\n**标准解答**：- 直接 `eval(expr)` 等于把模型生成的任意代码交给 Python 执行器，能读到环境变量、能 `import os` 删文件，是严重 RCE 风险。\n  - 最低安全线：沙箱化 `eval`，清空内建、只白名单注入所需符号：\n    `eval(expr, {\"__builtins__\": {}}, {\"sqrt\": math.sqrt, \"pi\": math.pi})`\n  - 更稳妥：用 `ast.literal_eval` 或专用数学解析库（如 `sympy`/`numexpr`）。\n\n**项目实践**：`week6/day5-6.py` 的 `calculator` 正是这个沙箱写法——只暴露 `sqrt`/`pi`，其余一律不可用；异常再包一层 `try/except` 返回「计算错误」而非抛出。"
+  },
+  {
+    "id": "aistudy-20260822-9",
+    "module": "aistudy",
+    "q": "`sync_to_drill.py` 这套管道做了哪几件事？为什么必须幂等？",
+    "a": "**考察点**：工程化思维——脚本是给机器定时跑的，不是给人跑一次的；幂等是自动化脚本的底线。\n\n**标准解答**：- 它把每周面试题 md 变成刷题网页的一个模块：① 正则抓「三、逐题解读」区块 → 结构化成 `{id, module, q, a}`；② 双写两份副本（`interview-drill/deploy/data` 本地预览 + `_drill_repo/data` GitHub Pages 源）；③ 幂等注册模块——检测 `index.html` 的 `MODULES` 数组是否已有 `aistudy`，没有才插入；④ 支持 `--week YYYY-MM-DD`（只取该日所在周一~周日）与 `--push`。\n  - 为什么幂等：自动化每周日跑一次，重复跑不能重复插入模块、不能覆盖人工改动。按 `id` 去重 + 检测锚点是否已存在，保证「跑 N 次 == 跑 1 次」。\n\n**项目实践**：`docs/面试题/sync_to_drill.py`（174 行），08-21 种子导入 3 份历史面试题（08-13/08-17/08-20）共 33 题落库，`--push` 带 `GIT_TERMINAL_PROMPT=0` 与 90s 超时防挂死（沙箱无 GitHub 凭证，push 注定失败，需本机手动 `git push`）。"
   }
 ]
