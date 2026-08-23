@@ -187,6 +187,9 @@
   #revBanner{ display:none; padding:10px 14px; margin-bottom:8px; background:#fff8e1; border:2.5px solid var(--ink);
     border-radius:14px 5px 14px 5px; box-shadow:var(--shadow); font-size:19px; color:#7a5b00; text-align:center; transform:rotate(-.3deg); }
   #revBanner .n{ color:var(--red); font-weight:bold; font-size:22px; }
+  #resumeHint{ display:none; padding:10px 14px; margin-bottom:8px; background:#eef6ff; border:2.5px solid var(--ink);
+    border-radius:14px 5px 14px 5px; box-shadow:var(--shadow); font-size:19px; color:#15539e; text-align:center; transform:rotate(-.3deg); }
+  #resumeHint b{ color:var(--blue); }
   .a{ min-height:0; }
   .rev-info{ flex:none; margin-top:8px; font-size:16px; color:#5c524a; border-top:2px dashed var(--line);
     padding-top:6px; display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
@@ -253,6 +256,7 @@
   </div>
 
   <div id="revBanner">🔔 今天有 <span class="n">0</span> 题该复习啦，点「复习」开始 ✦</div>
+  <div id="resumeHint"></div>
 
   <div class="section-label">选择模块</div>
   <div class="modbtn" id="modBtn">📂 模块：<span class="cur" id="modCur">全部模块</span></div>
@@ -300,7 +304,7 @@
     <div class="btn" id="nextBtn">下一题 ▶</div>
   </div>
 
-  <div class="foot"><a id="statsLink">▣ 看模块统计</a> · <a id="backupLink">⇅ 备份/恢复</a></div>
+  <div class="foot"><a id="statsLink">▣ 看模块统计</a> · <a id="backupLink">⇅ 备份/恢复</a> · <a id="dailyLink">📅 计划记录</a></div>
 </div>
 
 <div class="overlay" id="overlay">
@@ -347,6 +351,16 @@
   </div>
 </div>
 
+<!-- 计划记录表浮层 -->
+<div class="overlay" id="dailyOverlay">
+  <div class="stats">
+    <h2>📅 计划记录表</h2>
+    <div class="total" id="dailySummary">—</div>
+    <div id="dailyBody"></div>
+    <div class="closebtn" id="closeDaily">关闭 ✕</div>
+  </div>
+</div>
+
 <!-- 左侧模块抽屉 -->
 <div class="drawer-mask" id="drawerMask"></div>
 <div class="drawer" id="drawer">
@@ -371,9 +385,11 @@ let QUESTIONS = []; // 题目数据改为从 ./data/<module>.json 按需加载�
 
 /* ====== 状态 ====== */
 const LS_PROG='drill-progress-v1', LS_TODAY='drill-today', LS_GOAL='drill-goal', LS_REVIEW='drill-review-v1', LS_REV_SEED='drill-review-seeded';
+const LS_DAILY='drill-daily-v1';
 let progress = JSON.parse(localStorage.getItem(LS_PROG)||'{}');
 let goal = parseInt(localStorage.getItem(LS_GOAL))||20;
 let today = JSON.parse(localStorage.getItem(LS_TODAY)||'{}');
+let daily = JSON.parse(localStorage.getItem(LS_DAILY)||'{}'); // 每日背题记录 { 'YYYY-MM-DD': {count, goal} }
 let reviews = JSON.parse(localStorage.getItem(LS_REVIEW)||'{}');
 let curModule='all', curMode='seq', list=[], pos=0, pool=[];
 let drawerView='modules', drawerMod='all';
@@ -384,6 +400,9 @@ let revQuota = parseInt(localStorage.getItem(LS_REV_QUOTA))||10;
 let notifEnabled = localStorage.getItem(LS_NOTIF)==='1';
 let revToday = JSON.parse(localStorage.getItem(LS_REV_TODAY)||'{}');
 let lastNotif = 0;
+const LS_LAST='drill-last';      // 上次背到的题（用于「打开续背」）
+let lastSaved = null;            // boot 时从 localStorage 读入，恢复用
+let appReady = false;            // 防止启动期 buildList 覆盖 lastSaved
 const LS_REV_QUOTA_MOD='drill-rev-quota-mod';
 let revQuotaMod = JSON.parse(localStorage.getItem(LS_REV_QUOTA_MOD)||'{}'); // 弱项模块单独配额 {modId:number}
 const LS_REV_MIN_MOD='drill-rev-min-mod';
@@ -413,9 +432,10 @@ const SR_LEVELS=[1,2,4,7,15,30,60];
 const $ = s=>document.querySelector(s);
 const elCard=$('#card');
 const todayStr=()=>new Date().toISOString().slice(0,10);
+function prevDateStr(s){ const [y,m,d]=s.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-1); const z=n=>String(n).padStart(2,'0'); return dt.getUTCFullYear()+'-'+z(dt.getUTCMonth()+1)+'-'+z(dt.getUTCDate()); }
 function ensureToday(){ if(today.date!==todayStr()) today={date:todayStr(), ids:[]}; }
 function saveToday(){ localStorage.setItem(LS_TODAY, JSON.stringify(today)); }
-function bumpToday(id, on){ ensureToday(); const i=today.ids.indexOf(id); if(on){ if(i<0) today.ids.push(id); } else { if(i>=0) today.ids.splice(i,1); } saveToday(); updatePlan(); }
+function bumpToday(id, on){ ensureToday(); const i=today.ids.indexOf(id); if(on){ if(i<0) today.ids.push(id); } else { if(i>=0) today.ids.splice(i,1); } saveToday(); daily[today.date]={count:today.ids.length, goal:goal}; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); updatePlan(); }
 
 /* 模块抽屉 */
 function renderDrawer(){
@@ -529,6 +549,11 @@ function hl(a){
   a = a.replace(/\x01(.+?)\x02/g,'<b>$1</b>');
   return a;
 }
+function saveLast(){
+  if(!appReady) return;
+  const q=list[pos]; if(!q) return;
+  try{ localStorage.setItem(LS_LAST, JSON.stringify({module:curModule, mode:curMode, id:q.id})); }catch(e){}
+}
 function showCard(){
   const q=list[pos]; if(!q){ showEmpty(); return; }
   const n=list.length;
@@ -541,6 +566,7 @@ function showCard(){
   elCard.classList.remove('flip');
   document.querySelectorAll('.rate').forEach(r=>r.classList.toggle('picked', progress[q.id]===r.dataset.rate));
   $('#prevBtn').disabled=(pos===0); $('#nextBtn').disabled=(pos===n-1);
+  saveLast();
 }
 
 function updateProgress(){
@@ -846,7 +872,7 @@ $('#randBtn').onclick=()=>{ if(list.length===0) return; if(pool.length===0) pool
 
 /* 每日目标 */
 $('#goalInput').value=goal;
-$('#goalInput').onchange=()=>{ goal=parseInt($('#goalInput').value)||1; localStorage.setItem(LS_GOAL,goal); updatePlan(); };
+$('#goalInput').onchange=()=>{ goal=parseInt($('#goalInput').value)||1; localStorage.setItem(LS_GOAL,goal); ensureToday(); if(daily[today.date]){ daily[today.date].goal=goal; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); } updatePlan(); };
 
 /* 统计浮层 */
 function openStats(){
@@ -868,6 +894,59 @@ $('#statsLink').onclick=openStats;
 $('#closeStats').onclick=()=>$('#overlay').classList.remove('show');
 $('#overlay').onclick=e=>{ if(e.target.id==='overlay') $('#overlay').classList.remove('show'); };
 
+/* 计划记录表 */
+function openDaily(){
+  const dates=Object.keys(daily).sort().reverse();
+  let total=0, met=0, streak=0;
+  let cur=todayStr();
+  while(daily[cur] && daily[cur].goal>0 && daily[cur].count>=daily[cur].goal){ streak++; cur=prevDateStr(cur); }
+  let rows='';
+  dates.slice(0,30).forEach(d=>{
+    const r=daily[d]; const ok=r.goal>0 && r.count>=r.goal;
+    total+=r.count; if(ok) met++;
+    const pct=r.goal?Math.min(100, r.count/r.goal*100):0;
+    rows+=`<div class="row"><div class="name"><span>${d}</span><span>${r.count} / ${r.goal}${ok?' ✓':' ·'}</span></div><div class="sbar"><i style="width:${pct}%"></i></div></div>`;
+  });
+  $('#dailySummary').textContent=`共记录 ${dates.length} 天 · 累计背 ${total} 题 · 达标 ${met} 天 · 连续达标 ${streak} 天`;
+  $('#dailyBody').innerHTML=rows||'<div class="total" style="color:#9a8f80">还没有记录，今天背几题试试 ✦</div>';
+  $('#dailyOverlay').classList.add('show');
+}
+$('#dailyLink').onclick=openDaily;
+$('#closeDaily').onclick=()=>$('#dailyOverlay').classList.remove('show');
+$('#dailyOverlay').onclick=e=>{ if(e.target.id==='dailyOverlay') $('#dailyOverlay').classList.remove('show'); };
+
+/* 打开续背：恢复到上次背到的题 */
+function restoreLast(){
+  const s = lastSaved;
+  if(!s || !s.id) return;
+  if(!QUESTIONS.some(q=>q.id===s.id)) return;
+  let mod = s.module||'all', mode = s.mode||'seq';
+  curModule = mod; curMode = mode;
+  document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on', x.dataset.mode===curMode));
+  $('#revQuotaWrap').classList.toggle('on', curMode==='review');
+  buildList();
+  // 该模式/模块已无题（如清空错题本、无到期复习）→ 回退到「全部 · 顺序」
+  if(list.length===0 && (mod!=='all' || mode!=='seq')){
+    curModule='all'; curMode='seq';
+    document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on', x.dataset.mode==='seq'));
+    $('#revQuotaWrap').classList.remove('on');
+    buildList();
+  }
+  let p = list.findIndex(q=>q.id===s.id);
+  if(p<0) p=0;
+  pos=p;
+  showCard();
+  renderDrawer();
+  showResumeHint();
+}
+function showResumeHint(){
+  const q=list[pos]; if(!q) return;
+  const el=$('#resumeHint'); if(!el) return;
+  const qTxt = q.q.length>16 ? q.q.slice(0,16)+'…' : q.q;
+  el.innerHTML = '📍 已回到上次：<b>'+(MOD_NAME[q.module]||q.module)+'</b> · 第 '+(pos+1)+'/'+list.length+' 题「'+qTxt+'」 ✦';
+  el.style.display='';
+  setTimeout(()=>{ if(el) el.style.display='none'; }, 4500);
+}
 boot();
 // 启动时从各模块 JSON 加载题目（GitHub Pages / 本地服务器均可；file:// 双击会被 CORS 拦截）
 async function boot(){
@@ -877,6 +956,7 @@ async function boot(){
     ));
     QUESTIONS = [].concat(...parts);
   }catch(e){ QUESTIONS = []; }
+  try{ lastSaved = JSON.parse(localStorage.getItem(LS_LAST)||'null'); }catch(e){ lastSaved=null; }
   if(!QUESTIONS.length){
     const tip=document.createElement('div');
     tip.style.cssText='position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#fff3cd;color:#7a5b00;padding:10px 14px;border:2px solid #e0c068;border-radius:10px;max-width:92%;font-size:13px;z-index:999;text-align:center';
@@ -885,6 +965,8 @@ async function boot(){
   }
   seedReviewsOnce();
   renderDrawer(); buildList(); updatePlan(); updateCountdown(); updateRevUI(); renderRevPlan();
+  appReady=true;
+  restoreLast();
   $('#revQuotaInput').value=revQuota;
   // 通知初始化：之前开启过且已授权则自动启用
   if(notifEnabled && notifSupported() && Notification.permission==='granted'){ $('#notifBtn').textContent='关闭通知'; $('#notifState').textContent='当前：已开启（页面打开时到期会提醒）'; schedNotif(); }

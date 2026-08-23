@@ -1,260 +1,260 @@
 [
- {
-  "id": "vue001",
-  "module": "vue",
-  "q": "Vue2 与 Vue3 响应式原理区别？",
-  "a": "**Vue2**：Object.defineProperty 递归劫持每个属性 getter/setter。缺点：① 对**新增/删除**属性无响应（需 Vue.set/delete）；② 数组需重写方法；③ 全量递归、初始化慢；④ 听不了 Map/Set。\n**Vue3**：用 **Proxy** 代理整个对象，天然支持增删、数组索引、Map/Set；**懒代理**（访问才代理深层），性能更好；配合 Reflect。\n组件 API：Vue3 主推 Composition API（setup），逻辑按功能聚合更易复用。"
- },
- {
-  "id": "vue002",
-  "module": "vue",
-  "q": "Vue3 中 ref 和 reactive 怎么选？",
-  "a": "都创建响应式。\n**ref**：可包装任意类型，`.value` 访问；模板自动解包；常用于基本类型或需整体替换。\n**reactive**：仅对象/数组，直接访问属性；**不能直接解构/展开**（会丢响应），要用 toRefs 转 ref。\n实践：基本类型/独立值用 ref；一组成员状态用 reactive；解构 reactive 必用 toRefs。"
- },
- {
-  "id": "vue003",
-  "module": "vue",
-  "q": "Vue 组件间通信方式有哪些？",
-  "a": "父子：props 下传 + emit 上发（v-model 是 :value+@input 语法糖，vue3 用 v-model:xxx）。\n跨层：provide/inject（祖先提供、后代注入，适合主题/用户）。\n全局：Vuex（vue2）或 Pinia（vue3 推荐，更轻、TS 友好、无 mutations）。\n其他：attrs 透传、$refs 调子方法、事件总线（mitt，不推荐大型项目）。\n注意 props 单向数据流，子不直接改父传对象。"
- },
- {
-  "id": "vue004",
-  "module": "vue",
-  "q": "Composition API 与 Options API 区别？",
-  "a": "**Options** data/methods/computed/mounted 按**选项类型**分块，易读但逻辑分散（一个功能散多处），复用靠 mixin（易命名冲突/来源不清）。\n**Composition** setup 里**按功能聚拢**变量与逻辑，复用靠**组合式函数 useX**（无冲突、类型好）。官方推荐 Composition；Options 适合小/老项目。注意 setup 中 this 不可用（用 ref/reactive）。"
- },
- {
-  "id": "vue005",
-  "module": "vue",
-  "q": "Vue3 生命周期？",
-  "a": "创建：**setup**（取代 beforeCreate/created）→ onBeforeMount → **onMounted**（DOM 就绪，发请求/初始化）。更新：**onBeforeUpdate** → **onUpdated**（避免里改响应式致死循环）。\n卸载：**onBeforeUnmount** → **onUnmounted**（**必清**定时器/监听/实例防泄漏）。缓存：onActivated/onDeactivated（keep-alive）。SSR 额外：onServerPrefetch。"
- },
- {
-  "id": "vue006",
-  "module": "vue",
-  "q": "v-if 与 v-show 区别？",
-  "a": "**v-if** **真条件渲染**，不满足不创建 DOM（销毁/重建），切换开销大、有过渡。**v-show** 始终渲染，**display:none** 切换显示，开销小、频繁切更优。\n实践：频繁切换用 v-show；极少切/权限控制用 v-if。v-if 与 v-for 同元素时 **v-if 优先级更低**（vue3 中 v-if 不访问 v-for 变量，应避免同用，用 computed 过滤）。"
- },
- {
-  "id": "vue007",
-  "module": "vue",
-  "q": "v-for 为什么需要 key？",
-  "a": "key 是 Vue **识别节点身份**的唯一标识，用于 Diff 复用。**有 key** 按 key 比对新旧，复用同 key 节点、移动而非重建，列表不乱。\n**无 key / 用 index** index 会变（删中间项后错位），易**状态错乱/性能差**。实践：用**稳定唯一 id** 做 key，绝不用 index（除非静态列表）。"
- },
- {
-  "id": "vue008",
-  "module": "vue",
-  "q": "Vue3 编译期优化（Patch Flag / hoist）？",
-  "a": "Vue3 模板编译器做的优化：① **Patch Flag** 编译时给动态节点打标（如 TEXT/CLASS），Diff 只比**有动态标记**的部分，跳过静态；② **静态提升 hoistStatic** 把静态节点/属性**提为常量**只建一次；\n③ **缓存事件**（cacheHandler）；④ **Block Tree** 收集动态子，跳过静态子树。→ 比 Vue2 快很多。"
- },
- {
-  "id": "vue009",
-  "module": "vue",
-  "q": "Teleport 和 Suspense 是什么？",
-  "a": "**Teleport** 把组件 DOM **传送到 body 等指定节点**（如弹窗/Toast 避免父 overflow 遮挡），逻辑仍在原组件。**Suspense** **异步组件/setup await** 的加载占位，#default 异步 + #fallback 兜底（vue3 实验性，SSR 稳）。\n用途：弹层用 Teleport；异步数据/代码分割用 Suspense 显示骨架。"
- },
- {
-  "id": "vue010",
-  "module": "vue",
-  "q": "computed 与 watch 区别？",
-  "a": "**computed** **派生状态**，依赖变才重算（**缓存**，无依赖不变），必须 return，适合“由别的状态算出来”。**watch** **监听变化做副作用**（请求/改 DOM），不 return，可异步，适合“变了要干嘛”。\n实践：显示用 computed（如全选）；副作用用 watch（如监听 id 发请求）。watch 有 immediate/deep（deep 监听对象开销大，改用具体属性）。"
- },
- {
-  "id": "vue011",
-  "module": "vue",
-  "q": "watchEffect 是什么？",
-  "a": "**watchEffect** 立即执行并**自动收集依赖**，依赖变就重跑（不需指定源），适合“依赖不明确”的副作用。对比 watch：watch 要显式写源+回调；watchEffect 自动追踪**回调内用到的响应式**。\n清理：返回函数（如取消监听）。停止：返回 stop()。注意：依赖收集基于同步读取，异步读不追踪。"
- },
- {
-  "id": "vue012",
-  "module": "vue",
-  "q": "自定义指令 directive 怎么写？",
-  "a": "封装**DOM 底层行为**（v-xxx）。钩子：created、beforeMount、mounted、beforeUpdate、updated、unmounted。例：v-focus（mounted 自动 el.focus()）、v-loading（插入遮罩）、v-permission（无权限移除节点）。\n全局 app.directive('x',{})；局部 components 同级 directives。区别：指令只管 DOM 行为，组件管结构+逻辑。"
- },
- {
-  "id": "vue013",
-  "module": "vue",
-  "q": "keep-alive 作用？",
-  "a": "**<keep-alive>** 包裹动态组件，**缓存不活跃实例**（不销毁），切回时保状态/避免重渲染。钩子：onActivated（激活）、onDeactivated（停用）。控制：include/exclude/max（正则/名字，max 限缓存数 LRU）。\n用途：Tab 切换、列表→详情返回保滚动/表单。注意：缓存实例不触发 mounted，用 activated 代替。"
- },
- {
-  "id": "vue014",
-  "module": "vue",
-  "q": "Vue 的虚拟 DOM 与 Diff？",
-  "a": "用 **VNode**（JS 对象）描述 DOM，状态变生成新 VNode，与旧 Diff 出**最小补丁** patch 到真实 DOM，减少直接操作。Diff（snabbdom 系）：① 同节点才深比（patchVnode）；② 新旧同序列表用**双端比较**（头头/尾尾/头尾/尾头）+ key 复用；③ 静态节点借编译优化跳过。\n代价：超大列表仍重 → 虚拟滚动。"
- },
- {
-  "id": "vue015",
-  "module": "vue",
-  "q": "Pinia 与 Vuex 区别？",
-  "a": "**Pinia**（Vue3 官方推荐）无 **mutations**（直接 action 改/或 $patch）、**TS 友好**、类型推断好、无模块嵌套（用 store 组合）、代码量省、devtools 支持。\n**Vuex** state/getters/mutations/actions 四件套，mutations 必须同步（约束但繁琐），模块易命名空间复杂。迁移：新项目直接 Pinia；老项目 Vuex 仍可。"
- },
- {
-  "id": "vue016",
-  "module": "vue",
-  "q": "Vue 中 nextTick 原理？",
-  "a": "数据改了 DOM **不会立刻**更新（Vue 异步批量合并更新，同轮只渲染一次）。**nextTick(cb)** 把回调推入**微任务**（Promise.then / MutationObserver 降级），等 DOM 更新完再执行，从而拿到更新后 DOM。\n用途：改数据后立刻读 DOM（如聚焦、量高）。返回 Promise 可 await nextTick()。"
- },
- {
-  "id": "vue017",
-  "module": "vue",
-  "q": "Vue 插槽 slot 用法？",
-  "a": "父向子**传入模板片段**：① **默认插槽** <slot/>；② **具名插槽** <slot name=x/> + <template v-slot:header>（简写 #header）；③ **作用域插槽** 子把数据传回 <slot :row=item/>，父 #default={row} 用（列表组件常用）。\n用途：封装灵活组件（表格列自定义、卡片内容可配）。"
- },
- {
-  "id": "vue018",
-  "module": "vue",
-  "q": "Vue Router 守卫与懒加载？",
-  "a": "**守卫** 全局 beforeEach（登录鉴权/埋点）、beforeResolve、afterEach；路由独享 beforeEnter；组件内 onBeforeRouteLeave（离开确认）。**懒加载** () => import('./X.vue') 路由级分包，首屏只载当前页。\n**模式** history（需服务端 fallback，URL 干净）/ hash（#，无需服务端）。传参：params（不在 URL 刷新丢）/ query（在 URL）。"
- },
- {
-  "id": "vue019",
-  "module": "vue",
-  "q": "Vue3 项目性能优化点？",
-  "a": "① **代码分包**（路由懒加载）；② **v-show** 频繁切换；③ 大列表**虚拟滚动**（vue-virtual-scroller）；④ computed 缓存派生；⑤ 组件 **keep-alive** 缓存；⑥ 图片懒加载；⑦ **shallowRef/shallowReactive** 降深层响应开销；\n⑧ 大对象用 markRaw 跳过代理；⑨ 销毁清定时器/监听；⑩ 生产关 sourcemap/开压缩。"
- },
- {
-  "id": "vue020",
-  "module": "vue",
-  "q": "Vue 3 的响应式原理是什么？与 Vue 2 有什么区别？",
-  "a": "**简要回答**\n\nVue 3 使用 Proxy 实现响应式，相比 Vue 2 的 `Object.defineProperty`，在性能、能力和可维护性上均有大幅提升。\n\n**拆解说明**\n\n**Vue 3 的响应式核心机制：**\n\n1. 使用 Proxy 拦截对象的 `get/set` 操作\n2. `track()` 函数收集依赖（在 getter 中）\n3. `trigger()` 函数触发更新（在 setter 中）\n4. `ReactiveEffect` 类统一管理副作用函数\n\n**与 Vue 2 的区别：**\n\n| 特性 | Vue 2 | Vue 3 |\n|-|-|-|\n| 基础机制 | `Object.defineProperty` | `Proxy` |\n| 支持新增/删除属性 | 否 | 是 |\n| 支持数组索引 | 否（需重写原型） | 是 |\n| 嵌套代理 | 手动递归 | 懒加载递归代理 |\n| 性能表现 | 初始化时递归全对象 | 按需代理，性能更优 |\n\n**常见追问**"
- },
- {
-  "id": "vue021",
-  "module": "vue",
-  "q": "*Q: 为什么不用 `Object.defineProperty`？",
-  "a": "因为它有以下局限：\n\n- 无法监听新增/删除属性\n- 不支持数组索引变化\n- 必须递归遍历所有嵌套属性\n- 性能和维护成本高\n\nProxy 则可拦截对象的所有操作，是更现代的选择。\n\n---"
- },
- {
-  "id": "vue022",
-  "module": "vue",
-  "q": "ref 和 reactive 有什么区别？",
-  "a": "**简要回答**\n\nref 适合基本类型，reactive 用于对象和数组。ref 返回 `.value` 包裹的数据，reactive 返回 Proxy。\n\n**拆解说明**\n\n**ref：**\n\n- 用于基本类型（string、number 等）\n- 返回 RefImpl 对象，访问时需 `.value`\n- 模板中自动解包\n- 包装对象时会递归调用 reactive\n\n**reactive：**\n\n- 用于引用类型（对象、数组）\n- 返回 Proxy，直接访问属性即可\n- 是深度响应式，嵌套对象也响应\n- 无法直接替换整个对象，否则会失去响应性\n\n**示例代码**\n\n```JavaScript\nimport { ref, reactive } from 'vue'\n\nconst count = ref(0)\nconst user = reactive({ name: 'John', age: 25 })\n\nconst update = () => {\n  count.value++        // ref 需要 .value\n  user.name = 'Jane'   // reactive 直接访问\n}\n```\n\n**常见追问**"
- },
- {
-  "id": "vue023",
-  "module": "vue",
-  "q": "*Q: 为什么有时候对象也用 ref？",
-  "a": "以下场景推荐使用 ref 包装对象：\n\n- 需要整体替换对象：`user.value = newUser`\n- 和第三方库交互\n- 需要接口统一\n\n---"
- },
- {
-  "id": "vue024",
-  "module": "vue",
-  "q": "Vue 的响应式更新是同步还是异步的？",
-  "a": "**简要回答**\n\nVue 的响应式更新是异步的，采用微任务队列进行 DOM 批量更新。\n\n**拆解说明**\n\n**更新流程：**\n\n1. 修改响应式数据 → 触发 setter → 收集 effect\n2. effect 被放入更新队列\n3. DOM 更新合并执行\n4. 下一事件循环中统一刷新 DOM\n\n**异步更新优势：**\n\n- 合并多次数据变动\n- 减少渲染次数，提升性能\n- 避免中间状态被渲染\n\n**示例代码**\n\n```JavaScript\nimport { ref, nextTick } from 'vue'\n\nconst count = ref(0)\n\nconst update = async () => {\n  count.value = 1\n  count.value = 2\n  count.value = 3\n\n  console.log(document.querySelector('#count').textContent) // 仍是旧值\n  await nextTick()\n  console.log(document.querySelector('#count').textContent) // 此时更新完毕\n}\n```\n\n**常见追问**"
- },
- {
-  "id": "vue025",
-  "module": "vue",
-  "q": "*Q: nextTick 的原理是什么？",
-  "a": "Vue 内部优先使用微任务调度（如 Promise.then），回退方案依次为：\n\n- MutationObserver\n- setImmediate\n- setTimeout\n\nnextTick 本质是把回调放到 DOM 更新之后的微任务队列中执行。\n\n---\n\n**二、Composition API 类**"
- },
- {
-  "id": "vue026",
-  "module": "vue",
-  "q": "`setup` 函数的作用是什么？它与 `data`、`methods` 等选项有什么关系？",
-  "a": "**简要回答**\n\n`setup` 是 Composition API 的入口，用于整合和组织组件的逻辑。它在组件实例创建前执行，并取代了 Vue 2 中的 `data`、`methods`、`computed` 等选项。\n\n**拆解说明**\n\n**`setup` 的核心职责：**\n\n1. **逻辑组织中心**：在 `setup` 内部声明响应式状态、计算属性、侦听器和生命周期钩子。\n2. **执行时机**：在 `props` 被解析后、组件实例创建前执行。此时 `this` 还不是组件实例。\n3. **参数**：接收两个参数：`props`（响应式的，不能解构）和 `context`（包含 `attrs`, `slots`, `emit`）。\n4. **返回值**：返回一个对象，该对象中的属性和方法会暴露给模板和组件的其他部分。\n\n**与 Options API 的关系：**\n\n`setup` 旨在取代 Options API 中分散的逻辑。一个 `setup` 函数可以完成过去需要 `data()`、`methods`、`computed`、`watch` 和生命周期钩子多个选项才能完成的工作，让相关逻辑更内聚。\n\n**示例代码**\n\n```JavaScript\nimport { ref, computed, onMounted } from 'vue'\n\nexport default {\n  props: {\n    initialValue: {\n      type: Number,\n      default: 0\n    }\n  },\n  setup(props, { emit }) {\n    // 1. 状态 (等同于 data)\n    const count = ref(props.initialValue)\n\n    // 2. 计算属性 (等同于 computed)\n    const doubleCount = computed(() => count.value * 2)\n\n    // 3. 方法 (等同于 methods)\n    const increment = () => {\n      count.value++\n      emit('change', count.value)\n    }\n\n    // 4. 生命周期钩子 (等同于 mounted)\n    onMounted(() => {\n      console.log('Component is mounted!')\n    })\n\n    // 暴露给模板\n    return {\n      count,\n      doubleCount,\n      increment\n    }\n  }\n}\n```\n\n**常见追问**"
- },
- {
-  "id": "vue027",
-  "module": "vue",
-  "q": "*Q: `setup` 里的 `this` 是什么？",
-  "a": "在 `setup` 函数执行期间，`this` 是 `undefined`。这是为了避免与 Options API 的 `this` 指向组件实例的行为混淆。所有需要的功能都通过 `props` 和 `context` 参数提供。\n\n---"
- },
- {
-  "id": "vue028",
-  "module": "vue",
-  "q": "`watch` 和 `watchEffect` 有什么区别？",
-  "a": "**简要回答**\n\n`watch` 需要明确指定侦听的数据源，更具体；`watchEffect` 会自动追踪其回调函数中使用的响应式依赖，更智能。\n\n**拆解说明**\n\n| 特性 | `watch` | `watchEffect` |\n|-|-|-|\n| **依赖追踪** | 手动指定，需明确传入要侦听的 ref 或 reactive 对象 | 自动追踪，无需指定，函数体内用到的依赖都会被追踪 |\n| **首次执行** | 默认懒执行（lazy），仅在数据变化时执行。可配置 `immediate: true` | 立即执行一次，然后当依赖变化时再次执行 |\n| **回调参数** | 可以访问新值和旧值 (`(newValue, oldValue) => ...`) | 无法访问旧值，只在新值变化时重新运行整个函数 |\n| **使用场景** | 当你只想在特定数据变化时执行某个操作（如网络请求） | 当一个副作用依赖多个数据源，或需要立即执行时 |\n\n**示例代码**\n\n```JavaScript\nimport { ref, watch, watchEffect } from 'vue'\n\nconst userId = ref(1)\nconst userInfo = ref(null)\n\n// --- watch 示例 ---\n// 明确侦听 userId 的变化，并在变化时执行操作\nwatch(userId, async (newId, oldId) => {\n  console.log(`User ID changed from ${oldId} to ${newId}`)\n  // userInfo.value = await fetchUser(newId) // 根据 ID 获取新用户数据\n})\n\n// --- watchEffect 示例 ---\n// 自动依赖 userId，会立即执行一次，之后每当 userId 变化都会再次执行\nwatchEffect(() => {\n  console.log(`Current User ID is: ${userId.value}`)\n  // 这个函数会立即运行，打印 \"Current User ID is: 1\"\n})\n\nconst changeUser = () => {\n  userId.value++\n}\n```\n\n**常见追问**"
- },
- {
-  "id": "vue029",
-  "module": "vue",
-  "q": "*Q: 应该优先选择哪个？",
-  "a": "- 当副作用与某个数据源强相关，且需要访问旧值时，优先用 `watch`。\n- 当副作用依赖多个响应式数据，且逻辑简单直观时，`watchEffect` 更简洁。\n- 需要停止侦听时，两者都会返回一个 `stop` 函数，调用它即可停止。\n\n---\n\n**三、生命周期类**"
- },
- {
-  "id": "vue030",
-  "module": "vue",
-  "q": "Vue 3 的生命周期钩子有哪些？与 Vue 2 相比有什么变化？",
-  "a": "**简要回答**\n\nVue 3 的生命周期钩子在 Composition API 中使用，名称上基本是 Vue 2 钩子加上 `on` 前缀。最大的变化是 `beforeCreate` 和 `created` 被 `setup` 函数本身所取代。\n\n**拆解说明**\n\n**Vue 3 (Composition API) vs Vue 2 (Options API) 钩子映射：**\n\n| Vue 2 选项 | Vue 3 (在 `setup` 中使用) | 描述 |\n|-|-|-|\n| `beforeCreate` | `setup()` | 组件实例创建前，`setup` 是入口 |\n| `created` | `setup()` | 组件实例创建后，逻辑在 `setup` 中完成 |\n| `beforeMount` | `onBeforeMount` | DOM 挂载前 |\n| `mounted` | `onMounted` | DOM 挂载后 |\n| `beforeUpdate` | `onBeforeUpdate` | DOM 更新前 |\n| `updated` | `onUpdated` | DOM 更新后 |\n| `beforeDestroy` | `onBeforeUnmount` | 组件实例销毁前 |\n| `destroyed` | `onUnmounted` | 组件实例销毁后 |\n| `errorCaptured` | `onErrorCaptured` | 捕获子孙组件错误时调用 |\n\n**新增的调试钩子：**\n\n- `onRenderTracked`: 跟踪虚拟 DOM 重新渲染时收集的依赖。\n- `onRenderTriggered`: 跟踪触发虚拟 DOM 重新渲染的事件。\n\n**示例代码**\n\n```JavaScript\nimport { onMounted, onUpdated, onUnmounted } from 'vue'\n\nexport default {\n  setup() {\n    onMounted(() => {\n      console.log('组件已挂载')\n    })\n\n    onUpdated(() => {\n      console.log('组件已更新')\n    })\n\n    onUnmounted(() => {\n      console.log('组件已卸载')\n      // 在这里清理副作用，如定时器、事件监听等\n    })\n  }\n}\n```\n\n**常见追问**"
- },
- {
-  "id": "vue031",
-  "module": "vue",
-  "q": "*Q: 为什么不再需要 `beforeCreate` 和 `created`？",
-  "a": "因为 `setup` 函数的执行时机覆盖了这两个钩子的功能。`setup` 在 `props` 解析之后、组件实例创建之前执行，所有需要在 `created` 中完成的数据初始化和响应式设置，都可以在 `setup` 中直接完成，使其更为直观和统一。\n\n---\n\n**四、组件通信类**"
- },
- {
-  "id": "vue032",
-  "module": "vue",
-  "q": "Vue 3 中有哪些主要的组件通信方式？",
-  "a": "**简要回答**\n\nVue 3 的核心通信方式包括：`props` / `emit`、`provide` / `inject`、`v-model`、以及通过 `ref` 和 `defineExpose` 实现的父子组件直接访问。对于复杂场景，则推荐使用 Pinia 等全局状态管理库。\n\n**拆解说明**\n\n**1. `props`** / `emit`**（父 -> 子，子 -> 父）**\n\n- **`props`**: 父组件向子组件传递数据，是单向数据流。\n- **`emit`**: 子组件通过触发事件向父组件发送消息。Vue 3 推荐在组件中使用 `emits` 选项来显式声明它会触发哪些事件，这有助于代码的可读性和维护性。\n\n**2. `provide`** / `inject`**（祖先 -> 后代）**\n\n- 用于跨越多层级的组件通信，避免“属性透传”（Prop Drilling）。\n- 祖先组件通过 `provide()` 提供数据或方法，任何后代组件都可以通过 `inject()` 来注入并使用它们。\n- **注意**：`provide` 的数据默认不是响应式的，除非你提供的是一个 ref 或 reactive 对象。\n\n**3.** `v-model`**（双向绑定语法糖）**\n\n- 在 Vue 3 中，组件上的 `v-model` 被简化了。它等价于传递一个 `modelValue` prop 并监听一个 `update:modelValue` 事件。\n- Vue 3 还支持在单个组件上使用多个 `v-model`，例如 `v-model:title` 和 `v-model:content`。\n\n**4. `ref`** / `defineExpose`**（父 -> 子）**\n\n- 父组件可以通过模板 `ref` 获取子组件的实例。\n- 默认情况下，子组件的 `setup` 是私有的。子组件必须使用 `defineExpose` 宏来明确暴露希望父组件访问的属性或方法。\n\n**5. 全局状态管理（Pinia / Vuex）**\n\n- 对于非父子关系、跨多个组件共享的状态，使用 Pinia（Vue 官方推荐）或 Vuex 是最佳实践。\n- 它们提供了一个集中的、可预测的状态存储，并与 Vue Devtools 深度集成。\n\n**示例代码**\n\n```HTML\n<!-- Parent.vue -->\n<template>\n  <Child\n    :message=\"parentMsg\"\n    @response=\"handleResponse\"\n    v-model:name=\"userName\"\n    ref=\"childRef\"\n  />\n  <p>Received from child: {{ childResponse }}</p>\n  <p>User name from child: {{ userName }}</p>\n  <button @click=\"callChildMethod\">Call Child</button>\n</template>\n\n<script setup>\nimport { ref } from 'vue'\nimport Child from './Child.vue'\n\nconst parentMsg = ref('Hello from Parent')\nconst childResponse = ref('')\nconst userName = ref('John')\nconst childRef = ref(null)\n\nconst handleResponse = (msg) => {\n  childResponse.value = msg\n}\n\nconst callChildMethod = () => {\n  childRef.value.sayHi() // 调用子组件暴露的方法\n}\n</script>\n```\n\n```HTML\n<!-- Child.vue -->\n<template>\n  <p>{{ message }}</p>\n  <button @click=\"$emit('response', 'Hi from Child')\">Send Msg</button>\n  <input :value=\"name\" @input=\"$emit('update:name', $event.target.value)\" />\n</template>\n\n<script setup>\nimport { defineProps, defineEmits, defineExpose } from 'vue'\n\ndefineProps({\n  message: String,\n  name: String\n})\n\ndefineEmits(['response', 'update:name'])\n\nconst sayHi = () => {\n  alert('Hi!')\n}\n\n// 暴露方法给父组件\ndefineExpose({\n  sayHi\n})\n</script>\n```\n\n**常见追问**"
- },
- {
-  "id": "vue033",
-  "module": "vue",
-  "q": "*Q: `provide/inject` 和 Pinia/Vuex 有什么区别和适用场景？",
-  "a": "- **`provide/inject`**：是轻量级的、针对特定组件树的依赖注入方案。它适用于在一个明确的“分支”下传递数据，例如一个表单组件库向其内部的输入框、按钮等组件提供统一的主题或配置。它不适合做真正的全局状态管理。\n- **Pinia/Vuex**：是重量级的、应用级别的全局状态管理方案。它们提供集中的 Store、State、Getter、Action，并支持 Devtools 调试，适用于需要跨页面、跨业务模块共享的数据，如用户信息、购物车等。\n\n---\n\n**五、性能优化类**"
- },
- {
-  "id": "vue034",
-  "module": "vue",
-  "q": "Vue 3 相比 Vue 2 在性能上做了哪些核心优化？",
-  "a": "**简要回答**\n\nVue 3 的性能优化是革命性的，主要得益于**编译时优化**（静态树提升、补丁标志）和**更高效的响应式系**\\*（Proxy）。这使得初始渲染更快、更新性能更强、内存占用更少。\n\n**拆解说明**\n\n**1. 编译时优化 (Compiler-Informed Virtual DOM)**\n\n- **Patch Flags (补丁标志)**：Vue 3 的编译器在分析模板时，会为动态节点（如带有 `v-bind`、`v-on` 或插值的元素）添加一个数字“标志”（Patch Flag）。在更新时，渲染器只需查看这个标志，就知道这个节点具体哪部分可能改变（例如，是文本内容、class 还是 style），从而跳过对不相关属性的比较。这极大地减少了 Virtual DOM diff 的工作量。\n\n  - *例如：*`<div :class=\"cls\">{{ text }}</div>` 会被标记为需要检查 *`CLASS`* 和 `TEXT`*。*\n- **Static Tree Hoisting (静态树提升)**：对于模板中完全静态的内容（没有任何绑定的元素和节点），编译器会将其提升到渲染函数之外。这意味着这些静态部分只会在应用启动时被创建一次，并在后续的所有渲染中被复用。这大大减少了不必要的虚拟节点创建和内存消耗。\n- **Event Listener Caching (事件监听器缓存)**：默认情况下，如果一个事件监听器没有动态绑定（例如 `@click=\"handler\"` 而不是 `@click=\"dynamic[handler]\"`），它会被缓存起来。这避免了在每次组件更新时都重新创建一个新的函数，降低了内存压力和垃圾回收的频率。\n\n**2. 基于 Proxy 的响应式系统**\n\n- 如前所述，Proxy 解决了 `Object.defineProperty` 的诸多限制。从性能角度看，`Proxy` 是懒代理的，它只在属性被访问时才进行代理，而不是在初始化时就递归遍历整个对象，这使得大型复杂对象的初始化速度更快。\n\n**常见追问:**"
- },
- {
-  "id": "vue035",
-  "module": "vue",
-  "q": "*Q: 你能详细解释一下“静态树提升”吗？它解决了什么问题？",
-  "a": "“静态树提升”解决的是在每次组件渲染时重复创建静态 VNode（虚拟节点）的性能浪费问题。\n\n在 Vue 2 中，无论一个元素是否会改变，每次组件的 `render` 函数执行时，它对应的 VNode 都会被重新创建一遍。\n\n在 Vue 3 中，编译器足够智能，可以识别出像 `<div>Hello World</div>` 或带有静态 `class` 和 `id` 的元素。它会将这些节点的创建代码从 `render` 函数中“提升”出去，变成一个在外部定义的常量。`render` 函数执行时，直接引用这个预先创建好的常量即可。\n\n**这样做的好处是：**\n\n1. **减少内存分配**：避免了重复创建相同的 VNode 对象。\n2. **加快渲染速度**：跳过了对这些静态节点的 diff 过程。\n\n---"
- },
- {
-  "id": "vue036",
-  "module": "vue",
-  "q": "在日常 Vue 3 开发中，有哪些常用的性能优化技巧？",
-  "a": "**简要回答**\n\n常用的性能优化技巧包括：通过 `v-if` vs `v-show` 控制渲染成本、使用 `v-memo` 减少不必要的更新、通过虚拟列表优化长列表、利用 `defineAsyncComponent` 进行组件懒加载，以及合理利用 `computed` 缓存计算结果。\n\n**拆解说明**\n\n**1. 合理使用 `v-if`** 和 **`v-show`**\n\n- **`v-if`**: 是“真正的”条件渲染，它会确保在切换过程中条件块内的事件监听器和子组件被适当地销毁和重建。它的**切换开销更高**。\n- **`v-show`**: 只是简单地切换元素的 CSS `display` 属性。它的**初始渲染开销更高**。\n- **选择**：如果需要频繁地切换，使用 `v-show`；如果运行时条件很少改变，使用 `v-if`。\n\n**2. 使用 `v-memo` 指令**\n\n- 这是一个性能指令，可以用来“记忆”模板的一部分。如果 `v-memo` 的依赖项数组中的值没有发生变化，Vue 将跳过对该 VNode 及其整个子树的更新。\n- 它非常适合优化那些渲染成本高但不经常变化的大列表或复杂节点。\n\n```HTML\n<div v-memo=\"[item.id === selectedId]\">\n  <p>{{ item.name }}</p>\n  <!-- 更多复杂的子节点 -->\n</div>\n```\n\n*在这个例子中，只有当 `item.id === selectedId`* 的结果改变时，这个 *`div` 及其子节点才会重新渲染。*\n\n**3. 虚拟滚动/虚拟列表**\n\n- 当渲染包含成千上万条数据的长列表时，一次性渲染所有 DOM 节点会导致严重的性能问题。\n- 应该使用虚拟列表技术，它只渲染视口中可见的一小部分项目。可以使用现成的库，如 `vue-virtual-scroller`。\n\n**4. 组件懒加载 (Code Splitting)**\n\n- 对于大型应用，可以将应用拆分成多个小代码块（chunks），只在需要时才从服务器加载。\n- Vue Router 与 `defineAsyncComponent` 结合使用是实现按路由懒加载的最佳方式。\n\n```JavaScript\nimport { createRouter, createWebHistory } from 'vue-router'\nimport { defineAsyncComponent } from 'vue'\n\nconst router = createRouter({\n  history: createWebHistory(),\n  routes: [\n    {\n      path: '/profile',\n      // Profile 组件及其依赖只有在用户访问 /profile 时才会被加载\n      component: defineAsyncComponent(() => import('./views/Profile.vue'))\n    }\n  ]\n})\n```\n\n**5. 其他技巧**\n\n- **使用** `KeepAlive`：缓存非活动组件的实例，而不是销毁它们，以便在来回切换时保持它们的状态并避免重新渲染。\n- **优化** `computed`：对于复杂的、计算成本高的操作，优先使用 `computed`，因为它会缓存结果，只有在依赖变化时才重新计算。\n\n---\n\n**六、对比分析类**"
- },
- {
-  "id": "vue037",
-  "module": "vue",
-  "q": "Vue 3 与 React 在核心思想和实现上有哪些异同？",
-  "a": "**简要回答**\n\nVue 3 和 React 都是顶级的现代前端框架，它们都采用组件化和虚拟 DOM 的思想。其核心区别在于**响应式系统的实现方式**和**视图层的表达方式**。Vue 使用模板和自动化的响应式追踪，追求开发的便利性和低心智负担；而 React 使用 JSX 和显式的状态更新，追求函数的纯粹性和更灵活的 JavaScript 控制力。\n\n**拆解说明**\n\n| 对比维度 | Vue 3 | React |\n|-|-|-|\n| **响应式实现** | **自动化追踪**：通过 `Proxy` (`ref`, `reactive`) 自动拦截数据读写，自动收集和触发依赖。开发者无需手动声明依赖。 | **手动显式更新**：通过 `useState`, `useReducer` 等 Hooks，调用 `setState` 函数来手动触发组件的重新渲染。 |\n| **视图层 (View)** | **HTML 模板 (**`.vue` 文件)：语法更接近原生 HTML，对设计师和初学者友好，实现了关注点分离 (HTML/CSS/JS)。 | **JSX (JavaScript XML)**：将 HTML 结构直接写在 JavaScript 中，提供了完整的 JavaScript 编程能力，更加灵活。 |\n| **API 设计风格** | **渐进式框架**：提供 Options API 和 Composition API 两种风格，既可以像传统方式一样简单上手，也可以组织大型复杂应用。 | **函数式编程**：自 Hooks 推出后，全面拥抱函数式组件，强调不可变性和纯函数。有明确的规则（如 Hooks 只能在顶层调用）。 |\n| **性能优化策略** | **编译时优化**：通过静态树提升、补丁标志等技术，在编译阶段分析模板，最大限度地减少运行时 diff 的开销。 | **运行时优化**：主要依赖开发者通过 `useMemo`, `useCallback` 等 Hooks 手动进行优化，以避免不必要的计算和子组件重渲染。 |\n| **生态系统** | **官方维护**：核心库（如 Vue Router, Pinia）由官方团队维护，风格统一，整合度高，提供“全家桶”式的开发体验。 | **社区驱动**：生态更庞大，解决方案更多样化。路由、状态管理等有多种流行的社区库可供选择，给予开发者更多自由度。 |\n\n**常见追问**"
- },
- {
-  "id": "vue038",
-  "module": "vue",
-  "q": "*Q: 你认为哪种响应式模型更好？",
-  "a": "这个问题没有绝对答案，重在展现你的理解深度。\n\n- **Vue 的优势在于简洁和高效**。它的自动追踪机制减少了样板代码，开发者可以专注于业务逻辑，心智负担较低。对于大多数场景，这种“智能”的系统非常高效。\n- **React 的优势在于显式和可预测**。每一次状态更新都由开发者明确触发，数据流向清晰，更容易调试和推理复杂的交互逻辑。这种明确性在大规模、高复杂度的应用中可能更受欢迎。\n-\n\n**总结：** 可以说 Vue 提供了“恰到好处的魔法”，而 React 提供了“完全的控制权”。选择哪个取决于团队的技术栈偏好、项目复杂度和对开发体验的追求。\n\n---"
- },
- {
-  "id": "vue039",
-  "module": "vue",
-  "q": "Vue 3 Composition API 相比 Options API 好在哪？逻辑复用怎么做？",
-  "a": "**简要回答：**\nComposition API 用**函数**组织逻辑，解决 Options API「同一功能的代码被 scattered 在 data/computed/methods 多个选项里」的问题，让**相关逻辑聚合、跨组件复用更自然**。\n\n**拆解：**\n- Options API：按「选项类型」分组，功能一多就来回跳；mixins 复用有命名冲突、来源不清晰。\n- Composition API：按「功能」分组，`setup()` 里把 ref/reactive/computed/watch 写在一起；复用抽成**组合式函数（composable）**，如 `useUser()`。\n- `<script setup>` 是语法糖，不用手写 `setup()` 返回，类型推导更好。\n\n**示例（composable 复用）：**\n```\n// useCounter.js\nexport function useCounter(){\n  const n = ref(0);\n  const inc = () => n.value++;\n  return { n, inc };\n}\n```\n**追问：** 两者能混用吗？（能，但同组件建议统一风格。）"
- },
- {
-  "id": "vue040",
-  "module": "vue",
-  "q": "Vue 3 的编译时优化（静态提升 / Patch Flags / Block Tree）原理？",
-  "a": "**简要回答：**\nVue 3 在**编译阶段**就分析模板，把「不会变的东西」提升出去、给「会变的东西」打标记，运行时 diff 只比对动态部分，性能大幅优于 Vue 2 的全量比对。\n\n**拆解：**\n- **静态提升（hoistStatic）**：静态节点/属性只创建一次，渲染时直接复用，不进虚拟 DOM 比对。\n- **Patch Flags**：编译时给动态节点打标志（如 TEXT=1, CLASS=2, PROPS=8），运行时 `patch` 只按 flag 更新对应内容。\n- **Block Tree**：把模板按「动态节点」切成 block，diff 时跳过整块静态内容，只遍历动态子节点数组。\n- **缓存事件处理**：`@click=\"foo\"` 这种静态函数引用被缓存，避免每次重建。\n\n**追问：** 为什么 Patch Flags 比 Vue 2 快？（Vue 2 要递归比整棵 VNode；Vue 3 直奔动态节点。）"
- },
- {
-  "id": "vue041",
-  "module": "vue",
-  "q": "<script setup> 相比普通 <script> 有什么优势？",
-  "a": "**简要回答：**\n`<script setup>` 是编译时语法糖，写在里面的顶层绑定**自动暴露给模板**，不用 `return`，代码更短、TS 推导更好、作用域更干净。\n\n**拆解：**\n- 普通 `<script>`：要 `export default { setup(){ ... return {...} }}` 手动返回才能用。\n- `<script setup>`：顶层变量/函数直接进模板；`import` 的组件直接用，不用 `components` 注册；`defineProps`/`defineEmits` 编译器宏免引入。\n- 编译后其实是把顶层声明收集进 `setup()` 返回，运行无额外成本。\n- 还可配普通 `<script>` 写 `name`、选项式配置（不能同时有俩 setup）。\n\n**示例：**\n```\n<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);            // 模板直接用 {{ count }}\nconst props = defineProps({ id: String });\n</script>\n```\n**追问：** 怎么给组件命名？（并列写普通 `<script> export default { name:'X' }</script>`。）"
- },
- {
-  "id": "vue042",
-  "module": "vue",
-  "q": "Vue 3 依赖收集与触发更新（track / trigger / effect）的细节？",
-  "a": "**简要回答：**\nVue 3 用 **Proxy** 拦截响应式对象，组件渲染时读取属性会「收集依赖」（track），属性被改写时「触发更新」（trigger），精准通知用到它的副作用（组件/effect）重跑。\n\n**拆解：**\n- **reactive**：Proxy 包裹对象，get 时 `track(target, key)` 把「当前活跃 effect」记进 dep（Set）；set 时 `trigger` 取出 dep 里的 effect 执行。\n- **ref**：本质是 `{ value }` 的响应式，模板里自动 `.value` 脱壳。\n- **effect / watchEffect**：执行时把自己设为「活跃 effect」，跑一遍回调即完成收集。\n- 相比 Vue 2 的 `Object.defineProperty`：Proxy 能监听新增/删除属性、数组索引、Map/Set，且是**懒代理**（用到才代理深层）。\n\n**追问：** 为什么 Vue 3 响应式是「懒」的？（访问嵌套对象才对其 Proxy，省内存。）"
- },
- {
-  "id": "vue043",
-  "module": "vue",
-  "q": "Vue 3 的 Teleport 和 Suspense 分别解决什么问题？",
-  "a": "**简要回答：**\n- **Teleport**：把组件内部 DOM「传送到」body 下指定容器，解决**嵌套层级导致的 z-index/overflow 溢出**问题（弹窗、Toast、抽屉）。\n- **Suspense**：在「异步组件/setup 里 await」加载完成前显示 fallback 占位，统一处理异步 UI 的等待态。\n\n**拆解：**\n- Teleport 组件本身仍在原逻辑树（props/事件正常），只是 DOM 落点变了。\n- Suspense 包住 `<AsyncComp/>`，`#default` 是异步内容，`#fallback` 是加载中；多个异步会等全部就绪。\n\n**示例：**\n```\n<Teleport to=\"body\"><Modal v-if=\"show\"/></Teleport>\n<Suspense><template #default><AsyncUser/></template>\n  <template #fallback>加载中…</template></Suspense>\n```\n**追问：** Teleport 到 body 后样式隔离怎么做？（用全局/scoped + 深度选择器或 :global。）"
- }
+  {
+    "id": "vue001",
+    "module": "vue",
+    "q": "Vue2 与 Vue3 响应式原理区别？",
+    "a": "**Vue2**：Object.defineProperty 递归劫持每个属性 getter/setter。缺点：① 对**新增/删除**属性无响应（需 Vue.set/delete）；② 数组需重写方法；③ 全量递归、初始化慢；④ 听不了 Map/Set。\n**Vue3**：用 **Proxy** 代理整个对象，天然支持增删、数组索引、Map/Set；**懒代理**（访问才代理深层），性能更好；配合 Reflect。\n组件 API：Vue3 主推 Composition API（setup），逻辑按功能聚合更易复用。"
+  },
+  {
+    "id": "vue002",
+    "module": "vue",
+    "q": "Vue3 中 ref 和 reactive 怎么选？",
+    "a": "都创建响应式。\n**ref**：可包装任意类型，`.value` 访问；模板自动解包；常用于基本类型或需整体替换。\n**reactive**：仅对象/数组，直接访问属性；**不能直接解构/展开**（会丢响应），要用 toRefs 转 ref。\n实践：基本类型/独立值用 ref；一组成员状态用 reactive；解构 reactive 必用 toRefs。"
+  },
+  {
+    "id": "vue003",
+    "module": "vue",
+    "q": "Vue 组件间通信方式有哪些？",
+    "a": "父子：props 下传 + emit 上发（v-model 是 :value+@input 语法糖，vue3 用 v-model:xxx）。\n跨层：provide/inject（祖先提供、后代注入，适合主题/用户）。\n全局：Vuex（vue2）或 Pinia（vue3 推荐，更轻、TS 友好、无 mutations）。\n其他：attrs 透传、$refs 调子方法、事件总线（mitt，不推荐大型项目）。\n注意 props 单向数据流，子不直接改父传对象。"
+  },
+  {
+    "id": "vue004",
+    "module": "vue",
+    "q": "Composition API 与 Options API 区别？",
+    "a": "**Options** data/methods/computed/mounted 按**选项类型**分块，易读但逻辑分散（一个功能散多处），复用靠 mixin（易命名冲突/来源不清）。\n**Composition** setup 里**按功能聚拢**变量与逻辑，复用靠**组合式函数 useX**（无冲突、类型好）。官方推荐 Composition；Options 适合小/老项目。注意 setup 中 this 不可用（用 ref/reactive）。"
+  },
+  {
+    "id": "vue005",
+    "module": "vue",
+    "q": "Vue3 生命周期？",
+    "a": "创建：**setup**（取代 beforeCreate/created）→ onBeforeMount → **onMounted**（DOM 就绪，发请求/初始化）。更新：**onBeforeUpdate** → **onUpdated**（避免里改响应式致死循环）。\n卸载：**onBeforeUnmount** → **onUnmounted**（**必清**定时器/监听/实例防泄漏）。缓存：onActivated/onDeactivated（keep-alive）。SSR 额外：onServerPrefetch。"
+  },
+  {
+    "id": "vue006",
+    "module": "vue",
+    "q": "v-if 与 v-show 区别？",
+    "a": "**v-if** **真条件渲染**，不满足不创建 DOM（销毁/重建），切换开销大、有过渡。**v-show** 始终渲染，**display:none** 切换显示，开销小、频繁切更优。\n实践：频繁切换用 v-show；极少切/权限控制用 v-if。v-if 与 v-for 同元素时 **v-if 优先级更低**（vue3 中 v-if 不访问 v-for 变量，应避免同用，用 computed 过滤）。"
+  },
+  {
+    "id": "vue007",
+    "module": "vue",
+    "q": "v-for 为什么需要 key？",
+    "a": "key 是 Vue **识别节点身份**的唯一标识，用于 Diff 复用。**有 key** 按 key 比对新旧，复用同 key 节点、移动而非重建，列表不乱。\n**无 key / 用 index** index 会变（删中间项后错位），易**状态错乱/性能差**。实践：用**稳定唯一 id** 做 key，绝不用 index（除非静态列表）。"
+  },
+  {
+    "id": "vue008",
+    "module": "vue",
+    "q": "Vue3 编译期优化（Patch Flag / hoist）？",
+    "a": "Vue3 模板编译器做的优化：① **Patch Flag** 编译时给动态节点打标（如 TEXT/CLASS），Diff 只比**有动态标记**的部分，跳过静态；② **静态提升 hoistStatic** 把静态节点/属性**提为常量**只建一次；\n③ **缓存事件**（cacheHandler）；④ **Block Tree** 收集动态子，跳过静态子树。→ 比 Vue2 快很多。"
+  },
+  {
+    "id": "vue009",
+    "module": "vue",
+    "q": "Teleport 和 Suspense 是什么？",
+    "a": "**Teleport** 把组件 DOM **传送到 body 等指定节点**（如弹窗/Toast 避免父 overflow 遮挡），逻辑仍在原组件。**Suspense** **异步组件/setup await** 的加载占位，#default 异步 + #fallback 兜底（vue3 实验性，SSR 稳）。\n用途：弹层用 Teleport；异步数据/代码分割用 Suspense 显示骨架。"
+  },
+  {
+    "id": "vue010",
+    "module": "vue",
+    "q": "computed 与 watch 区别？",
+    "a": "**computed** **派生状态**，依赖变才重算（**缓存**，无依赖不变），必须 return，适合“由别的状态算出来”。**watch** **监听变化做副作用**（请求/改 DOM），不 return，可异步，适合“变了要干嘛”。\n实践：显示用 computed（如全选）；副作用用 watch（如监听 id 发请求）。watch 有 immediate/deep（deep 监听对象开销大，改用具体属性）。"
+  },
+  {
+    "id": "vue011",
+    "module": "vue",
+    "q": "watchEffect 是什么？",
+    "a": "**watchEffect** 立即执行并**自动收集依赖**，依赖变就重跑（不需指定源），适合“依赖不明确”的副作用。对比 watch：watch 要显式写源+回调；watchEffect 自动追踪**回调内用到的响应式**。\n清理：返回函数（如取消监听）。停止：返回 stop()。注意：依赖收集基于同步读取，异步读不追踪。"
+  },
+  {
+    "id": "vue012",
+    "module": "vue",
+    "q": "自定义指令 directive 怎么写？",
+    "a": "封装**DOM 底层行为**（v-xxx）。\n**钩子签名**：`(el, binding, vnode, prevVnode)` —— 每个钩子都收到这 4 个参数。\n- `el`：绑定的真实 DOM 元素。\n- `binding`：指令信息对象，含 `value`（绑定值）、`oldValue`（旧值，updated 用）、`arg`（参数，如 v-dir:foo 的 foo）、`modifiers`（修饰符对象，如 v-dir.a.b）、`instance`（组件实例）、`name`、`rawName`。\n- `vnode` / `prevVnode`：当前/旧虚拟节点。\n**钩子**：created、beforeMount、mounted、beforeUpdate、updated、unmounted。例：v-focus（mounted 自动 `el.focus()`）、v-loading（插入遮罩）、v-permission（无权限移除节点）。\n**注册**：全局 `app.directive('x', { mounted(el,binding){...} })`；局部在组件 `directives` 选项 / `<script setup>` 内 `vX` 函数式声明。区别：指令只管 DOM 行为，组件管结构+逻辑。"
+  },
+  {
+    "id": "vue013",
+    "module": "vue",
+    "q": "keep-alive 作用？",
+    "a": "**<keep-alive>** 包裹动态组件，**缓存不活跃实例**（不销毁），切回时保状态/避免重渲染。钩子：onActivated（激活）、onDeactivated（停用）。控制：include/exclude/max（正则/名字，max 限缓存数 LRU）。\n用途：Tab 切换、列表→详情返回保滚动/表单。注意：缓存实例不触发 mounted，用 activated 代替。"
+  },
+  {
+    "id": "vue014",
+    "module": "vue",
+    "q": "Vue 的虚拟 DOM 与 Diff？",
+    "a": "用 **VNode**（JS 对象）描述 DOM，状态变生成新 VNode，与旧 Diff 出**最小补丁** patch 到真实 DOM，减少直接操作。\n**Vue2（snabbdom 系）Diff**：① 同节点才深比（patchVnode）；② 新旧同序列表用**双端比较**（头头/尾尾/头尾/尾头）+ key 复用；③ 静态节点借编译优化跳过；代价：超大列表仍重 → 虚拟滚动。\n**Vue3 Diff 升级**：在双端比较基础上，对乱序子节点求**最长递增子序列 LIS（Longest Increasing Subsequence）**，标记“无需移动”的节点，只把其余节点 move 到正确位置，**最小化 DOM 移动次数**（不重新创建）。\n**编译期配合**：Vue3 还有 **静态提升 hoistStatic / Block Tree / Patch Flag**，diff 时直接跳过静态子树，只比对动态节点——比 Vue2 全量递归快很多。\n实践：列表必给 **稳定 key**（勿用 index）；超大列表仍用虚拟滚动。"
+  },
+  {
+    "id": "vue015",
+    "module": "vue",
+    "q": "Pinia 与 Vuex 区别？",
+    "a": "**Pinia**（Vue3 官方推荐）无 **mutations**（直接 action 改/或 $patch）、**TS 友好**、类型推断好、无模块嵌套（用 store 组合）、代码量省、devtools 支持。\n**Vuex** state/getters/mutations/actions 四件套，mutations 必须同步（约束但繁琐），模块易命名空间复杂。迁移：新项目直接 Pinia；老项目 Vuex 仍可。"
+  },
+  {
+    "id": "vue016",
+    "module": "vue",
+    "q": "Vue 中 nextTick 原理？",
+    "a": "数据改了 DOM **不会立刻**更新（Vue 异步批量合并更新，同轮只渲染一次）。**nextTick(cb)** 把回调推入**微任务**（Promise.then / MutationObserver 降级），等 DOM 更新完再执行，从而拿到更新后 DOM。\n用途：改数据后立刻读 DOM（如聚焦、量高）。返回 Promise 可 await nextTick()。"
+  },
+  {
+    "id": "vue017",
+    "module": "vue",
+    "q": "Vue 插槽 slot 用法？",
+    "a": "父向子**传入模板片段**：① **默认插槽** <slot/>；② **具名插槽** <slot name=x/> + <template v-slot:header>（简写 #header）；③ **作用域插槽** 子把数据传回 <slot :row=item/>，父 #default={row} 用（列表组件常用）。\n用途：封装灵活组件（表格列自定义、卡片内容可配）。"
+  },
+  {
+    "id": "vue018",
+    "module": "vue",
+    "q": "Vue Router 守卫与懒加载？",
+    "a": "**守卫** 全局 beforeEach（登录鉴权/埋点）、beforeResolve、afterEach；路由独享 beforeEnter；组件内 onBeforeRouteLeave（离开确认）。**懒加载** () => import('./X.vue') 路由级分包，首屏只载当前页。\n**模式** history（需服务端 fallback，URL 干净）/ hash（#，无需服务端）。传参：params（不在 URL 刷新丢）/ query（在 URL）。"
+  },
+  {
+    "id": "vue019",
+    "module": "vue",
+    "q": "Vue3 项目性能优化点？",
+    "a": "① **代码分包**（路由懒加载）；② **v-show** 频繁切换；③ 大列表**虚拟滚动**（vue-virtual-scroller）；④ computed 缓存派生；⑤ 组件 **keep-alive** 缓存；⑥ 图片懒加载；⑦ **shallowRef/shallowReactive** 降深层响应开销；\n⑧ 大对象用 markRaw 跳过代理；⑨ 销毁清定时器/监听；⑩ 生产关 sourcemap/开压缩。"
+  },
+  {
+    "id": "vue020",
+    "module": "vue",
+    "q": "Vue 3 的响应式原理是什么？与 Vue 2 有什么区别？",
+    "a": "**简要回答**\n\nVue 3 使用 Proxy 实现响应式，相比 Vue 2 的 `Object.defineProperty`，在性能、能力和可维护性上均有大幅提升。\n\n**拆解说明**\n\n**Vue 3 的响应式核心机制：**\n\n1. 使用 Proxy 拦截对象的 `get/set` 操作\n2. `track()` 函数收集依赖（在 getter 中）\n3. `trigger()` 函数触发更新（在 setter 中）\n4. `ReactiveEffect` 类统一管理副作用函数\n\n**与 Vue 2 的区别：**\n\n| 特性 | Vue 2 | Vue 3 |\n|-|-|-|\n| 基础机制 | `Object.defineProperty` | `Proxy` |\n| 支持新增/删除属性 | 否 | 是 |\n| 支持数组索引 | 否（需重写原型） | 是 |\n| 嵌套代理 | 手动递归 | 懒加载递归代理 |\n| 性能表现 | 初始化时递归全对象 | 按需代理，性能更优 |\n\n**常见追问**"
+  },
+  {
+    "id": "vue021",
+    "module": "vue",
+    "q": "*Q: 为什么不用 `Object.defineProperty`？",
+    "a": "因为它有以下局限：\n\n- 无法监听新增/删除属性\n- 不支持数组索引变化\n- 必须递归遍历所有嵌套属性\n- 性能和维护成本高\n\nProxy 则可拦截对象的所有操作，是更现代的选择。\n\n---"
+  },
+  {
+    "id": "vue022",
+    "module": "vue",
+    "q": "ref 和 reactive 有什么区别？",
+    "a": "**简要回答**\n\nref 适合基本类型，reactive 用于对象和数组。ref 返回 `.value` 包裹的数据，reactive 返回 Proxy。\n\n**拆解说明**\n\n**ref：**\n\n- 用于基本类型（string、number 等）\n- 返回 RefImpl 对象，访问时需 `.value`\n- 模板中自动解包\n- 包装对象时会递归调用 reactive\n\n**reactive：**\n\n- 用于引用类型（对象、数组）\n- 返回 Proxy，直接访问属性即可\n- 是深度响应式，嵌套对象也响应\n- 无法直接替换整个对象，否则会失去响应性\n\n**示例代码**\n\n```JavaScript\nimport { ref, reactive } from 'vue'\n\nconst count = ref(0)\nconst user = reactive({ name: 'John', age: 25 })\n\nconst update = () => {\n  count.value++        // ref 需要 .value\n  user.name = 'Jane'   // reactive 直接访问\n}\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue023",
+    "module": "vue",
+    "q": "*Q: 为什么有时候对象也用 ref？",
+    "a": "以下场景推荐使用 ref 包装对象：\n\n- 需要整体替换对象：`user.value = newUser`\n- 和第三方库交互\n- 需要接口统一\n\n---"
+  },
+  {
+    "id": "vue024",
+    "module": "vue",
+    "q": "Vue 的响应式更新是同步还是异步的？",
+    "a": "**简要回答**\n\nVue 的响应式更新是异步的，采用微任务队列进行 DOM 批量更新。\n\n**拆解说明**\n\n**更新流程：**\n\n1. 修改响应式数据 → 触发 setter → 收集 effect\n2. effect 被放入更新队列\n3. DOM 更新合并执行\n4. 下一事件循环中统一刷新 DOM\n\n**异步更新优势：**\n\n- 合并多次数据变动\n- 减少渲染次数，提升性能\n- 避免中间状态被渲染\n\n**示例代码**\n\n```JavaScript\nimport { ref, nextTick } from 'vue'\n\nconst count = ref(0)\n\nconst update = async () => {\n  count.value = 1\n  count.value = 2\n  count.value = 3\n\n  console.log(document.querySelector('#count').textContent) // 仍是旧值\n  await nextTick()\n  console.log(document.querySelector('#count').textContent) // 此时更新完毕\n}\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue025",
+    "module": "vue",
+    "q": "*Q: nextTick 的原理是什么？",
+    "a": "Vue 内部优先使用微任务调度（如 Promise.then），回退方案依次为：\n\n- MutationObserver\n- setImmediate\n- setTimeout\n\nnextTick 本质是把回调放到 DOM 更新之后的微任务队列中执行。\n\n---\n\n**二、Composition API 类**"
+  },
+  {
+    "id": "vue026",
+    "module": "vue",
+    "q": "`setup` 函数的作用是什么？它与 `data`、`methods` 等选项有什么关系？",
+    "a": "**简要回答**\n\n`setup` 是 Composition API 的入口，用于整合和组织组件的逻辑。它在组件实例创建前执行，并取代了 Vue 2 中的 `data`、`methods`、`computed` 等选项。\n\n**拆解说明**\n\n**`setup` 的核心职责：**\n\n1. **逻辑组织中心**：在 `setup` 内部声明响应式状态、计算属性、侦听器和生命周期钩子。\n2. **执行时机**：在 `props` 被解析后、组件实例创建前执行。此时 `this` 还不是组件实例。\n3. **参数**：接收两个参数：`props`（响应式的，不能解构）和 `context`（包含 `attrs`, `slots`, `emit`）。\n4. **返回值**：返回一个对象，该对象中的属性和方法会暴露给模板和组件的其他部分。\n\n**与 Options API 的关系：**\n\n`setup` 旨在取代 Options API 中分散的逻辑。一个 `setup` 函数可以完成过去需要 `data()`、`methods`、`computed`、`watch` 和生命周期钩子多个选项才能完成的工作，让相关逻辑更内聚。\n\n**示例代码**\n\n```JavaScript\nimport { ref, computed, onMounted } from 'vue'\n\nexport default {\n  props: {\n    initialValue: {\n      type: Number,\n      default: 0\n    }\n  },\n  setup(props, { emit }) {\n    // 1. 状态 (等同于 data)\n    const count = ref(props.initialValue)\n\n    // 2. 计算属性 (等同于 computed)\n    const doubleCount = computed(() => count.value * 2)\n\n    // 3. 方法 (等同于 methods)\n    const increment = () => {\n      count.value++\n      emit('change', count.value)\n    }\n\n    // 4. 生命周期钩子 (等同于 mounted)\n    onMounted(() => {\n      console.log('Component is mounted!')\n    })\n\n    // 暴露给模板\n    return {\n      count,\n      doubleCount,\n      increment\n    }\n  }\n}\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue027",
+    "module": "vue",
+    "q": "*Q: `setup` 里的 `this` 是什么？",
+    "a": "在 `setup` 函数执行期间，`this` 是 `undefined`。这是为了避免与 Options API 的 `this` 指向组件实例的行为混淆。所有需要的功能都通过 `props` 和 `context` 参数提供。\n\n---"
+  },
+  {
+    "id": "vue028",
+    "module": "vue",
+    "q": "`watch` 和 `watchEffect` 有什么区别？",
+    "a": "**简要回答**\n\n`watch` 需要明确指定侦听的数据源，更具体；`watchEffect` 会自动追踪其回调函数中使用的响应式依赖，更智能。\n\n**拆解说明**\n\n| 特性 | `watch` | `watchEffect` |\n|-|-|-|\n| **依赖追踪** | 手动指定，需明确传入要侦听的 ref 或 reactive 对象 | 自动追踪，无需指定，函数体内用到的依赖都会被追踪 |\n| **首次执行** | 默认懒执行（lazy），仅在数据变化时执行。可配置 `immediate: true` | 立即执行一次，然后当依赖变化时再次执行 |\n| **回调参数** | 可以访问新值和旧值 (`(newValue, oldValue) => ...`) | 无法访问旧值，只在新值变化时重新运行整个函数 |\n| **使用场景** | 当你只想在特定数据变化时执行某个操作（如网络请求） | 当一个副作用依赖多个数据源，或需要立即执行时 |\n\n**示例代码**\n\n```JavaScript\nimport { ref, watch, watchEffect } from 'vue'\n\nconst userId = ref(1)\nconst userInfo = ref(null)\n\n// --- watch 示例 ---\n// 明确侦听 userId 的变化，并在变化时执行操作\nwatch(userId, async (newId, oldId) => {\n  console.log(`User ID changed from ${oldId} to ${newId}`)\n  // userInfo.value = await fetchUser(newId) // 根据 ID 获取新用户数据\n})\n\n// --- watchEffect 示例 ---\n// 自动依赖 userId，会立即执行一次，之后每当 userId 变化都会再次执行\nwatchEffect(() => {\n  console.log(`Current User ID is: ${userId.value}`)\n  // 这个函数会立即运行，打印 \"Current User ID is: 1\"\n})\n\nconst changeUser = () => {\n  userId.value++\n}\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue029",
+    "module": "vue",
+    "q": "*Q: 应该优先选择哪个？",
+    "a": "- 当副作用与某个数据源强相关，且需要访问旧值时，优先用 `watch`。\n- 当副作用依赖多个响应式数据，且逻辑简单直观时，`watchEffect` 更简洁。\n- 需要停止侦听时，两者都会返回一个 `stop` 函数，调用它即可停止。\n\n---\n\n**三、生命周期类**"
+  },
+  {
+    "id": "vue030",
+    "module": "vue",
+    "q": "Vue 3 的生命周期钩子有哪些？与 Vue 2 相比有什么变化？",
+    "a": "**简要回答**\n\nVue 3 的生命周期钩子在 Composition API 中使用，名称上基本是 Vue 2 钩子加上 `on` 前缀。最大的变化是 `beforeCreate` 和 `created` 被 `setup` 函数本身所取代。\n\n**拆解说明**\n\n**Vue 3 (Composition API) vs Vue 2 (Options API) 钩子映射：**\n\n| Vue 2 选项 | Vue 3 (在 `setup` 中使用) | 描述 |\n|-|-|-|\n| `beforeCreate` | `setup()` | 组件实例创建前，`setup` 是入口 |\n| `created` | `setup()` | 组件实例创建后，逻辑在 `setup` 中完成 |\n| `beforeMount` | `onBeforeMount` | DOM 挂载前 |\n| `mounted` | `onMounted` | DOM 挂载后 |\n| `beforeUpdate` | `onBeforeUpdate` | DOM 更新前 |\n| `updated` | `onUpdated` | DOM 更新后 |\n| `beforeDestroy` | `onBeforeUnmount` | 组件实例销毁前 |\n| `destroyed` | `onUnmounted` | 组件实例销毁后 |\n| `errorCaptured` | `onErrorCaptured` | 捕获子孙组件错误时调用 |\n\n**新增的调试钩子：**\n\n- `onRenderTracked`: 跟踪虚拟 DOM 重新渲染时收集的依赖。\n- `onRenderTriggered`: 跟踪触发虚拟 DOM 重新渲染的事件。\n\n**示例代码**\n\n```JavaScript\nimport { onMounted, onUpdated, onUnmounted } from 'vue'\n\nexport default {\n  setup() {\n    onMounted(() => {\n      console.log('组件已挂载')\n    })\n\n    onUpdated(() => {\n      console.log('组件已更新')\n    })\n\n    onUnmounted(() => {\n      console.log('组件已卸载')\n      // 在这里清理副作用，如定时器、事件监听等\n    })\n  }\n}\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue031",
+    "module": "vue",
+    "q": "*Q: 为什么不再需要 `beforeCreate` 和 `created`？",
+    "a": "因为 `setup` 函数的执行时机覆盖了这两个钩子的功能。`setup` 在 `props` 解析之后、组件实例创建之前执行，所有需要在 `created` 中完成的数据初始化和响应式设置，都可以在 `setup` 中直接完成，使其更为直观和统一。\n\n---\n\n**四、组件通信类**"
+  },
+  {
+    "id": "vue032",
+    "module": "vue",
+    "q": "Vue 3 中有哪些主要的组件通信方式？",
+    "a": "**简要回答**\n\nVue 3 的核心通信方式包括：`props` / `emit`、`provide` / `inject`、`v-model`、以及通过 `ref` 和 `defineExpose` 实现的父子组件直接访问。对于复杂场景，则推荐使用 Pinia 等全局状态管理库。\n\n**拆解说明**\n\n**1. `props`** / `emit`**（父 -> 子，子 -> 父）**\n\n- **`props`**: 父组件向子组件传递数据，是单向数据流。\n- **`emit`**: 子组件通过触发事件向父组件发送消息。Vue 3 推荐在组件中使用 `emits` 选项来显式声明它会触发哪些事件，这有助于代码的可读性和维护性。\n\n**2. `provide`** / `inject`**（祖先 -> 后代）**\n\n- 用于跨越多层级的组件通信，避免“属性透传”（Prop Drilling）。\n- 祖先组件通过 `provide()` 提供数据或方法，任何后代组件都可以通过 `inject()` 来注入并使用它们。\n- **注意**：`provide` 的数据默认不是响应式的，除非你提供的是一个 ref 或 reactive 对象。\n\n**3.** `v-model`**（双向绑定语法糖）**\n\n- 在 Vue 3 中，组件上的 `v-model` 被简化了。它等价于传递一个 `modelValue` prop 并监听一个 `update:modelValue` 事件。\n- Vue 3 还支持在单个组件上使用多个 `v-model`，例如 `v-model:title` 和 `v-model:content`。\n\n**4. `ref`** / `defineExpose`**（父 -> 子）**\n\n- 父组件可以通过模板 `ref` 获取子组件的实例。\n- 默认情况下，子组件的 `setup` 是私有的。子组件必须使用 `defineExpose` 宏来明确暴露希望父组件访问的属性或方法。\n\n**5. 全局状态管理（Pinia / Vuex）**\n\n- 对于非父子关系、跨多个组件共享的状态，使用 Pinia（Vue 官方推荐）或 Vuex 是最佳实践。\n- 它们提供了一个集中的、可预测的状态存储，并与 Vue Devtools 深度集成。\n\n**示例代码**\n\n```HTML\n<!-- Parent.vue -->\n<template>\n  <Child\n    :message=\"parentMsg\"\n    @response=\"handleResponse\"\n    v-model:name=\"userName\"\n    ref=\"childRef\"\n  />\n  <p>Received from child: {{ childResponse }}</p>\n  <p>User name from child: {{ userName }}</p>\n  <button @click=\"callChildMethod\">Call Child</button>\n</template>\n\n<script setup>\nimport { ref } from 'vue'\nimport Child from './Child.vue'\n\nconst parentMsg = ref('Hello from Parent')\nconst childResponse = ref('')\nconst userName = ref('John')\nconst childRef = ref(null)\n\nconst handleResponse = (msg) => {\n  childResponse.value = msg\n}\n\nconst callChildMethod = () => {\n  childRef.value.sayHi() // 调用子组件暴露的方法\n}\n</script>\n```\n\n```HTML\n<!-- Child.vue -->\n<template>\n  <p>{{ message }}</p>\n  <button @click=\"$emit('response', 'Hi from Child')\">Send Msg</button>\n  <input :value=\"name\" @input=\"$emit('update:name', $event.target.value)\" />\n</template>\n\n<script setup>\nimport { defineProps, defineEmits, defineExpose } from 'vue'\n\ndefineProps({\n  message: String,\n  name: String\n})\n\ndefineEmits(['response', 'update:name'])\n\nconst sayHi = () => {\n  alert('Hi!')\n}\n\n// 暴露方法给父组件\ndefineExpose({\n  sayHi\n})\n</script>\n```\n\n**常见追问**"
+  },
+  {
+    "id": "vue033",
+    "module": "vue",
+    "q": "*Q: `provide/inject` 和 Pinia/Vuex 有什么区别和适用场景？",
+    "a": "- **`provide/inject`**：是轻量级的、针对特定组件树的依赖注入方案。它适用于在一个明确的“分支”下传递数据，例如一个表单组件库向其内部的输入框、按钮等组件提供统一的主题或配置。它不适合做真正的全局状态管理。\n- **Pinia/Vuex**：是重量级的、应用级别的全局状态管理方案。它们提供集中的 Store、State、Getter、Action，并支持 Devtools 调试，适用于需要跨页面、跨业务模块共享的数据，如用户信息、购物车等。\n\n---\n\n**五、性能优化类**"
+  },
+  {
+    "id": "vue034",
+    "module": "vue",
+    "q": "Vue 3 相比 Vue 2 在性能上做了哪些核心优化？",
+    "a": "**简要回答**\n\nVue 3 的性能优化是革命性的，主要得益于**编译时优化**（静态树提升、补丁标志）和**更高效的响应式系**\\*（Proxy）。这使得初始渲染更快、更新性能更强、内存占用更少。\n\n**拆解说明**\n\n**1. 编译时优化 (Compiler-Informed Virtual DOM)**\n\n- **Patch Flags (补丁标志)**：Vue 3 的编译器在分析模板时，会为动态节点（如带有 `v-bind`、`v-on` 或插值的元素）添加一个数字“标志”（Patch Flag）。在更新时，渲染器只需查看这个标志，就知道这个节点具体哪部分可能改变（例如，是文本内容、class 还是 style），从而跳过对不相关属性的比较。这极大地减少了 Virtual DOM diff 的工作量。\n\n  - *例如：*`<div :class=\"cls\">{{ text }}</div>` 会被标记为需要检查 *`CLASS`* 和 `TEXT`*。*\n- **Static Tree Hoisting (静态树提升)**：对于模板中完全静态的内容（没有任何绑定的元素和节点），编译器会将其提升到渲染函数之外。这意味着这些静态部分只会在应用启动时被创建一次，并在后续的所有渲染中被复用。这大大减少了不必要的虚拟节点创建和内存消耗。\n- **Event Listener Caching (事件监听器缓存)**：默认情况下，如果一个事件监听器没有动态绑定（例如 `@click=\"handler\"` 而不是 `@click=\"dynamic[handler]\"`），它会被缓存起来。这避免了在每次组件更新时都重新创建一个新的函数，降低了内存压力和垃圾回收的频率。\n\n**2. 基于 Proxy 的响应式系统**\n\n- 如前所述，Proxy 解决了 `Object.defineProperty` 的诸多限制。从性能角度看，`Proxy` 是懒代理的，它只在属性被访问时才进行代理，而不是在初始化时就递归遍历整个对象，这使得大型复杂对象的初始化速度更快。\n\n**常见追问:**"
+  },
+  {
+    "id": "vue035",
+    "module": "vue",
+    "q": "*Q: 你能详细解释一下“静态树提升”吗？它解决了什么问题？",
+    "a": "“静态树提升”解决的是在每次组件渲染时重复创建静态 VNode（虚拟节点）的性能浪费问题。\n\n在 Vue 2 中，无论一个元素是否会改变，每次组件的 `render` 函数执行时，它对应的 VNode 都会被重新创建一遍。\n\n在 Vue 3 中，编译器足够智能，可以识别出像 `<div>Hello World</div>` 或带有静态 `class` 和 `id` 的元素。它会将这些节点的创建代码从 `render` 函数中“提升”出去，变成一个在外部定义的常量。`render` 函数执行时，直接引用这个预先创建好的常量即可。\n\n**这样做的好处是：**\n\n1. **减少内存分配**：避免了重复创建相同的 VNode 对象。\n2. **加快渲染速度**：跳过了对这些静态节点的 diff 过程。\n\n---"
+  },
+  {
+    "id": "vue036",
+    "module": "vue",
+    "q": "在日常 Vue 3 开发中，有哪些常用的性能优化技巧？",
+    "a": "**简要回答**\n\n常用的性能优化技巧包括：通过 `v-if` vs `v-show` 控制渲染成本、使用 `v-memo` 减少不必要的更新、通过虚拟列表优化长列表、利用 `defineAsyncComponent` 进行组件懒加载，以及合理利用 `computed` 缓存计算结果。\n\n**拆解说明**\n\n**1. 合理使用 `v-if`** 和 **`v-show`**\n\n- **`v-if`**: 是“真正的”条件渲染，它会确保在切换过程中条件块内的事件监听器和子组件被适当地销毁和重建。它的**切换开销更高**。\n- **`v-show`**: 只是简单地切换元素的 CSS `display` 属性。它的**初始渲染开销更高**。\n- **选择**：如果需要频繁地切换，使用 `v-show`；如果运行时条件很少改变，使用 `v-if`。\n\n**2. 使用 `v-memo` 指令**\n\n- 这是一个性能指令，可以用来“记忆”模板的一部分。如果 `v-memo` 的依赖项数组中的值没有发生变化，Vue 将跳过对该 VNode 及其整个子树的更新。\n- 它非常适合优化那些渲染成本高但不经常变化的大列表或复杂节点。\n\n```HTML\n<div v-memo=\"[item.id === selectedId]\">\n  <p>{{ item.name }}</p>\n  <!-- 更多复杂的子节点 -->\n</div>\n```\n\n*在这个例子中，只有当 `item.id === selectedId`* 的结果改变时，这个 *`div` 及其子节点才会重新渲染。*\n\n**3. 虚拟滚动/虚拟列表**\n\n- 当渲染包含成千上万条数据的长列表时，一次性渲染所有 DOM 节点会导致严重的性能问题。\n- 应该使用虚拟列表技术，它只渲染视口中可见的一小部分项目。可以使用现成的库，如 `vue-virtual-scroller`。\n\n**4. 组件懒加载 (Code Splitting)**\n\n- 对于大型应用，可以将应用拆分成多个小代码块（chunks），只在需要时才从服务器加载。\n- Vue Router 与 `defineAsyncComponent` 结合使用是实现按路由懒加载的最佳方式。\n\n```JavaScript\nimport { createRouter, createWebHistory } from 'vue-router'\nimport { defineAsyncComponent } from 'vue'\n\nconst router = createRouter({\n  history: createWebHistory(),\n  routes: [\n    {\n      path: '/profile',\n      // Profile 组件及其依赖只有在用户访问 /profile 时才会被加载\n      component: defineAsyncComponent(() => import('./views/Profile.vue'))\n    }\n  ]\n})\n```\n\n**5. 其他技巧**\n\n- **使用** `KeepAlive`：缓存非活动组件的实例，而不是销毁它们，以便在来回切换时保持它们的状态并避免重新渲染。\n- **优化** `computed`：对于复杂的、计算成本高的操作，优先使用 `computed`，因为它会缓存结果，只有在依赖变化时才重新计算。\n\n---\n\n**六、对比分析类**"
+  },
+  {
+    "id": "vue037",
+    "module": "vue",
+    "q": "Vue 3 与 React 在核心思想和实现上有哪些异同？",
+    "a": "**简要回答**\n\nVue 3 和 React 都是顶级的现代前端框架，它们都采用组件化和虚拟 DOM 的思想。其核心区别在于**响应式系统的实现方式**和**视图层的表达方式**。Vue 使用模板和自动化的响应式追踪，追求开发的便利性和低心智负担；而 React 使用 JSX 和显式的状态更新，追求函数的纯粹性和更灵活的 JavaScript 控制力。\n\n**拆解说明**\n\n| 对比维度 | Vue 3 | React |\n|-|-|-|\n| **响应式实现** | **自动化追踪**：通过 `Proxy` (`ref`, `reactive`) 自动拦截数据读写，自动收集和触发依赖。开发者无需手动声明依赖。 | **手动显式更新**：通过 `useState`, `useReducer` 等 Hooks，调用 `setState` 函数来手动触发组件的重新渲染。 |\n| **视图层 (View)** | **HTML 模板 (**`.vue` 文件)：语法更接近原生 HTML，对设计师和初学者友好，实现了关注点分离 (HTML/CSS/JS)。 | **JSX (JavaScript XML)**：将 HTML 结构直接写在 JavaScript 中，提供了完整的 JavaScript 编程能力，更加灵活。 |\n| **API 设计风格** | **渐进式框架**：提供 Options API 和 Composition API 两种风格，既可以像传统方式一样简单上手，也可以组织大型复杂应用。 | **函数式编程**：自 Hooks 推出后，全面拥抱函数式组件，强调不可变性和纯函数。有明确的规则（如 Hooks 只能在顶层调用）。 |\n| **性能优化策略** | **编译时优化**：通过静态树提升、补丁标志等技术，在编译阶段分析模板，最大限度地减少运行时 diff 的开销。 | **运行时优化**：主要依赖开发者通过 `useMemo`, `useCallback` 等 Hooks 手动进行优化，以避免不必要的计算和子组件重渲染。 |\n| **生态系统** | **官方维护**：核心库（如 Vue Router, Pinia）由官方团队维护，风格统一，整合度高，提供“全家桶”式的开发体验。 | **社区驱动**：生态更庞大，解决方案更多样化。路由、状态管理等有多种流行的社区库可供选择，给予开发者更多自由度。 |\n\n**常见追问**"
+  },
+  {
+    "id": "vue038",
+    "module": "vue",
+    "q": "*Q: 你认为哪种响应式模型更好？",
+    "a": "这个问题没有绝对答案，重在展现你的理解深度。\n\n- **Vue 的优势在于简洁和高效**。它的自动追踪机制减少了样板代码，开发者可以专注于业务逻辑，心智负担较低。对于大多数场景，这种“智能”的系统非常高效。\n- **React 的优势在于显式和可预测**。每一次状态更新都由开发者明确触发，数据流向清晰，更容易调试和推理复杂的交互逻辑。这种明确性在大规模、高复杂度的应用中可能更受欢迎。\n-\n\n**总结：** 可以说 Vue 提供了“恰到好处的魔法”，而 React 提供了“完全的控制权”。选择哪个取决于团队的技术栈偏好、项目复杂度和对开发体验的追求。\n\n---"
+  },
+  {
+    "id": "vue039",
+    "module": "vue",
+    "q": "Vue 3 Composition API 相比 Options API 好在哪？逻辑复用怎么做？",
+    "a": "**简要回答：**\nComposition API 用**函数**组织逻辑，解决 Options API「同一功能的代码被 scattered 在 data/computed/methods 多个选项里」的问题，让**相关逻辑聚合、跨组件复用更自然**。\n\n**拆解：**\n- Options API：按「选项类型」分组，功能一多就来回跳；mixins 复用有命名冲突、来源不清晰。\n- Composition API：按「功能」分组，`setup()` 里把 ref/reactive/computed/watch 写在一起；复用抽成**组合式函数（composable）**，如 `useUser()`。\n- `<script setup>` 是语法糖，不用手写 `setup()` 返回，类型推导更好。\n\n**示例（composable 复用）：**\n```\n// useCounter.js\nexport function useCounter(){\n  const n = ref(0);\n  const inc = () => n.value++;\n  return { n, inc };\n}\n```\n**追问：** 两者能混用吗？（能，但同组件建议统一风格。）"
+  },
+  {
+    "id": "vue040",
+    "module": "vue",
+    "q": "Vue 3 的编译时优化（静态提升 / Patch Flags / Block Tree）原理？",
+    "a": "**简要回答：**\nVue 3 在**编译阶段**就分析模板，把「不会变的东西」提升出去、给「会变的东西」打标记，运行时 diff 只比对动态部分，性能大幅优于 Vue 2 的全量比对。\n\n**拆解：**\n- **静态提升（hoistStatic）**：静态节点/属性只创建一次，渲染时直接复用，不进虚拟 DOM 比对。\n- **Patch Flags**：编译时给动态节点打标志（如 TEXT=1, CLASS=2, PROPS=8），运行时 `patch` 只按 flag 更新对应内容。\n- **Block Tree**：把模板按「动态节点」切成 block，diff 时跳过整块静态内容，只遍历动态子节点数组。\n- **缓存事件处理**：`@click=\"foo\"` 这种静态函数引用被缓存，避免每次重建。\n\n**追问：** 为什么 Patch Flags 比 Vue 2 快？（Vue 2 要递归比整棵 VNode；Vue 3 直奔动态节点。）"
+  },
+  {
+    "id": "vue041",
+    "module": "vue",
+    "q": "<script setup> 相比普通 <script> 有什么优势？",
+    "a": "**简要回答：**\n`<script setup>` 是编译时语法糖，写在里面的顶层绑定**自动暴露给模板**，不用 `return`，代码更短、TS 推导更好、作用域更干净。\n\n**拆解：**\n- 普通 `<script>`：要 `export default { setup(){ ... return {...} }}` 手动返回才能用。\n- `<script setup>`：顶层变量/函数直接进模板；`import` 的组件直接用，不用 `components` 注册；`defineProps`/`defineEmits` 编译器宏免引入。\n- 编译后其实是把顶层声明收集进 `setup()` 返回，运行无额外成本。\n- 还可配普通 `<script>` 写 `name`、选项式配置（不能同时有俩 setup）。\n\n**示例：**\n```\n<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);            // 模板直接用 {{ count }}\nconst props = defineProps({ id: String });\n</script>\n```\n**追问：** 怎么给组件命名？（并列写普通 `<script> export default { name:'X' }</script>`。）"
+  },
+  {
+    "id": "vue042",
+    "module": "vue",
+    "q": "Vue 3 依赖收集与触发更新（track / trigger / effect）的细节？",
+    "a": "**简要回答：**\nVue 3 用 **Proxy** 拦截响应式对象，组件渲染时读取属性会「收集依赖」（track），属性被改写时「触发更新」（trigger），精准通知用到它的副作用（组件/effect）重跑。\n\n**拆解：**\n- **reactive**：Proxy 包裹对象，get 时 `track(target, key)` 把「当前活跃 effect」记进 dep（Set）；set 时 `trigger` 取出 dep 里的 effect 执行。\n- **ref**：本质是 `{ value }` 的响应式，模板里自动 `.value` 脱壳。\n- **effect / watchEffect**：执行时把自己设为「活跃 effect」，跑一遍回调即完成收集。\n- 相比 Vue 2 的 `Object.defineProperty`：Proxy 能监听新增/删除属性、数组索引、Map/Set，且是**懒代理**（用到才代理深层）。\n\n**追问：** 为什么 Vue 3 响应式是「懒」的？（访问嵌套对象才对其 Proxy，省内存。）"
+  },
+  {
+    "id": "vue043",
+    "module": "vue",
+    "q": "Vue 3 的 Teleport 和 Suspense 分别解决什么问题？",
+    "a": "**简要回答：**\n- **Teleport**：把组件内部 DOM「传送到」body 下指定容器，解决**嵌套层级导致的 z-index/overflow 溢出**问题（弹窗、Toast、抽屉）。\n- **Suspense**：在「异步组件/setup 里 await」加载完成前显示 fallback 占位，统一处理异步 UI 的等待态。\n\n**拆解：**\n- Teleport 组件本身仍在原逻辑树（props/事件正常），只是 DOM 落点变了。\n- Suspense 包住 `<AsyncComp/>`，`#default` 是异步内容，`#fallback` 是加载中；多个异步会等全部就绪。\n\n**示例：**\n```\n<Teleport to=\"body\"><Modal v-if=\"show\"/></Teleport>\n<Suspense><template #default><AsyncUser/></template>\n  <template #fallback>加载中…</template></Suspense>\n```\n**追问：** Teleport 到 body 后样式隔离怎么做？（用全局/scoped + 深度选择器或 :global。）"
+  }
 ]

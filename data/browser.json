@@ -1,296 +1,314 @@
 [
- {
-  "id": "browser001",
-  "module": "browser",
-  "q": "重排(reflow)与重绘(repaint)区别？",
-  "a": "**重排 Reflow**：几何属性变（宽高/位置/增删节点）→ 浏览器重算布局，开销大。\n**重绘 Repaint**：仅外观变（color/visibility）→ 跳过布局直接画。触发重排必重绘。\n优化：① 用 transform/opacity 走 GPU 合成层，避免重排；② 读写分离防布局抖动；③ 批量改样式（加 class）；④ 离屏操作用 DocumentFragment；⑤ 动画加 will-change。"
- },
- {
-  "id": "browser002",
-  "module": "browser",
-  "q": "防抖(debounce)和节流(throttle)区别？",
-  "a": "**防抖 debounce**：触发后等 N 秒**无新触发**才执行；期间又触发则重新计时。适用搜索输入、resize 结束、防重复提交。\n**节流 throttle**：每 N 秒**最多执行一次**，固定节奏。适用 scroll、mousemove、拖拽。\n实现：防抖用定时器清除重设；节流用时间戳或定时器（首尾都触发用时间戳+定时器组合）。"
- },
- {
-  "id": "browser003",
-  "module": "browser",
-  "q": "首屏加载如何优化？",
-  "a": "目标：尽快看到可交互内容。\n路由级：路由懒加载（import()）、组件按需。\n资源：图片懒加载（loading=lazy / IntersectionObserver）、WebP、CDN、gzip/brotli、HTTP 缓存。\n渲染：关键 CSS 内联、非关键 JS 用 defer、preconnect 预连接、骨架屏、减少长任务（Web Worker）、SSR/预渲染。"
- },
- {
-  "id": "browser004",
-  "module": "browser",
-  "q": "浏览器渲染主流程？",
-  "a": "① **解析** HTML → DOM 树，CSS → CSSOM；② 合并成 **Render Tree**（只含可见节点）；③ **Layout/Reflow** 算几何位置；④ **Paint** 转绘制指令；⑤ **Composite** 分层合成送 GPU。\nJS 会阻塞解析（放底部/defer/async）。改动几何走 2-4，改外观走 4，transform/opacity 仅 5（合成层，最快）。"
- },
- {
-  "id": "browser005",
-  "module": "browser",
-  "q": "输入 URL 到页面显示全过程？",
-  "a": "① DNS 解析域名 → IP（缓存→本地→根→顶级→权威）；② **TCP 三次握手**建连；③ 发 **HTTP 请求**；④ 服务器响应（可能重定向/304）；⑤ 浏览器**解析渲染**；⑥ 加载子资源（并行受限 6 个/域）；⑦ **TCP 四次挥手**断开（HTTP1.1 keep-alive 复用）。HTTPS 多了 TLS 握手。"
- },
- {
-  "id": "browser006",
-  "module": "browser",
-  "q": "强缓存与协商缓存区别？",
-  "a": "**强缓存** 未过期直接读本地，**不请求**服务器。头：Expires（时间）/ **Cache-Control: max-age**（优先级高，相对秒）。\n**协商缓存** 过期后带**校验字段**问服务器是否变。ETag（内容哈希，精确）/ **Last-Modified**（时间，精度秒、可能误判）。304 = 未变用缓存；200 = 新内容。流程：强缓存优先，过期走协商。"
- },
- {
-  "id": "browser007",
-  "module": "browser",
-  "q": "常见 HTTP 缓存响应头？",
-  "a": "**Cache-Control**：max-age（秒）、no-cache（走协商）、no-store（不缓存）、public/private、must-revalidate。**Expires** 绝对时间（HTTP1，已被 max-age 取代）。\n**ETag** / **If-None-Match** 内容校验（配对用）。**Last-Modified** / **If-Modified-Since** 时间校验。实践：静态资源加 hash + 长缓存（max-age=1y, immutable）；HTML 用 no-cache。"
- },
- {
-  "id": "browser008",
-  "module": "browser",
-  "q": "前端内存泄漏常见原因？",
-  "a": "① **意外的全局变量**（未声明变量）；② 闭包**长期持有大对象**；③ **未清理的定时器** setInterval；④ 遗忘的 **事件监听** addEventListener 没 removeEventListener；\n⑤ **DOM 引用**未置 null（remove 后 JS 还持有）；⑥ 遗忘的 **ECharts/Three 实例**没 dispose；⑦ 第三方库订阅。排查：Chrome DevTools **Memory** 快照对比。"
- },
- {
-  "id": "browser009",
-  "module": "browser",
-  "q": "Web Worker 是什么？",
-  "a": "在**后台线程**跑 JS，**不阻塞主线程**（UI 流畅）。限制：① **无 DOM/Window**（不能操作页面）；② 通过 **postMessage** 与主线程通信（结构化克隆传数据）；③ 同源；④ 引入脚本用 importScripts。\n用途：大计算（加密/解析/排序）、图片处理。注：密集任务优先 Worker；小任务用 rAF 分片即可。"
- },
- {
-  "id": "browser010",
-  "module": "browser",
-  "q": "Service Worker 作用？",
-  "a": "运行在**浏览器与网络间**的代理脚本（独立线程），**离线缓存**核心。能力：① 拦截 fetch，缓存静态资源 → 离线可用（PWA）；② 推送通知；③ 后台同步。\n特点：HTTPS、生命周期（install/activate）、**无 DOM**、用 Cache API。注：与 Web Worker 不同（SW 持久、可离线）；调试用 Chrome Application 面板。"
- },
- {
-  "id": "browser011",
-  "module": "browser",
-  "q": "同源策略限制了什么？",
-  "a": "同源 = **协议+域名+端口**全同。限制：① 一个源的 JS **不能读**另一源的 DOM/Cookie；② **不能发**跨域 AJAX（除非 CORS）；③ 不能拿 localStorage。\n允许：img/script/link 等**标签**引用跨域资源（但读不到内容）。目的：防 XSS/CSRF 跨站数据窃取。跨域方案：CORS、postMessage、代理。"
- },
- {
-  "id": "browser012",
-  "module": "browser",
-  "q": "JS 垃圾回收机制？",
-  "a": "自动 GC，主算法：① **标记-清除**（主流）：从根对象（window/全局）可达的标记存活，不可达清除；解决循环引用。② **引用计数**（旧，已弃）：计数 0 回收，循环引用**漏**（A↔B 永不回收）。\nV8 分代：新生代（Scavenge 复制）频繁快、老生代（Mark-Sweep/Compact）慢。手动：断引用（置 null）、消大闭包，助回收。"
- },
- {
-  "id": "browser013",
-  "module": "browser",
-  "q": "requestAnimationFrame 与 setTimeout 区别？",
-  "a": "**rAF** 在**每次重绘前**调用（约 60fps 同步刷新），页面隐藏时**自动暂停**省电，动画更流畅不丢帧。\n**setTimeout(fn,16)** 按计时器排队，**不一定对齐刷新**新，后台也跑（费电），易卡顿/掉帧。动画/需视觉同步用 rAF；分片大计算用 rAF 防长任务。"
- },
- {
-  "id": "browser014",
-  "module": "browser",
-  "q": "长任务（Long Task）怎么优化？",
-  "a": "**长任务** > 50ms 阻塞主线程，导致卡顿、INP 差（交互到响应延迟）。优化：① **拆分**大循环（rAF/setTimeout 分片、或 scheduler.yield）；② 重计算移 **Web Worker**；\n③ 减少**重排**（读写分离、批改样式）；④ 虚拟列表限 DOM；⑤ 防抖高频；⑥ 代码分包按需加载。测量：Performance 面板看 Long Tasks 红条。"
- },
- {
-  "id": "browser015",
-  "module": "browser",
-  "q": "懒加载与预加载？",
-  "a": "**懒加载** 用到的才加载，省流量提首屏。图片 loading=lazy / IntersectionObserver；路由 import() 分包；组件 v-if 延迟建。\n**预加载** 提前加载可能要用的，提速后续。<link rel=prefetch>（空闲预取下一页）、preload（当前页关键资源）、DNS prefetch / preconnect。权衡：首屏用懒加载，关键链路用预加载。"
- },
- {
-  "id": "browser016",
-  "module": "browser",
-  "q": "什么是前端性能优化？为什么重要？",
-  "a": "**参考答案：**\n\n前端性能优化是指通过各种技术手段和策略，提升网页加载速度、渲染效率和用户交互体验的过程。\n\n重要性：\n\n- **用户体验**：页面加载速度直接影响用户满意度和留存率\n- **业务价值**：研究表明页面加载时间每增加1秒，转化率下降7%\n- **SEO影响**：搜索引擎将页面速度作为排名因素之一\n- **资源成本**：减少带宽消耗和服务器压力"
- },
- {
-  "id": "browser017",
-  "module": "browser",
-  "q": "前端性能优化的核心指标有哪些？",
-  "a": "**参考答案：**\n\n**Core Web Vitals（核心网页指标）：**\n\n- **LCP（Largest Contentful Paint）**：最大内容绘制时间，理想值<2.5s\n- **FID（First Input Delay）**：首次输入延迟，理想值<100ms\n- **CLS（Cumulative Layout Shift）**：累积布局偏移，理想值<0.1\n\n**其他重要指标：**\n\n- **FCP（First Contentful Paint）**：首次内容绘制\n- **TTI（Time to Interactive）**：可交互时间\n- **FMP（First Meaningful Paint）**：首次有意义绘制"
- },
- {
-  "id": "browser018",
-  "module": "browser",
-  "q": "如何减少HTTP请求数量？",
-  "a": "**参考答案：**\n\n- **资源合并**：CSS/JS文件合并，雪碧图（CSS Sprites）\n- **内联资源**：小图片转base64，关键CSS内联\n- **懒加载**：图片、组件按需加载\n- **缓存策略**：利用浏览器缓存减少重复请求\n- **CDN加速**：静态资源使用CDN分发\n- **HTTP/2**：利用多路复用特性\n\n```JavaScript\n// 图片懒加载示例\nconst lazyImages = document.querySelectorAll('img[data-src]');\nconst imageObserver = new IntersectionObserver((entries) => {\n  entries.forEach(entry => {\n    if (entry.isIntersecting) {\n      const img = entry.target;\n      img.src = img.dataset.src;\n      imageObserver.unobserve(img);\n    }\n  });\n});\nlazyImages.forEach(img => imageObserver.observe(img));\n```"
- },
- {
-  "id": "browser019",
-  "module": "browser",
-  "q": "什么是关键渲染路径？如何优化？",
-  "a": "**参考答案：**\n\n关键渲染路径是浏览器将HTML、CSS和JavaScript转换为屏幕像素的步骤序列。\n\n**优化策略：**\n\n- **减少关键资源数量**：内联关键CSS，延迟非关键资源\n- **减少关键字节数**：压缩资源，移除未使用代码\n- **缩短关键路径长度**：优化资源加载顺序\n\n```HTML\n<!-- 关键CSS内联 -->\n<style>\n  /* 首屏关键样式 */\n  .header { display: flex; }\n</style>\n\n<!-- 非关键CSS异步加载 -->\n<link rel=\"preload\" href=\"styles.css\" as=\"style\" onload=\"this.onload=null;this.rel='stylesheet'\">\n```"
- },
- {
-  "id": "browser020",
-  "module": "browser",
-  "q": "CSS性能优化有哪些方法？",
-  "a": "**参考答案：**\n\n- **选择器优化**：避免复杂选择器，减少嵌套层级\n- **CSS压缩**：移除空格、注释，合并相同规则\n- **避免@import**：使用link标签代替@import\n- **CSS3硬件加速**：使用transform、opacity触发GPU加速\n- **移除未使用CSS**：工具如PurgeCSS清理无用样式\n\n```CSS\n/* 避免复杂选择器 */\n/* 不好 */\n.nav ul li a span { color: red; }\n\n/* 好 */\n.nav-link-text { color: red; }\n\n/* 触发硬件加速 */\n.animated {\n  transform: translateZ(0);\n  will-change: transform;\n}\n```"
- },
- {
-  "id": "browser021",
-  "module": "browser",
-  "q": "JavaScript性能优化策略有哪些？",
-  "a": "**参考答案：**\n\n- **代码分割**：按需加载，动态import\n- **Tree Shaking**：移除未使用代码\n- **压缩混淆**：减小文件体积\n- **Web Workers**：将计算密集任务移到后台线程\n- **避免阻塞**：使用async/defer属性\n\n```JavaScript\n// 动态导入\nconst loadModule = async () => {\n  const module = await import('./heavy-module.js');\n  module.init();\n};\n\n// Web Workers\nconst worker = new Worker('calculation.js');\nworker.postMessage(data);\nworker.onmessage = (e) => {\n  console.log('Result:', e.data);\n};\n```"
- },
- {
-  "id": "browser022",
-  "module": "browser",
-  "q": "图片优化有哪些技术？",
-  "a": "**参考答案：**\n\n- **格式选择**：WebP > JPEG > PNG，根据场景选择\n- **尺寸优化**：响应式图片，srcset属性\n- **压缩**：有损/无损压缩，工具如TinyPNG\n- **懒加载**：viewport外图片延迟加载\n- **雪碧图**：小图标合并减少请求\n\n```HTML\n<!-- 响应式图片 -->\n<picture>\n  <source media=\"(min-width: 800px)\" srcset=\"large.webp\" type=\"image/webp\">\n  <source media=\"(min-width: 400px)\" srcset=\"medium.webp\" type=\"image/webp\">\n  <img src=\"small.jpg\" alt=\"描述\" loading=\"lazy\">\n</picture>\n```"
- },
- {
-  "id": "browser023",
-  "module": "browser",
-  "q": "什么是浏览器缓存？如何配置？",
-  "a": "**参考答案：**\n\n浏览器缓存是将资源存储在本地，减少网络请求的机制。\n\n**缓存类型：**\n\n- **强缓存**：Cache-Control, Expires\n- **协商缓存**：ETag, Last-Modified\n\n**配置策略：**\n\n```HTTP\n**静态资源长期缓存**\nCache-Control: max-age=31536000, immutable\n\n**HTML文件不缓存**\nCache-Control: no-cache\n\n**API接口短期缓存**\nCache-Control: max-age=300\n```"
- },
- {
-  "id": "browser024",
-  "module": "browser",
-  "q": "CDN的工作原理和优势是什么？",
-  "a": "**参考答案：**\n\nCDN（内容分发网络）将内容缓存到全球各地的边缘服务器，用户从最近的服务器获取资源。\n\n**优势：**\n\n- **减少延迟**：就近访问，降低网络延迟\n- **减轻源站压力**：分散请求到边缘节点\n- **提高可用性**：多节点冗余，提升稳定性\n- **节省带宽**：减少源站带宽消耗\n\n**使用场景：**\n\n- 静态资源（CSS、JS、图片）\n- 视频、音频等大文件\n- API接口加速"
- },
- {
-  "id": "browser025",
-  "module": "browser",
-  "q": "什么是预加载？有哪些类型？",
-  "a": "**参考答案：**\n\n预加载是提前获取用户可能需要的资源，提升后续访问速度。\n\n**类型：**\n\n- **DNS预解析**：`<link rel=\"dns-prefetch\" href=\"//example.com\">`\n- **预连接**：`<link rel=\"preconnect\" href=\"//fonts.googleapis.com\">`\n- **资源预加载**：`<link rel=\"preload\" href=\"style.css\" as=\"style\">`\n- **页面预取**：`<link rel=\"prefetch\" href=\"/next-page.html\">`\n\n```HTML\n<!-- 预加载关键字体 -->\n<link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" type=\"font/woff2\" crossorigin>\n\n<!-- 预取下一页面 -->\n<link rel=\"prefetch\" href=\"/product-detail.html\">\n```"
- },
- {
-  "id": "browser026",
-  "module": "browser",
-  "q": "如何优化首屏加载时间？",
-  "a": "**参考答案：**\n\n- **关键资源优先**：内联关键CSS，优先加载首屏内容\n- **代码分割**：只加载首屏必需代码\n- **服务端渲染（SSR）**：减少客户端渲染时间\n- **骨架屏**：提供视觉反馈，改善感知性能\n- **资源预加载**：提前加载关键资源\n\n```JavaScript\n// 代码分割示例\nconst HomePage = lazy(() => import('./HomePage'));\nconst ProductPage = lazy(() => import('./ProductPage'));\n\nfunction App() {\n  return (\n    <Suspense fallback={<SkeletonLoader />}>\n      <Routes>\n        <Route path=\"/\" element={<HomePage />} />\n        <Route path=\"/product\" element={<ProductPage />} />\n      </Routes>\n    </Suspense>\n  );\n}\n```"
- },
- {
-  "id": "browser027",
-  "module": "browser",
-  "q": "什么是虚拟滚动？如何实现？",
-  "a": "**参考答案：**\n\n虚拟滚动是只渲染可视区域内的列表项，大幅提升长列表性能的技术。\n\n**实现原理：**\n\n- 计算可视区域能显示的项目数量\n- 根据滚动位置计算当前应渲染的项目\n- 动态创建/销毁DOM元素\n\n```JavaScript\nclass VirtualList {\n  constructor(container, itemHeight, totalItems) {\n    this.container = container;\n    this.itemHeight = itemHeight;\n    this.totalItems = totalItems;\n    this.visibleCount = Math.ceil(container.clientHeight / itemHeight);\n    this.startIndex = 0;\n\n    this.init();\n  }\n\n  init() {\n    this.container.style.height = this.totalItems * this.itemHeight + 'px';\n    this.container.addEventListener('scroll', this.onScroll.bind(this));\n    this.render();\n  }\n\n  onScroll() {\n    this.startIndex = Math.floor(this.container.scrollTop / this.itemHeight);\n    this.render();\n  }\n\n  render() {\n    const endIndex = Math.min(this.startIndex + this.visibleCount, this.totalItems);\n    // 渲染 startIndex 到 endIndex 的项目\n  }\n}\n```"
- },
- {
-  "id": "browser028",
-  "module": "browser",
-  "q": "如何进行Bundle分析和优化？",
-  "a": "**参考答案：**\n\n**分析工具：**\n\n- **webpack-bundle-analyzer**：可视化bundle组成\n- **source-map-explorer**：分析源码占用\n- **bundlephobia**：分析npm包大小\n\n**优化策略：**\n\n- **代码分割**：按路由/功能分割\n- **Tree Shaking**：移除未使用代码\n- **外部依赖**：大型库使用CDN\n- **动态导入**：按需加载模块\n\n```JavaScript\n// webpack配置示例\nmodule.exports = {\n  optimization: {\n    splitChunks: {\n      chunks: 'all',\n      cacheGroups: {\n        vendor: {\n          test: /[\\\\/]node_modules[\\\\/]/,\n          name: 'vendors',\n          chunks: 'all',\n        },\n      },\n    },\n  },\n};\n```"
- },
- {
-  "id": "browser029",
-  "module": "browser",
-  "q": "什么是Service Worker？如何用于性能优化？",
-  "a": "**参考答案：**\n\nService Worker是运行在后台的脚本，可以拦截网络请求，实现离线缓存和推送通知。\n\n**性能优化应用：**\n\n- **缓存策略**：实现复杂的缓存逻辑\n- **离线访问**：缓存关键资源，支持离线浏览\n- **预缓存**：在空闲时预加载资源\n- **网络优化**：智能选择缓存或网络\n\n```JavaScript\n// service-worker.js\nself.addEventListener('fetch', event => {\n  if (event.request.destination === 'image') {\n    event.respondWith(\n      caches.match(event.request).then(response => {\n        return response || fetch(event.request).then(fetchResponse => {\n          const responseClone = fetchResponse.clone();\n          caches.open('images').then(cache => {\n            cache.put(event.request, responseClone);\n          });\n          return fetchResponse;\n        });\n      })\n    );\n  }\n});\n```"
- },
- {
-  "id": "browser030",
-  "module": "browser",
-  "q": "如何优化移动端性能？",
-  "a": "**参考答案：**\n\n- **触摸优化**：使用touch事件，避免300ms延迟\n- **视口配置**：正确设置viewport meta标签\n- **图片适配**：使用合适尺寸和格式\n- **网络优化**：考虑弱网环境，实现降级策略\n- **电池优化**：减少CPU密集操作\n\n```HTML\n<!-- 移动端视口配置 -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n\n<!-- 避免300ms延迟 -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, touch-action=manipulation\">\n```\n\n```CSS\n/* 移动端优化 */\n.touch-element {\n  touch-action: manipulation; /* 避免双击缩放延迟 */\n  -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */\n}\n```"
- },
- {
-  "id": "browser031",
-  "module": "browser",
-  "q": "什么是关键CSS？如何提取和使用？",
-  "a": "**参考答案：**\n\n关键CSS是渲染首屏内容所必需的最小CSS集合。\n\n**提取方法：**\n\n- **工具**：Critical、Penthouse、UnCSS\n- **手动分析**：识别首屏元素对应样式\n- **自动化**：构建流程中自动提取\n\n**使用策略：**\n\n```HTML\n<!-- 内联关键CSS -->\n<style>\n  /* 首屏关键样式 */\n  .header { display: flex; height: 60px; }\n  .hero { min-height: 400px; }\n</style>\n\n<!-- 异步加载完整CSS -->\n<link rel=\"preload\" href=\"/styles/main.css\" as=\"style\" onload=\"this.onload=null;this.rel='stylesheet'\">\n<noscript><link rel=\"stylesheet\" href=\"/styles/main.css\"></noscript>\n```"
- },
- {
-  "id": "browser032",
-  "module": "browser",
-  "q": "如何实现资源的预加载和懒加载？",
-  "a": "**参考答案：**\n\n**预加载（Preloading）：**\n\n```HTML\n<!-- 预加载关键资源 -->\n<link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" crossorigin>\n<link rel=\"preload\" href=\"/images/hero.jpg\" as=\"image\">\n\n<!-- JavaScript预加载 -->\n<script>\nconst link = document.createElement('link');\nlink.rel = 'preload';\nlink.href = '/api/data.json';\nlink.as = 'fetch';\ndocument.head.appendChild(link);\n</script>\n```\n\n**懒加载（Lazy Loading）：**\n\n```JavaScript\n// 图片懒加载\nconst imageObserver = new IntersectionObserver((entries) => {\n  entries.forEach(entry => {\n    if (entry.isIntersecting) {\n      const img = entry.target;\n      img.src = img.dataset.src;\n      img.classList.remove('lazy');\n      imageObserver.unobserve(img);\n    }\n  });\n});\n\n// 组件懒加载\nconst LazyComponent = React.lazy(() => import('./HeavyComponent'));\n```"
- },
- {
-  "id": "browser033",
-  "module": "browser",
-  "q": "什么是Web Vitals？如何监控和优化？",
-  "a": "**参考答案：**\n\nWeb Vitals是Google提出的用户体验质量指标集合。\n\n**核心指标：**\n\n- **LCP**：最大内容绘制 (<2.5s)\n- **FID**：首次输入延迟 (<100ms)\n- **CLS**：累积布局偏移 (<0.1)\n\n**监控方法：**\n\n```JavaScript\n// 使用web-vitals库\nimport {getCLS, getFID, getFCP, getLCP, getTTFB} from 'web-vitals';\n\ngetCLS(console.log);\ngetFID(console.log);\ngetFCP(console.log);\ngetLCP(console.log);\ngetTTFB(console.log);\n\n// 自定义上报\nfunction sendToAnalytics(metric) {\n  fetch('/analytics', {\n    method: 'POST',\n    body: JSON.stringify(metric)\n  });\n}\n```"
- },
- {
-  "id": "browser034",
-  "module": "browser",
-  "q": "如何优化JavaScript执行性能？",
-  "a": "**参考答案：**\n\n- **减少主线程阻塞**：使用requestIdleCallback\n- **优化算法复杂度**：选择高效算法和数据结构\n- **避免内存泄漏**：及时清理事件监听器和定时器\n- **使用Web Workers**：将计算密集任务移到后台\n- **代码分割**：按需加载，减少初始bundle大小\n\n```JavaScript\n// 时间切片优化长任务\nfunction processLargeArray(array, callback) {\n  const chunk = 1000;\n  let index = 0;\n\n  function processChunk() {\n    const start = performance.now();\n\n    while (index < array.length && (performance.now() - start) < 5) {\n      // 处理数组项\n      processItem(array[index++]);\n    }\n\n    if (index < array.length) {\n      requestIdleCallback(processChunk);\n    } else {\n      callback();\n    }\n  }\n\n  processChunk();\n}\n```"
- },
- {
-  "id": "browser035",
-  "module": "browser",
-  "q": "什么是HTTP/2？对性能有什么影响？",
-  "a": "**参考答案：**\n\nHTTP/2是HTTP协议的第二个主要版本，带来显著性能提升。\n\n**主要特性：**\n\n- **多路复用**：单连接并行处理多个请求\n- **头部压缩**：HPACK算法压缩HTTP头\n- **服务器推送**：主动推送资源给客户端\n- **二进制分帧**：更高效的数据传输\n\n**性能影响：**\n\n- 减少连接数，降低延迟\n- 消除队头阻塞问题\n- 减少网络开销\n- 更好的带宽利用率\n\n```JavaScript\n// HTTP/2服务器推送示例（Node.js）\nconst http2 = require('http2');\nconst server = http2.createSecureServer(options);\n\nserver.on('stream', (stream, headers) => {\n  if (headers[':path'] === '/') {\n    // 推送CSS和JS资源\n    stream.pushStream({':path': '/styles.css'}, (err, pushStream) => {\n      pushStream.respondWithFile('./styles.css');\n    });\n  }\n});\n```"
- },
- {
-  "id": "browser036",
-  "module": "browser",
-  "q": "如何进行前端性能监控？",
-  "a": "**参考答案：**\n\n**监控指标：**\n\n- **加载性能**：FCP, LCP, TTI\n- **运行时性能**：FPS, 内存使用, CPU占用\n- **用户体验**：FID, CLS, 错误率\n\n**监控方案：**\n\n```JavaScript\n// Performance Observer API\nconst observer = new PerformanceObserver((list) => {\n  list.getEntries().forEach((entry) => {\n    if (entry.entryType === 'largest-contentful-paint') {\n      console.log('LCP:', entry.startTime);\n      // 上报数据\n      sendMetric('LCP', entry.startTime);\n    }\n  });\n});\n\nobserver.observe({entryTypes: ['largest-contentful-paint']});\n\n// 自定义性能监控\nclass PerformanceMonitor {\n  static trackPageLoad() {\n    window.addEventListener('load', () => {\n      const perfData = performance.timing;\n      const metrics = {\n        dns: perfData.domainLookupEnd - perfData.domainLookupStart,\n        tcp: perfData.connectEnd - perfData.connectStart,\n        ttfb: perfData.responseStart - perfData.navigationStart,\n        domReady: perfData.domContentLoadedEventEnd - perfData.navigationStart\n      };\n      this.sendMetrics(metrics);\n    });\n  }\n}\n```"
- },
- {
-  "id": "browser037",
-  "module": "browser",
-  "q": "什么是Tree Shaking？如何配置？",
-  "a": "**参考答案：**\n\nTree Shaking是移除JavaScript中未使用代码的优化技术，基于ES6模块的静态结构。\n\n**工作原理：**\n\n- 分析模块依赖关系\n- 标记使用的代码\n- 移除未使用的代码\n\n**配置示例：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  mode: 'production',\n  optimization: {\n    usedExports: true,\n    sideEffects: false, // 标记包为无副作用\n  },\n};\n\n// package.json\n{\n  \"sideEffects\": [\n    \"*.css\",\n    \"*.scss\",\n    \"./src/polyfills.js\"\n  ]\n}\n\n// 正确的导入方式\nimport { debounce } from 'lodash-es'; // 支持tree shaking\n// 避免\nimport _ from 'lodash'; // 导入整个库\n```"
- },
- {
-  "id": "browser038",
-  "module": "browser",
-  "q": "如何优化CSS动画性能？",
-  "a": "**参考答案：**\n\n- **使用transform和opacity**：触发GPU加速，避免重排重绘\n- **will-change属性**：提示浏览器优化动画元素\n- **避免动画布局属性**：width、height、margin等\n- **使用CSS3动画**：优于JavaScript动画\n- **合理使用硬件加速**：避免过度使用导致内存问题\n\n```CSS\n/* 高性能动画 */\n.optimized-animation {\n  will-change: transform;\n  transform: translateZ(0); /* 创建合成层 */\n  transition: transform 0.3s ease-out;\n}\n\n.optimized-animation:hover {\n  transform: translateX(100px) scale(1.1);\n}\n\n/* 避免的动画属性 */\n.bad-animation {\n  transition: width 0.3s; /* 会触发重排 */\n}\n\n/* 使用transform替代 */\n.good-animation {\n  transform: scaleX(1.2); /* 只触发合成 */\n}\n```"
- },
- {
-  "id": "browser039",
-  "module": "browser",
-  "q": "什么是资源提示（Resource Hints）？",
-  "a": "**参考答案：**\n\n资源提示是HTML5规范，允许开发者向浏览器提供关于资源加载的提示。\n\n**类型：**\n\n- **dns-prefetch**：DNS预解析\n- **preconnect**：预连接\n- **preload**：预加载\n- **prefetch**：预取\n- **prerender**：预渲染\n\n```HTML\n<!-- DNS预解析 -->\n<link rel=\"dns-prefetch\" href=\"//fonts.googleapis.com\">\n\n<!-- 预连接（包含DNS解析、TCP握手、TLS协商） -->\n<link rel=\"preconnect\" href=\"//fonts.gstatic.com\" crossorigin>\n\n<!-- 预加载当前页面需要的资源 -->\n<link rel=\"preload\" href=\"/critical.css\" as=\"style\">\n<link rel=\"preload\" href=\"/hero.jpg\" as=\"image\">\n\n<!-- 预取用户可能访问的资源 -->\n<link rel=\"prefetch\" href=\"/next-page.html\">\n\n<!-- 预渲染整个页面 -->\n<link rel=\"prerender\" href=\"/landing-page.html\">\n```"
- },
- {
-  "id": "browser040",
-  "module": "browser",
-  "q": "如何实现代码分割（Code Splitting）？",
-  "a": "**参考答案：**\n\n代码分割是将代码拆分成多个bundle，实现按需加载的技术。\n\n**分割策略：**\n\n- **入口分割**：多个入口点\n- **动态导入**：import()语法\n- **第三方库分割**：vendor chunk\n\n```JavaScript\n// 动态导入\nconst loadComponent = async () => {\n  const { default: Component } = await import('./HeavyComponent');\n  return Component;\n};\n\n// React代码分割\nconst LazyComponent = React.lazy(() => import('./LazyComponent'));\n\nfunction App() {\n  return (\n    <Suspense fallback={<div>Loading...</div>}>\n      <LazyComponent />\n    </Suspense>\n  );\n}\n\n// webpack配置\nmodule.exports = {\n  optimization: {\n    splitChunks: {\n      chunks: 'all',\n      cacheGroups: {\n        vendor: {\n          test: /[\\\\/]node_modules[\\\\/]/,\n          name: 'vendors',\n          chunks: 'all',\n        },\n        common: {\n          name: 'common',\n          minChunks: 2,\n          chunks: 'all',\n        }\n      }\n    }\n  }\n};\n```"
- },
- {
-  "id": "browser041",
-  "module": "browser",
-  "q": "什么是关键渲染路径优化？",
-  "a": "**参考答案：**\n\n关键渲染路径优化是指优化浏览器渲染页面的关键步骤，减少首屏渲染时间。\n\n**优化步骤：**\n\n1. **分析关键资源**：识别渲染首屏必需的资源\n2. **减少关键资源数量**：合并、内联关键资源\n3. **压缩关键字节数**：压缩CSS、JS、HTML\n4. **优化加载顺序**：优先加载关键资源\n\n```HTML\n<!-- 优化示例 -->\n<!DOCTYPE html>\n<html>\n<head>\n  <!-- 内联关键CSS -->\n  <style>\n    /* 首屏关键样式 */\n    body { margin: 0; font-family: Arial; }\n    .header { height: 60px; background: #333; }\n  </style>\n\n  <!-- 预加载字体 -->\n  <link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" crossorigin>\n</head>\n<body>\n  <!-- 首屏内容 -->\n  <header class=\"header\">...</header>\n\n  <!-- 异步加载非关键CSS -->\n  <link rel=\"preload\" href=\"/styles/main.css\" as=\"style\"\n        onload=\"this.onload=null;this.rel='stylesheet'\">\n\n  <!-- 延迟加载非关键JS -->\n  <script src=\"/js/main.js\" defer></script>\n</body>\n</html>\n```"
- },
- {
-  "id": "browser042",
-  "module": "browser",
-  "q": "如何优化长列表渲染性能？",
-  "a": "**参考答案：**\n\n**优化策略：**\n\n- **虚拟滚动**：只渲染可视区域\n- **分页加载**：按需加载数据\n- **防抖节流**：优化滚动事件\n- **使用key优化**：React中正确使用key\n- **避免内联函数**：减少不必要的重渲染\n\n```JavaScript\n// 虚拟滚动实现\nclass VirtualScroller {\n  constructor(container, itemHeight, items) {\n    this.container = container;\n    this.itemHeight = itemHeight;\n    this.items = items;\n    this.visibleCount = Math.ceil(container.clientHeight / itemHeight);\n    this.startIndex = 0;\n\n    this.init();\n  }\n\n  init() {\n    this.container.addEventListener('scroll', this.throttle(this.onScroll.bind(this), 16));\n    this.render();\n  }\n\n  onScroll() {\n    const scrollTop = this.container.scrollTop;\n    this.startIndex = Math.floor(scrollTop / this.itemHeight);\n    this.render();\n  }\n\n  render() {\n    const endIndex = Math.min(this.startIndex + this.visibleCount + 1, this.items.length);\n    const visibleItems = this.items.slice(this.startIndex, endIndex);\n\n    // 渲染可见项目\n    this.container.innerHTML = visibleItems.map((item, index) =>\n      `<div style=\"height: ${this.itemHeight}px; transform: translateY(${(this.startIndex + index) * this.itemHeight}px)\">\n        ${item.content}\n      </div>`\n    ).join('');\n  }\n\n  throttle(func, delay) {\n    let timer = null;\n    return function() {\n      if (!timer) {\n        timer = setTimeout(() => {\n          func.apply(this, arguments);\n          timer = null;\n        }, delay);\n      }\n    };\n  }\n}\n```"
- },
- {
-  "id": "browser043",
-  "module": "browser",
-  "q": "什么是PWA？如何提升性能？",
-  "a": "**参考答案：**\n\nPWA（Progressive Web App）是使用现代Web技术构建的应用，提供类似原生应用的体验。\n\n**性能优化特性：**\n\n- **Service Worker**：离线缓存和后台同步\n- **App Shell模式**：快速加载应用外壳\n- **预缓存策略**：关键资源预缓存\n- **推送通知**：提升用户参与度\n\n```JavaScript\n// service-worker.js\nconst CACHE_NAME = 'app-v1';\nconst urlsToCache = [\n  '/',\n  '/styles/main.css',\n  '/scripts/main.js',\n  '/images/icon.png'\n];\n\n// 安装时预缓存资源\nself.addEventListener('install', event => {\n  event.waitUntil(\n    caches.open(CACHE_NAME)\n      .then(cache => cache.addAll(urlsToCache))\n  );\n});\n\n// 拦截请求，优先从缓存读取\nself.addEventListener('fetch', event => {\n  event.respondWith(\n    caches.match(event.request)\n      .then(response => {\n        return response || fetch(event.request);\n      })\n  );\n});\n\n// 注册Service Worker\nif ('serviceWorker' in navigator) {\n  navigator.serviceWorker.register('/sw.js');\n}\n```"
- },
- {
-  "id": "browser044",
-  "module": "browser",
-  "q": "如何进行前端性能测试？",
-  "a": "**参考答案：**\n\n**测试工具：**\n\n- **Lighthouse**：综合性能评估\n- **WebPageTest**：详细性能分析\n- **Chrome DevTools**：实时性能监控\n- **GTmetrix**：页面速度测试\n\n**测试策略：**\n\n```JavaScript\n// 自动化性能测试\nconst lighthouse = require('lighthouse');\nconst chromeLauncher = require('chrome-launcher');\n\nasync function runLighthouse(url) {\n  const chrome = await chromeLauncher.launch({chromeFlags: ['--headless']});\n  const options = {logLevel: 'info', output: 'html', port: chrome.port};\n  const runnerResult = await lighthouse(url, options);\n\n  const score = runnerResult.report;\n  console.log('Performance score:', runnerResult.lhr.categories.performance.score * 100);\n\n  await chrome.kill();\n}\n\n// 性能预算设置\nconst performanceBudget = {\n  'first-contentful-paint': 2000,\n  'largest-contentful-paint': 2500,\n  'cumulative-layout-shift': 0.1,\n  'total-blocking-time': 300\n};\n\n// 监控关键指标\nfunction monitorPerformance() {\n  new PerformanceObserver((list) => {\n    list.getEntries().forEach((entry) => {\n      const metric = entry.name || entry.entryType;\n      const value = entry.startTime || entry.value;\n\n      if (performanceBudget[metric] && value > performanceBudget[metric]) {\n        console.warn(`Performance budget exceeded: ${metric} = ${value}ms`);\n      }\n    });\n  }).observe({entryTypes: ['paint', 'largest-contentful-paint', 'layout-shift']});\n}\n```"
- },
- {
-  "id": "browser045",
-  "module": "browser",
-  "q": "前端性能优化的最佳实践总结？",
-  "a": "**参考答案：**\n\n**加载优化：**\n\n- 减少HTTP请求数量\n- 启用Gzip/Brotli压缩\n- 使用CDN加速\n- 实施缓存策略\n- 优化关键渲染路径\n\n**运行时优化：**\n\n- 避免长任务阻塞主线程\n- 使用虚拟滚动处理长列表\n- 合理使用Web Workers\n- 优化动画性能\n- 防止内存泄漏\n\n**资源优化：**\n\n- 图片格式和尺寸优化\n- 代码分割和懒加载\n- Tree Shaking移除无用代码\n- 字体加载优化\n\n**监控和测试：**\n\n- 建立性能监控体系\n- 设置性能预算\n- 定期进行性能测试\n- 关注Core Web Vitals指标\n\n**开发流程：**\n\n- 性能优先的开发理念\n- 自动化构建优化\n- 持续性能监控\n- 团队性能意识培养"
- },
- {
-  "id": "browser046",
-  "module": "browser",
-  "q": "怎么用 Chrome DevTools 系统性排查内存泄漏？",
-  "a": "**简要回答：**\n核心三步：**复现 → 拍堆快照对比 → 定位游离/增长的对象**，再用 Retainers 追引用链。\n\n**拆解：**\n1. **Performance Monitor**：勾选 JS Heap / Nodes / DOM Nodes，重复操作看指标是否只增不减。\n2. **Memory → Heap Snapshot**：操作前拍一张，操作后拍一张，用「Comparison」视图看新增的对象。\n3. **看 Detached DOM**：DOM 节点已从页面移除但 JS 仍引用（如闭包、全局数组、事件监听未解绑）→ 典型泄漏。\n4. **Allocation instrumentation**：实时看哪些函数持续分配不回收。\n5. **Retainers 面板**：顺着引用链找到「谁还抱着这个对象不放」，修掉引用即可。\n\n**常见泄漏源：** 忘了解绑的全局事件监听、闭包持有大对象、timer 未清、缓存无上限。\n**追问：** 为什么 `console.log` 也会掩盖泄漏？（控制台引用会阻止对象被回收。）"
- },
- {
-  "id": "browser047",
-  "module": "browser",
-  "q": "页面白屏了怎么快速定位？常见原因有哪些？",
-  "a": "**简要回答：**\n白屏=「首屏没有任何可见内容」。按链路分层排查：**资源 → JS 报错 → 渲染阻塞 → 路由/数据**。\n\n**拆解：**\n1. **Network**：HTML/JS/CSS 是否 404、CDN 跨域、资源被 CSP 拦截、白屏 JS 没加载。\n2. **Console**：是否有未捕获报错（React 渲染抛错、import 路径错、Vue 模板编译失败）直接打断渲染。\n3. **空白根节点**：#app 为空 → 多半是入口 JS 抛错；加错误边界（ErrorBoundary）/ 全局 `window.onerror` 上报。\n4. **路由/权限**：首屏接口 401 跳登录、或 SSR 水合失败（hydration mismatch）。\n5. **性能**：超长 JS 解析（主线程被占）导致迟迟不绘制，看 Performance 的 Long Task。\n\n**工程化：** 接前端监控（白屏检测用「页面关键点是否渲染」+ 资源/JS 错误上报）才能线上快速定位。"
- },
- {
-  "id": "browser048",
-  "module": "browser",
-  "q": "页面卡顿 / 长任务怎么排查？Long Task 与 INP 是什么？",
-  "a": "**简要回答：**\n卡顿=主线程被某段 JS 占太久，用户点击/滚动无响应。用 **Performance 面板看 Long Task（>50ms）**，用 **INP** 衡量交互响应。\n\n**拆解：**\n- **Long Task**：执行超过 50ms 的任务，期间浏览器无法处理输入。Performance 里红色三角就是它。\n- **INP（Interaction to Next Paint）**：用户每次交互到下次绘制的最大延迟，2024 起取代 FID 成为 Core Web Vital，衡量「整体跟手度」。\n- **排查**：Performance 录制 → 看调用栈定位耗时函数（大循环、重排重绘、序列化大 JSON）。\n- **优化**：拆分长任务（`setTimeout` 分片 / `requestIdleCallback` / `scheduler.yield`）、Web Worker 搬计算、减少强制同步布局（读写 offset 交替）。\n\n**追问：** 为什么 FID 升级成 INP？（FID 只测首次交互，INP 覆盖全部交互更真实。）"
- },
- {
-  "id": "browser049",
-  "module": "browser",
-  "q": "Web Vitals（LCP / CLS / INP）是什么？分别怎么优化？",
-  "a": "**简要回答：**\nCore Web Vitals 三指标衡量**加载(LCP)、稳定(CLS)、交互(INP)**，是大厂面试与线上监控的硬标准。\n\n**拆解：**\n- **LCP（最大内容绘制）**：视口内最大元素（图片/文字块）渲染时间，目标 ≤2.5s。优化：图片懒加载+压缩(WebP)、预连接关键域名、服务端直出首屏、减少阻塞的 JS/CSS。\n- **CLS（累积布局偏移）**：元素意外位移程度，目标 ≤0.1。优化：图片/视频给 `width/height` 或 `aspect-ratio`、给广告/动态内容预留占位、避免插入内容把上面顶下去。\n- **INP（交互到绘制）**：见上一条，目标 ≤200ms。优化：拆分长任务、防抖非紧急更新、用 `useTransition`。\n\n**量化：** 用 `web-vitals` 库埋点上报，建立持续监控才能真正驱动优化。"
- }
+  {
+    "id": "browser001",
+    "module": "browser",
+    "q": "重排(reflow)与重绘(repaint)区别？",
+    "a": "**重排 Reflow**：几何属性变（宽高/位置/增删节点）→ 浏览器重算布局，开销大。\n**重绘 Repaint**：仅外观变（color/visibility）→ 跳过布局直接画。触发重排必重绘。\n优化：① 用 transform/opacity 走 GPU 合成层，避免重排；② 读写分离防布局抖动；③ 批量改样式（加 class）；④ 离屏操作用 DocumentFragment；⑤ 动画加 will-change。"
+  },
+  {
+    "id": "browser002",
+    "module": "browser",
+    "q": "防抖(debounce)和节流(throttle)区别？",
+    "a": "**防抖 debounce**：触发后等 N 秒**无新触发**才执行；期间又触发则重新计时。适用搜索输入、resize 结束、防重复提交。\n**节流 throttle**：每 N 秒**最多执行一次**，固定节奏。适用 scroll、mousemove、拖拽。\n实现：防抖用定时器清除重设；节流用时间戳或定时器（首尾都触发用时间戳+定时器组合）。"
+  },
+  {
+    "id": "browser003",
+    "module": "browser",
+    "q": "首屏加载如何优化？",
+    "a": "目标：尽快看到可交互内容。\n路由级：路由懒加载（import()）、组件按需。\n资源：图片懒加载（loading=lazy / IntersectionObserver）、WebP、CDN、gzip/brotli、HTTP 缓存。\n渲染：关键 CSS 内联、非关键 JS 用 defer、preconnect 预连接、骨架屏、减少长任务（Web Worker）、SSR/预渲染。"
+  },
+  {
+    "id": "browser004",
+    "module": "browser",
+    "q": "浏览器渲染主流程？",
+    "a": "① **解析** HTML → DOM 树，CSS → CSSOM；② 合并成 **Render Tree**（只含可见节点）；③ **Layout/Reflow** 算几何位置；④ **Paint** 转绘制指令；⑤ **Composite** 分层合成送 GPU。\nJS 会阻塞解析（放底部/defer/async）。改动几何走 2-4，改外观走 4，transform/opacity 仅 5（合成层，最快）。"
+  },
+  {
+    "id": "browser005",
+    "module": "browser",
+    "q": "输入 URL 到页面显示全过程？",
+    "a": "① DNS 解析域名 → IP（缓存→本地→根→顶级→权威）；② **TCP 三次握手**建连；③ 发 **HTTP 请求**；④ 服务器响应（可能重定向/304）；⑤ 浏览器**解析渲染**；⑥ 加载子资源（并行受限 6 个/域）；⑦ **TCP 四次挥手**断开（HTTP1.1 keep-alive 复用）。HTTPS 多了 TLS 握手。\n\n**浏览器端渲染细节（第 ⑤⑥ 步展开）：**\n\n1. **解析 HTML → DOM 树**：字节流 → 字符 → Token → Node → DOM。遇到 `<script>`（无 `async`/`defer`）会**阻塞解析**并等下载执行完；`defer` 延到 DOM 解析完执行，`async` 下载完立即执行。\n2. **解析 CSS → CSSOM 树**：CSS 不阻塞 HTML 解析，但**阻塞渲染**，也会阻塞其后 JS 的执行（JS 可能读样式）。\n3. **合成 Render Tree（渲染树）**：DOM + CSSOM 合并，只保留可见节点（`display:none` 不入树，`visibility:hidden`/透明元素仍在树中）。\n4. **Layout（布局/回流 Reflow）**：计算每个节点的几何信息（位置、尺寸），输出布局树。\n5. **Paint（绘制/重绘 Repaint）**：生成绘制指令列表，按层级拆分成绘制记录。\n6. **Composite（分层合成）**：分层（`transform`/`opacity`/`will-change`/`position:fixed` 等易生成独立合成层）→ 栅格化 tile → 交给 GPU 合成上屏。\n\n> 只改颜色等 → 重绘；改几何属性 → 回流 + 重绘（代价最高）；只改 `transform`/`opacity` → 只走合成，性能最好。\n\n**关键时间点（load 时机）：**\n\n- **DOMContentLoaded**：HTML 解析完、DOM 树构建完成（同步 JS 与 `defer` 脚本已执行）即触发，**不等**图片、样式表以外的子资源、iframe、异步 CSS。\n- **load**：DOM 及**所有依赖资源**（图片、CSS、JS、iframe、字体等）全部加载完成后触发，一定晚于 DOMContentLoaded。\n- 顺序：`DOMContentLoaded` → 子资源加载完 → `load` → （离开时）`beforeunload` / `pagehide`。\n- 对应 `document.readyState`：`loading` → `interactive`（DOMContentLoaded 时）→ `complete`（load 时）。"
+  },
+  {
+    "id": "browser006",
+    "module": "browser",
+    "q": "强缓存与协商缓存区别？",
+    "a": "**强缓存** 未过期直接读本地，**不请求**服务器。头：Expires（时间）/ **Cache-Control: max-age**（优先级高，相对秒）。\n**协商缓存** 过期后带**校验字段**问服务器是否变。ETag（内容哈希，精确）/ **Last-Modified**（时间，精度秒、可能误判）。304 = 未变用缓存；200 = 新内容。流程：强缓存优先，过期走协商。"
+  },
+  {
+    "id": "browser007",
+    "module": "browser",
+    "q": "常见 HTTP 缓存响应头？",
+    "a": "**Cache-Control**：max-age（秒）、no-cache（走协商）、no-store（不缓存）、public/private、must-revalidate。**Expires** 绝对时间（HTTP1，已被 max-age 取代）。\n**ETag** / **If-None-Match** 内容校验（配对用）。**Last-Modified** / **If-Modified-Since** 时间校验。实践：静态资源加 hash + 长缓存（max-age=1y, immutable）；HTML 用 no-cache。"
+  },
+  {
+    "id": "browser008",
+    "module": "browser",
+    "q": "前端内存泄漏常见原因？",
+    "a": "① **意外的全局变量**（未声明变量）；② 闭包**长期持有大对象**；③ **未清理的定时器** setInterval；④ 遗忘的 **事件监听** addEventListener 没 removeEventListener；\n⑤ **DOM 引用**未置 null（remove 后 JS 还持有）；⑥ 遗忘的 **ECharts/Three 实例**没 dispose；⑦ 第三方库订阅。排查：Chrome DevTools **Memory** 快照对比。"
+  },
+  {
+    "id": "browser009",
+    "module": "browser",
+    "q": "Web Worker 是什么？",
+    "a": "在**后台线程**跑 JS，**不阻塞主线程**（UI 流畅）。限制：① **无 DOM/Window**（不能操作页面）；② 通过 **postMessage** 与主线程通信（结构化克隆传数据）；③ 同源；④ 引入脚本用 importScripts。\n用途：大计算（加密/解析/排序）、图片处理。注：密集任务优先 Worker；小任务用 rAF 分片即可。"
+  },
+  {
+    "id": "browser010",
+    "module": "browser",
+    "q": "Service Worker 作用？",
+    "a": "运行在**浏览器与网络间**的代理脚本（独立线程），**离线缓存**核心。能力：① 拦截 fetch，缓存静态资源 → 离线可用（PWA）；② 推送通知；③ 后台同步。\n特点：HTTPS、生命周期（install/activate）、**无 DOM**、用 Cache API。注：与 Web Worker 不同（SW 持久、可离线）；调试用 Chrome Application 面板。"
+  },
+  {
+    "id": "browser011",
+    "module": "browser",
+    "q": "同源策略限制了什么？",
+    "a": "同源 = **协议+域名+端口**全同。限制：① 一个源的 JS **不能读**另一源的 DOM/Cookie；② **不能发**跨域 AJAX（除非 CORS）；③ 不能拿 localStorage。\n允许：img/script/link 等**标签**引用跨域资源（但读不到内容）。目的：防 XSS/CSRF 跨站数据窃取。跨域方案：CORS、postMessage、代理。"
+  },
+  {
+    "id": "browser012",
+    "module": "browser",
+    "q": "JS 垃圾回收机制？",
+    "a": "自动 GC，主算法：① **标记-清除**（主流）：从根对象（window/全局）可达的标记存活，不可达清除；解决循环引用。② **引用计数**（旧，已弃）：计数 0 回收，循环引用**漏**（A↔B 永不回收）。\nV8 分代：新生代（Scavenge 复制）频繁快、老生代（Mark-Sweep/Compact）慢。手动：断引用（置 null）、消大闭包，助回收。"
+  },
+  {
+    "id": "browser013",
+    "module": "browser",
+    "q": "requestAnimationFrame 与 setTimeout 区别？",
+    "a": "**rAF** 在**每次重绘前**调用（约 60fps 同步刷新），页面隐藏时**自动暂停**省电，动画更流畅不丢帧。\n**setTimeout(fn,16)** 按计时器排队，**不一定对齐刷新**新，后台也跑（费电），易卡顿/掉帧。动画/需视觉同步用 rAF；分片大计算用 rAF 防长任务。"
+  },
+  {
+    "id": "browser014",
+    "module": "browser",
+    "q": "长任务（Long Task）怎么优化？",
+    "a": "**长任务** > 50ms 阻塞主线程，导致卡顿、INP 差（交互到响应延迟）。优化：① **拆分**大循环（rAF/setTimeout 分片、或 scheduler.yield）；② 重计算移 **Web Worker**；\n③ 减少**重排**（读写分离、批改样式）；④ 虚拟列表限 DOM；⑤ 防抖高频；⑥ 代码分包按需加载。测量：Performance 面板看 Long Tasks 红条。"
+  },
+  {
+    "id": "browser015",
+    "module": "browser",
+    "q": "懒加载与预加载？",
+    "a": "**懒加载** 用到的才加载，省流量提首屏。图片 loading=lazy / IntersectionObserver；路由 import() 分包；组件 v-if 延迟建。\n**预加载** 提前加载可能要用的，提速后续。<link rel=prefetch>（空闲预取下一页）、preload（当前页关键资源）、DNS prefetch / preconnect。权衡：首屏用懒加载，关键链路用预加载。"
+  },
+  {
+    "id": "browser016",
+    "module": "browser",
+    "q": "什么是前端性能优化？为什么重要？",
+    "a": "**参考答案：**\n\n前端性能优化是指通过各种技术手段和策略，提升网页加载速度、渲染效率和用户交互体验的过程。\n\n重要性：\n\n- **用户体验**：页面加载速度直接影响用户满意度和留存率\n- **业务价值**：研究表明页面加载时间每增加1秒，转化率下降7%\n- **SEO影响**：搜索引擎将页面速度作为排名因素之一\n- **资源成本**：减少带宽消耗和服务器压力"
+  },
+  {
+    "id": "browser017",
+    "module": "browser",
+    "q": "前端性能优化的核心指标有哪些？",
+    "a": "**参考答案：**\n\n**Core Web Vitals（核心网页指标，2024 年 3 月起）：**\n\n- **LCP（Largest Contentful Paint）**：最大内容绘制，衡量加载性能，理想值 < 2.5s（2.5~4s 需改进，> 4s 差）\n- **INP（Interaction to Next Paint）**：交互到下一次绘制，衡量整体响应性，理想值 < 200ms（200~500ms 需改进，> 500ms 差）\n- **CLS（Cumulative Layout Shift）**：累积布局偏移，衡量视觉稳定性，理想值 < 0.1\n\n**⚠️ FID 已废弃：**\n\n- 2024 年 3 月 Google 正式用 **INP 取代 FID**，FID 于 2024 年 9 月从 Core Web Vitals 中移除。\n- **FID 只统计「首次交互」的输入延迟**（从用户操作到浏览器开始处理事件回调的等待时间），不含事件处理与渲染耗时，容易「虚假达标」。\n- **INP 统计页面生命周期内「所有交互」**（点击、点按、按键；不含滚动/悬停），取接近最差值（一般为第 98 百分位），且覆盖**输入延迟 + 事件处理时间 + 下一帧渲染呈现**全过程，更能反映真实响应体验。\n\n**其他重要指标：**\n\n- **TTFB（Time to First Byte）**：首字节时间，反映网络与服务端耗时\n- **FCP（First Contentful Paint）**：首次内容绘制（< 1.8s 为佳）\n- **TTI（Time to Interactive）**：可交互时间\n- **TBT（Total Blocking Time）**：总阻塞时间，实验室环境下 INP 的替代参考指标\n- **FMP / SI（Speed Index）**：首次有意义绘制 / 速度指数（FMP 已基本不再使用）\n\n**优化方向：**LCP 看资源加载（CDN、预加载、图片压缩、SSR）；INP 看主线程（拆分长任务、`scheduler.yield`/`requestIdleCallback`、减少不必要渲染）；CLS 看布局（图片/广告位预留宽高、避免动态插入内容、字体 `font-display` 处理）。"
+  },
+  {
+    "id": "browser018",
+    "module": "browser",
+    "q": "如何减少HTTP请求数量？",
+    "a": "**参考答案：**\n\n- **资源合并**：CSS/JS文件合并，雪碧图（CSS Sprites）\n- **内联资源**：小图片转base64，关键CSS内联\n- **懒加载**：图片、组件按需加载\n- **缓存策略**：利用浏览器缓存减少重复请求\n- **CDN加速**：静态资源使用CDN分发\n- **HTTP/2**：利用多路复用特性\n\n```JavaScript\n// 图片懒加载示例\nconst lazyImages = document.querySelectorAll('img[data-src]');\nconst imageObserver = new IntersectionObserver((entries) => {\n  entries.forEach(entry => {\n    if (entry.isIntersecting) {\n      const img = entry.target;\n      img.src = img.dataset.src;\n      imageObserver.unobserve(img);\n    }\n  });\n});\nlazyImages.forEach(img => imageObserver.observe(img));\n```"
+  },
+  {
+    "id": "browser019",
+    "module": "browser",
+    "q": "什么是关键渲染路径？如何优化？",
+    "a": "**参考答案：**\n\n关键渲染路径是浏览器将HTML、CSS和JavaScript转换为屏幕像素的步骤序列。\n\n**优化策略：**\n\n- **减少关键资源数量**：内联关键CSS，延迟非关键资源\n- **减少关键字节数**：压缩资源，移除未使用代码\n- **缩短关键路径长度**：优化资源加载顺序\n\n```HTML\n<!-- 关键CSS内联 -->\n<style>\n  /* 首屏关键样式 */\n  .header { display: flex; }\n</style>\n\n<!-- 非关键CSS异步加载 -->\n<link rel=\"preload\" href=\"styles.css\" as=\"style\" onload=\"this.onload=null;this.rel='stylesheet'\">\n```"
+  },
+  {
+    "id": "browser020",
+    "module": "browser",
+    "q": "CSS性能优化有哪些方法？",
+    "a": "**参考答案：**\n\n- **选择器优化**：避免复杂选择器，减少嵌套层级\n- **CSS压缩**：移除空格、注释，合并相同规则\n- **避免@import**：使用link标签代替@import\n- **CSS3硬件加速**：使用transform、opacity触发GPU加速\n- **移除未使用CSS**：工具如PurgeCSS清理无用样式\n\n```CSS\n/* 避免复杂选择器 */\n/* 不好 */\n.nav ul li a span { color: red; }\n\n/* 好 */\n.nav-link-text { color: red; }\n\n/* 触发硬件加速 */\n.animated {\n  transform: translateZ(0);\n  will-change: transform;\n}\n```"
+  },
+  {
+    "id": "browser021",
+    "module": "browser",
+    "q": "JavaScript性能优化策略有哪些？",
+    "a": "**参考答案：**\n\n- **代码分割**：按需加载，动态import\n- **Tree Shaking**：移除未使用代码\n- **压缩混淆**：减小文件体积\n- **Web Workers**：将计算密集任务移到后台线程\n- **避免阻塞**：使用async/defer属性\n\n```JavaScript\n// 动态导入\nconst loadModule = async () => {\n  const module = await import('./heavy-module.js');\n  module.init();\n};\n\n// Web Workers\nconst worker = new Worker('calculation.js');\nworker.postMessage(data);\nworker.onmessage = (e) => {\n  console.log('Result:', e.data);\n};\n```"
+  },
+  {
+    "id": "browser022",
+    "module": "browser",
+    "q": "图片优化有哪些技术？",
+    "a": "**参考答案：**\n\n- **格式选择**：WebP > JPEG > PNG，根据场景选择\n- **尺寸优化**：响应式图片，srcset属性\n- **压缩**：有损/无损压缩，工具如TinyPNG\n- **懒加载**：viewport外图片延迟加载\n- **雪碧图**：小图标合并减少请求\n\n```HTML\n<!-- 响应式图片 -->\n<picture>\n  <source media=\"(min-width: 800px)\" srcset=\"large.webp\" type=\"image/webp\">\n  <source media=\"(min-width: 400px)\" srcset=\"medium.webp\" type=\"image/webp\">\n  <img src=\"small.jpg\" alt=\"描述\" loading=\"lazy\">\n</picture>\n```"
+  },
+  {
+    "id": "browser023",
+    "module": "browser",
+    "q": "什么是浏览器缓存？如何配置？",
+    "a": "**参考答案：**\n\n浏览器缓存是将资源存储在本地，减少网络请求的机制。\n\n**缓存类型：**\n\n- **强缓存**：Cache-Control, Expires\n- **协商缓存**：ETag, Last-Modified\n\n**配置策略：**\n\n```HTTP\n**静态资源长期缓存**\nCache-Control: max-age=31536000, immutable\n\n**HTML文件不缓存**\nCache-Control: no-cache\n\n**API接口短期缓存**\nCache-Control: max-age=300\n```"
+  },
+  {
+    "id": "browser024",
+    "module": "browser",
+    "q": "CDN的工作原理和优势是什么？",
+    "a": "**参考答案：**\n\nCDN（内容分发网络）将内容缓存到全球各地的边缘服务器，用户从最近的服务器获取资源。\n\n**优势：**\n\n- **减少延迟**：就近访问，降低网络延迟\n- **减轻源站压力**：分散请求到边缘节点\n- **提高可用性**：多节点冗余，提升稳定性\n- **节省带宽**：减少源站带宽消耗\n\n**使用场景：**\n\n- 静态资源（CSS、JS、图片）\n- 视频、音频等大文件\n- API接口加速"
+  },
+  {
+    "id": "browser025",
+    "module": "browser",
+    "q": "什么是预加载？有哪些类型？",
+    "a": "**参考答案：**\n\n预加载是提前获取用户可能需要的资源，提升后续访问速度。\n\n**类型：**\n\n- **DNS预解析**：`<link rel=\"dns-prefetch\" href=\"//example.com\">`\n- **预连接**：`<link rel=\"preconnect\" href=\"//fonts.googleapis.com\">`\n- **资源预加载**：`<link rel=\"preload\" href=\"style.css\" as=\"style\">`\n- **页面预取**：`<link rel=\"prefetch\" href=\"/next-page.html\">`\n\n```HTML\n<!-- 预加载关键字体 -->\n<link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" type=\"font/woff2\" crossorigin>\n\n<!-- 预取下一页面 -->\n<link rel=\"prefetch\" href=\"/product-detail.html\">\n```"
+  },
+  {
+    "id": "browser026",
+    "module": "browser",
+    "q": "如何优化首屏加载时间？",
+    "a": "**参考答案：**\n\n- **关键资源优先**：内联关键CSS，优先加载首屏内容\n- **代码分割**：只加载首屏必需代码\n- **服务端渲染（SSR）**：减少客户端渲染时间\n- **骨架屏**：提供视觉反馈，改善感知性能\n- **资源预加载**：提前加载关键资源\n\n```JavaScript\n// 代码分割示例\nconst HomePage = lazy(() => import('./HomePage'));\nconst ProductPage = lazy(() => import('./ProductPage'));\n\nfunction App() {\n  return (\n    <Suspense fallback={<SkeletonLoader />}>\n      <Routes>\n        <Route path=\"/\" element={<HomePage />} />\n        <Route path=\"/product\" element={<ProductPage />} />\n      </Routes>\n    </Suspense>\n  );\n}\n```"
+  },
+  {
+    "id": "browser027",
+    "module": "browser",
+    "q": "什么是虚拟滚动？如何实现？",
+    "a": "**参考答案：**\n\n虚拟滚动是只渲染可视区域内的列表项，大幅提升长列表性能的技术。\n\n**实现原理：**\n\n- 计算可视区域能显示的项目数量\n- 根据滚动位置计算当前应渲染的项目\n- 动态创建/销毁DOM元素\n\n```JavaScript\nclass VirtualList {\n  constructor(container, itemHeight, totalItems) {\n    this.container = container;\n    this.itemHeight = itemHeight;\n    this.totalItems = totalItems;\n    this.visibleCount = Math.ceil(container.clientHeight / itemHeight);\n    this.startIndex = 0;\n\n    this.init();\n  }\n\n  init() {\n    this.container.style.height = this.totalItems * this.itemHeight + 'px';\n    this.container.addEventListener('scroll', this.onScroll.bind(this));\n    this.render();\n  }\n\n  onScroll() {\n    this.startIndex = Math.floor(this.container.scrollTop / this.itemHeight);\n    this.render();\n  }\n\n  render() {\n    const endIndex = Math.min(this.startIndex + this.visibleCount, this.totalItems);\n    // 渲染 startIndex 到 endIndex 的项目\n  }\n}\n```"
+  },
+  {
+    "id": "browser028",
+    "module": "browser",
+    "q": "如何进行Bundle分析和优化？",
+    "a": "**参考答案：**\n\n**分析工具：**\n\n- **webpack-bundle-analyzer**：可视化bundle组成\n- **source-map-explorer**：分析源码占用\n- **bundlephobia**：分析npm包大小\n\n**优化策略：**\n\n- **代码分割**：按路由/功能分割\n- **Tree Shaking**：移除未使用代码\n- **外部依赖**：大型库使用CDN\n- **动态导入**：按需加载模块\n\n```JavaScript\n// webpack配置示例\nmodule.exports = {\n  optimization: {\n    splitChunks: {\n      chunks: 'all',\n      cacheGroups: {\n        vendor: {\n          test: /[\\\\/]node_modules[\\\\/]/,\n          name: 'vendors',\n          chunks: 'all',\n        },\n      },\n    },\n  },\n};\n```"
+  },
+  {
+    "id": "browser029",
+    "module": "browser",
+    "q": "什么是Service Worker？如何用于性能优化？",
+    "a": "**参考答案：**\n\nService Worker是运行在后台的脚本，可以拦截网络请求，实现离线缓存和推送通知。\n\n**性能优化应用：**\n\n- **缓存策略**：实现复杂的缓存逻辑\n- **离线访问**：缓存关键资源，支持离线浏览\n- **预缓存**：在空闲时预加载资源\n- **网络优化**：智能选择缓存或网络\n\n```JavaScript\n// service-worker.js\nself.addEventListener('fetch', event => {\n  if (event.request.destination === 'image') {\n    event.respondWith(\n      caches.match(event.request).then(response => {\n        return response || fetch(event.request).then(fetchResponse => {\n          const responseClone = fetchResponse.clone();\n          caches.open('images').then(cache => {\n            cache.put(event.request, responseClone);\n          });\n          return fetchResponse;\n        });\n      })\n    );\n  }\n});\n```"
+  },
+  {
+    "id": "browser030",
+    "module": "browser",
+    "q": "如何优化移动端性能？",
+    "a": "**参考答案：**\n\n- **触摸优化**：使用touch事件，避免300ms延迟\n- **视口配置**：正确设置viewport meta标签\n- **图片适配**：使用合适尺寸和格式\n- **网络优化**：考虑弱网环境，实现降级策略\n- **电池优化**：减少CPU密集操作\n\n```HTML\n<!-- 移动端视口配置 -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n\n<!-- 避免300ms延迟 -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, touch-action=manipulation\">\n```\n\n```CSS\n/* 移动端优化 */\n.touch-element {\n  touch-action: manipulation; /* 避免双击缩放延迟 */\n  -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */\n}\n```"
+  },
+  {
+    "id": "browser031",
+    "module": "browser",
+    "q": "什么是关键CSS？如何提取和使用？",
+    "a": "**参考答案：**\n\n关键CSS是渲染首屏内容所必需的最小CSS集合。\n\n**提取方法：**\n\n- **工具**：Critical、Penthouse、UnCSS\n- **手动分析**：识别首屏元素对应样式\n- **自动化**：构建流程中自动提取\n\n**使用策略：**\n\n```HTML\n<!-- 内联关键CSS -->\n<style>\n  /* 首屏关键样式 */\n  .header { display: flex; height: 60px; }\n  .hero { min-height: 400px; }\n</style>\n\n<!-- 异步加载完整CSS -->\n<link rel=\"preload\" href=\"/styles/main.css\" as=\"style\" onload=\"this.onload=null;this.rel='stylesheet'\">\n<noscript><link rel=\"stylesheet\" href=\"/styles/main.css\"></noscript>\n```"
+  },
+  {
+    "id": "browser032",
+    "module": "browser",
+    "q": "如何实现资源的预加载和懒加载？",
+    "a": "**参考答案：**\n\n**预加载（Preloading）：**\n\n```HTML\n<!-- 预加载关键资源 -->\n<link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" crossorigin>\n<link rel=\"preload\" href=\"/images/hero.jpg\" as=\"image\">\n\n<!-- JavaScript预加载 -->\n<script>\nconst link = document.createElement('link');\nlink.rel = 'preload';\nlink.href = '/api/data.json';\nlink.as = 'fetch';\ndocument.head.appendChild(link);\n</script>\n```\n\n**懒加载（Lazy Loading）：**\n\n```JavaScript\n// 图片懒加载\nconst imageObserver = new IntersectionObserver((entries) => {\n  entries.forEach(entry => {\n    if (entry.isIntersecting) {\n      const img = entry.target;\n      img.src = img.dataset.src;\n      img.classList.remove('lazy');\n      imageObserver.unobserve(img);\n    }\n  });\n});\n\n// 组件懒加载\nconst LazyComponent = React.lazy(() => import('./HeavyComponent'));\n```"
+  },
+  {
+    "id": "browser033",
+    "module": "browser",
+    "q": "什么是Web Vitals？如何监控和优化？",
+    "a": "**参考答案：**\n\nWeb Vitals 是 Google 提出的用户体验质量指标集合，聚焦「加载、交互、视觉稳定」三个维度。\n\n**核心指标（Core Web Vitals）：**\n\n- **LCP**：最大内容绘制，< 2.5s\n- **INP**：交互到下一次绘制，< 200ms —— **2024 年 3 月起 INP 正式取代 FID 成为核心交互指标**（FID 已废弃：它只测首次交互的输入延迟，INP 覆盖所有交互的输入延迟 + 处理 + 渲染）\n- **CLS**：累积布局偏移，< 0.1\n\n**辅助指标（诊断用，非核心）：**\n\n- **TTFB**：首字节时间，用于定位 LCP 慢是否源于网络/服务端\n- **FCP**：首次内容绘制，用于定位白屏时长，是 LCP 的前置环节\n\n**监控方法：**\n\n```JavaScript\n// 使用 web-vitals v3+ 库（onXXX 命名；旧版 getXXX 已弃用）\nimport { onLCP, onINP, onCLS, onFCP, onTTFB } from 'web-vitals';\n\n// 核心指标\nonLCP(sendToAnalytics);\nonINP(sendToAnalytics); // 替代旧的 onFID / getFID\nonCLS(sendToAnalytics);\n\n// 辅助诊断指标（TTFB / FCP：帮助排查 LCP 瓶颈在网络还是渲染）\nonFCP(sendToAnalytics);\nonTTFB(sendToAnalytics);\n\n// 自定义上报：优先 sendBeacon，页面卸载也不丢数据\nfunction sendToAnalytics(metric) {\n  const body = JSON.stringify({\n    name: metric.name,   // LCP / INP / CLS ...\n    value: metric.value,\n    rating: metric.rating, // good | needs-improvement | poor\n    id: metric.id,\n  });\n  if (navigator.sendBeacon) navigator.sendBeacon('/analytics', body);\n  else fetch('/analytics', { method: 'POST', body, keepalive: true });\n}\n```\n\n**优化手段：**\n\n- **LCP**：CDN + 缓存、`<link rel=\"preload\">` 首屏大图、图片压缩/WebP、SSR/流式渲染、去除阻塞渲染的 CSS/JS\n- **INP**：拆分长任务（> 50ms）、事件回调内先响应视觉反馈再做重计算、`Web Worker` 卸载计算、防抖节流、减少大列表一次性渲染（虚拟滚动）\n- **CLS**：图片/视频/广告位显式设置宽高或 `aspect-ratio`、避免在已有内容上方插入 DOM、字体用 `font-display: optional/swap` + 预加载\n\n**注意区分：**实验室数据（Lighthouse，用 TBT 近似 INP）与真实用户数据 RUM（web-vitals + CrUX），线上决策应以 RUM 的 75 分位为准。"
+  },
+  {
+    "id": "browser034",
+    "module": "browser",
+    "q": "如何优化JavaScript执行性能？",
+    "a": "**参考答案：**\n\n- **减少主线程阻塞**：使用requestIdleCallback\n- **优化算法复杂度**：选择高效算法和数据结构\n- **避免内存泄漏**：及时清理事件监听器和定时器\n- **使用Web Workers**：将计算密集任务移到后台\n- **代码分割**：按需加载，减少初始bundle大小\n\n```JavaScript\n// 时间切片优化长任务\nfunction processLargeArray(array, callback) {\n  const chunk = 1000;\n  let index = 0;\n\n  function processChunk() {\n    const start = performance.now();\n\n    while (index < array.length && (performance.now() - start) < 5) {\n      // 处理数组项\n      processItem(array[index++]);\n    }\n\n    if (index < array.length) {\n      requestIdleCallback(processChunk);\n    } else {\n      callback();\n    }\n  }\n\n  processChunk();\n}\n```"
+  },
+  {
+    "id": "browser035",
+    "module": "browser",
+    "q": "什么是HTTP/2？对性能有什么影响？",
+    "a": "**参考答案：**\n\nHTTP/2是HTTP协议的第二个主要版本，带来显著性能提升。\n\n**主要特性：**\n\n- **多路复用**：单连接并行处理多个请求\n- **头部压缩**：HPACK算法压缩HTTP头\n- **服务器推送**：主动推送资源给客户端\n- **二进制分帧**：更高效的数据传输\n\n**性能影响：**\n\n- 减少连接数，降低延迟\n- 消除队头阻塞问题\n- 减少网络开销\n- 更好的带宽利用率\n\n```JavaScript\n// HTTP/2服务器推送示例（Node.js）\nconst http2 = require('http2');\nconst server = http2.createSecureServer(options);\n\nserver.on('stream', (stream, headers) => {\n  if (headers[':path'] === '/') {\n    // 推送CSS和JS资源\n    stream.pushStream({':path': '/styles.css'}, (err, pushStream) => {\n      pushStream.respondWithFile('./styles.css');\n    });\n  }\n});\n```"
+  },
+  {
+    "id": "browser036",
+    "module": "browser",
+    "q": "如何进行前端性能监控？",
+    "a": "**参考答案：**\n\n**监控指标：**\n\n- **加载性能**：FCP, LCP, TTI\n- **运行时性能**：FPS, 内存使用, CPU占用\n- **用户体验**：FID, CLS, 错误率\n\n**监控方案：**\n\n```JavaScript\n// Performance Observer API\nconst observer = new PerformanceObserver((list) => {\n  list.getEntries().forEach((entry) => {\n    if (entry.entryType === 'largest-contentful-paint') {\n      console.log('LCP:', entry.startTime);\n      // 上报数据\n      sendMetric('LCP', entry.startTime);\n    }\n  });\n});\n\nobserver.observe({entryTypes: ['largest-contentful-paint']});\n\n// 自定义性能监控\nclass PerformanceMonitor {\n  static trackPageLoad() {\n    window.addEventListener('load', () => {\n      const perfData = performance.timing;\n      const metrics = {\n        dns: perfData.domainLookupEnd - perfData.domainLookupStart,\n        tcp: perfData.connectEnd - perfData.connectStart,\n        ttfb: perfData.responseStart - perfData.navigationStart,\n        domReady: perfData.domContentLoadedEventEnd - perfData.navigationStart\n      };\n      this.sendMetrics(metrics);\n    });\n  }\n}\n```"
+  },
+  {
+    "id": "browser037",
+    "module": "browser",
+    "q": "什么是Tree Shaking？如何配置？",
+    "a": "**参考答案：**\n\nTree Shaking是移除JavaScript中未使用代码的优化技术，基于ES6模块的静态结构。\n\n**工作原理：**\n\n- 分析模块依赖关系\n- 标记使用的代码\n- 移除未使用的代码\n\n**配置示例：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  mode: 'production',\n  optimization: {\n    usedExports: true,\n    sideEffects: false, // 标记包为无副作用\n  },\n};\n\n// package.json\n{\n  \"sideEffects\": [\n    \"*.css\",\n    \"*.scss\",\n    \"./src/polyfills.js\"\n  ]\n}\n\n// 正确的导入方式\nimport { debounce } from 'lodash-es'; // 支持tree shaking\n// 避免\nimport _ from 'lodash'; // 导入整个库\n```"
+  },
+  {
+    "id": "browser038",
+    "module": "browser",
+    "q": "如何优化CSS动画性能？",
+    "a": "**参考答案：**\n\n- **使用transform和opacity**：触发GPU加速，避免重排重绘\n- **will-change属性**：提示浏览器优化动画元素\n- **避免动画布局属性**：width、height、margin等\n- **使用CSS3动画**：优于JavaScript动画\n- **合理使用硬件加速**：避免过度使用导致内存问题\n\n```CSS\n/* 高性能动画 */\n.optimized-animation {\n  will-change: transform;\n  transform: translateZ(0); /* 创建合成层 */\n  transition: transform 0.3s ease-out;\n}\n\n.optimized-animation:hover {\n  transform: translateX(100px) scale(1.1);\n}\n\n/* 避免的动画属性 */\n.bad-animation {\n  transition: width 0.3s; /* 会触发重排 */\n}\n\n/* 使用transform替代 */\n.good-animation {\n  transform: scaleX(1.2); /* 只触发合成 */\n}\n```"
+  },
+  {
+    "id": "browser039",
+    "module": "browser",
+    "q": "什么是资源提示（Resource Hints）？",
+    "a": "**参考答案：**\n\n资源提示是HTML5规范，允许开发者向浏览器提供关于资源加载的提示。\n\n**类型：**\n\n- **dns-prefetch**：DNS预解析\n- **preconnect**：预连接\n- **preload**：预加载\n- **prefetch**：预取\n- **prerender**：预渲染\n\n```HTML\n<!-- DNS预解析 -->\n<link rel=\"dns-prefetch\" href=\"//fonts.googleapis.com\">\n\n<!-- 预连接（包含DNS解析、TCP握手、TLS协商） -->\n<link rel=\"preconnect\" href=\"//fonts.gstatic.com\" crossorigin>\n\n<!-- 预加载当前页面需要的资源 -->\n<link rel=\"preload\" href=\"/critical.css\" as=\"style\">\n<link rel=\"preload\" href=\"/hero.jpg\" as=\"image\">\n\n<!-- 预取用户可能访问的资源 -->\n<link rel=\"prefetch\" href=\"/next-page.html\">\n\n<!-- 预渲染整个页面 -->\n<link rel=\"prerender\" href=\"/landing-page.html\">\n```"
+  },
+  {
+    "id": "browser040",
+    "module": "browser",
+    "q": "如何实现代码分割（Code Splitting）？",
+    "a": "**参考答案：**\n\n代码分割是将代码拆分成多个bundle，实现按需加载的技术。\n\n**分割策略：**\n\n- **入口分割**：多个入口点\n- **动态导入**：import()语法\n- **第三方库分割**：vendor chunk\n\n```JavaScript\n// 动态导入\nconst loadComponent = async () => {\n  const { default: Component } = await import('./HeavyComponent');\n  return Component;\n};\n\n// React代码分割\nconst LazyComponent = React.lazy(() => import('./LazyComponent'));\n\nfunction App() {\n  return (\n    <Suspense fallback={<div>Loading...</div>}>\n      <LazyComponent />\n    </Suspense>\n  );\n}\n\n// webpack配置\nmodule.exports = {\n  optimization: {\n    splitChunks: {\n      chunks: 'all',\n      cacheGroups: {\n        vendor: {\n          test: /[\\\\/]node_modules[\\\\/]/,\n          name: 'vendors',\n          chunks: 'all',\n        },\n        common: {\n          name: 'common',\n          minChunks: 2,\n          chunks: 'all',\n        }\n      }\n    }\n  }\n};\n```"
+  },
+  {
+    "id": "browser041",
+    "module": "browser",
+    "q": "什么是关键渲染路径优化？",
+    "a": "**参考答案：**\n\n关键渲染路径优化是指优化浏览器渲染页面的关键步骤，减少首屏渲染时间。\n\n**优化步骤：**\n\n1. **分析关键资源**：识别渲染首屏必需的资源\n2. **减少关键资源数量**：合并、内联关键资源\n3. **压缩关键字节数**：压缩CSS、JS、HTML\n4. **优化加载顺序**：优先加载关键资源\n\n```HTML\n<!-- 优化示例 -->\n<!DOCTYPE html>\n<html>\n<head>\n  <!-- 内联关键CSS -->\n  <style>\n    /* 首屏关键样式 */\n    body { margin: 0; font-family: Arial; }\n    .header { height: 60px; background: #333; }\n  </style>\n\n  <!-- 预加载字体 -->\n  <link rel=\"preload\" href=\"/fonts/main.woff2\" as=\"font\" crossorigin>\n</head>\n<body>\n  <!-- 首屏内容 -->\n  <header class=\"header\">...</header>\n\n  <!-- 异步加载非关键CSS -->\n  <link rel=\"preload\" href=\"/styles/main.css\" as=\"style\"\n        onload=\"this.onload=null;this.rel='stylesheet'\">\n\n  <!-- 延迟加载非关键JS -->\n  <script src=\"/js/main.js\" defer></script>\n</body>\n</html>\n```"
+  },
+  {
+    "id": "browser042",
+    "module": "browser",
+    "q": "如何优化长列表渲染性能？",
+    "a": "**参考答案：**\n\n**优化策略：**\n\n- **虚拟滚动**：只渲染可视区域\n- **分页加载**：按需加载数据\n- **防抖节流**：优化滚动事件\n- **使用key优化**：React中正确使用key\n- **避免内联函数**：减少不必要的重渲染\n\n```JavaScript\n// 虚拟滚动实现\nclass VirtualScroller {\n  constructor(container, itemHeight, items) {\n    this.container = container;\n    this.itemHeight = itemHeight;\n    this.items = items;\n    this.visibleCount = Math.ceil(container.clientHeight / itemHeight);\n    this.startIndex = 0;\n\n    this.init();\n  }\n\n  init() {\n    this.container.addEventListener('scroll', this.throttle(this.onScroll.bind(this), 16));\n    this.render();\n  }\n\n  onScroll() {\n    const scrollTop = this.container.scrollTop;\n    this.startIndex = Math.floor(scrollTop / this.itemHeight);\n    this.render();\n  }\n\n  render() {\n    const endIndex = Math.min(this.startIndex + this.visibleCount + 1, this.items.length);\n    const visibleItems = this.items.slice(this.startIndex, endIndex);\n\n    // 渲染可见项目\n    this.container.innerHTML = visibleItems.map((item, index) =>\n      `<div style=\"height: ${this.itemHeight}px; transform: translateY(${(this.startIndex + index) * this.itemHeight}px)\">\n        ${item.content}\n      </div>`\n    ).join('');\n  }\n\n  throttle(func, delay) {\n    let timer = null;\n    return function() {\n      if (!timer) {\n        timer = setTimeout(() => {\n          func.apply(this, arguments);\n          timer = null;\n        }, delay);\n      }\n    };\n  }\n}\n```"
+  },
+  {
+    "id": "browser043",
+    "module": "browser",
+    "q": "什么是PWA？如何提升性能？",
+    "a": "**参考答案：**\n\nPWA（Progressive Web App）是使用现代Web技术构建的应用，提供类似原生应用的体验。\n\n**性能优化特性：**\n\n- **Service Worker**：离线缓存和后台同步\n- **App Shell模式**：快速加载应用外壳\n- **预缓存策略**：关键资源预缓存\n- **推送通知**：提升用户参与度\n\n```JavaScript\n// service-worker.js\nconst CACHE_NAME = 'app-v1';\nconst urlsToCache = [\n  '/',\n  '/styles/main.css',\n  '/scripts/main.js',\n  '/images/icon.png'\n];\n\n// 安装时预缓存资源\nself.addEventListener('install', event => {\n  event.waitUntil(\n    caches.open(CACHE_NAME)\n      .then(cache => cache.addAll(urlsToCache))\n  );\n});\n\n// 拦截请求，优先从缓存读取\nself.addEventListener('fetch', event => {\n  event.respondWith(\n    caches.match(event.request)\n      .then(response => {\n        return response || fetch(event.request);\n      })\n  );\n});\n\n// 注册Service Worker\nif ('serviceWorker' in navigator) {\n  navigator.serviceWorker.register('/sw.js');\n}\n```"
+  },
+  {
+    "id": "browser044",
+    "module": "browser",
+    "q": "如何进行前端性能测试？",
+    "a": "**参考答案：**\n\n**测试工具：**\n\n- **Lighthouse**：综合性能评估\n- **WebPageTest**：详细性能分析\n- **Chrome DevTools**：实时性能监控\n- **GTmetrix**：页面速度测试\n\n**测试策略：**\n\n```JavaScript\n// 自动化性能测试\nconst lighthouse = require('lighthouse');\nconst chromeLauncher = require('chrome-launcher');\n\nasync function runLighthouse(url) {\n  const chrome = await chromeLauncher.launch({chromeFlags: ['--headless']});\n  const options = {logLevel: 'info', output: 'html', port: chrome.port};\n  const runnerResult = await lighthouse(url, options);\n\n  const score = runnerResult.report;\n  console.log('Performance score:', runnerResult.lhr.categories.performance.score * 100);\n\n  await chrome.kill();\n}\n\n// 性能预算设置\nconst performanceBudget = {\n  'first-contentful-paint': 2000,\n  'largest-contentful-paint': 2500,\n  'cumulative-layout-shift': 0.1,\n  'total-blocking-time': 300\n};\n\n// 监控关键指标\nfunction monitorPerformance() {\n  new PerformanceObserver((list) => {\n    list.getEntries().forEach((entry) => {\n      const metric = entry.name || entry.entryType;\n      const value = entry.startTime || entry.value;\n\n      if (performanceBudget[metric] && value > performanceBudget[metric]) {\n        console.warn(`Performance budget exceeded: ${metric} = ${value}ms`);\n      }\n    });\n  }).observe({entryTypes: ['paint', 'largest-contentful-paint', 'layout-shift']});\n}\n```"
+  },
+  {
+    "id": "browser045",
+    "module": "browser",
+    "q": "前端性能优化的最佳实践总结？",
+    "a": "**参考答案：**\n\n**加载优化：**\n\n- 减少HTTP请求数量\n- 启用Gzip/Brotli压缩\n- 使用CDN加速\n- 实施缓存策略\n- 优化关键渲染路径\n\n**运行时优化：**\n\n- 避免长任务阻塞主线程\n- 使用虚拟滚动处理长列表\n- 合理使用Web Workers\n- 优化动画性能\n- 防止内存泄漏\n\n**资源优化：**\n\n- 图片格式和尺寸优化\n- 代码分割和懒加载\n- Tree Shaking移除无用代码\n- 字体加载优化\n\n**监控和测试：**\n\n- 建立性能监控体系\n- 设置性能预算\n- 定期进行性能测试\n- 关注Core Web Vitals指标\n\n**开发流程：**\n\n- 性能优先的开发理念\n- 自动化构建优化\n- 持续性能监控\n- 团队性能意识培养"
+  },
+  {
+    "id": "browser046",
+    "module": "browser",
+    "q": "怎么用 Chrome DevTools 系统性排查内存泄漏？",
+    "a": "**简要回答：**\n核心三步：**复现 → 拍堆快照对比 → 定位游离/增长的对象**，再用 Retainers 追引用链。\n\n**拆解：**\n1. **Performance Monitor**：勾选 JS Heap / Nodes / DOM Nodes，重复操作看指标是否只增不减。\n2. **Memory → Heap Snapshot**：操作前拍一张，操作后拍一张，用「Comparison」视图看新增的对象。\n3. **看 Detached DOM**：DOM 节点已从页面移除但 JS 仍引用（如闭包、全局数组、事件监听未解绑）→ 典型泄漏。\n4. **Allocation instrumentation**：实时看哪些函数持续分配不回收。\n5. **Retainers 面板**：顺着引用链找到「谁还抱着这个对象不放」，修掉引用即可。\n\n**常见泄漏源：** 忘了解绑的全局事件监听、闭包持有大对象、timer 未清、缓存无上限。\n**追问：** 为什么 `console.log` 也会掩盖泄漏？（控制台引用会阻止对象被回收。）"
+  },
+  {
+    "id": "browser047",
+    "module": "browser",
+    "q": "页面白屏了怎么快速定位？常见原因有哪些？",
+    "a": "**简要回答：**\n白屏=「首屏没有任何可见内容」。按链路分层排查：**资源 → JS 报错 → 渲染阻塞 → 路由/数据**。\n\n**拆解：**\n1. **Network**：HTML/JS/CSS 是否 404、CDN 跨域、资源被 CSP 拦截、白屏 JS 没加载。\n2. **Console**：是否有未捕获报错（React 渲染抛错、import 路径错、Vue 模板编译失败）直接打断渲染。\n3. **空白根节点**：#app 为空 → 多半是入口 JS 抛错；加错误边界（ErrorBoundary）/ 全局 `window.onerror` 上报。\n4. **路由/权限**：首屏接口 401 跳登录、或 SSR 水合失败（hydration mismatch）。\n5. **性能**：超长 JS 解析（主线程被占）导致迟迟不绘制，看 Performance 的 Long Task。\n\n**工程化：** 接前端监控（白屏检测用「页面关键点是否渲染」+ 资源/JS 错误上报）才能线上快速定位。"
+  },
+  {
+    "id": "browser048",
+    "module": "browser",
+    "q": "页面卡顿 / 长任务怎么排查？Long Task 与 INP 是什么？",
+    "a": "**简要回答：**\n卡顿=主线程被某段 JS 占太久，用户点击/滚动无响应。用 **Performance 面板看 Long Task（>50ms）**，用 **INP** 衡量交互响应。\n\n**拆解：**\n- **Long Task**：执行超过 50ms 的任务，期间浏览器无法处理输入。Performance 里红色三角就是它。\n- **INP（Interaction to Next Paint）**：用户每次交互到下次绘制的最大延迟，2024 起取代 FID 成为 Core Web Vital，衡量「整体跟手度」。\n- **排查**：Performance 录制 → 看调用栈定位耗时函数（大循环、重排重绘、序列化大 JSON）。\n- **优化**：拆分长任务（`setTimeout` 分片 / `requestIdleCallback` / `scheduler.yield`）、Web Worker 搬计算、减少强制同步布局（读写 offset 交替）。\n\n**追问：** 为什么 FID 升级成 INP？（FID 只测首次交互，INP 覆盖全部交互更真实。）"
+  },
+  {
+    "id": "browser049",
+    "module": "browser",
+    "q": "Web Vitals（LCP / CLS / INP）是什么？分别怎么优化？",
+    "a": "**简要回答：**\nCore Web Vitals 三指标衡量**加载(LCP)、稳定(CLS)、交互(INP)**，是大厂面试与线上监控的硬标准。\n\n**拆解：**\n- **LCP（最大内容绘制）**：视口内最大元素（图片/文字块）渲染时间，目标 ≤2.5s。优化：图片懒加载+压缩(WebP)、预连接关键域名、服务端直出首屏、减少阻塞的 JS/CSS。\n- **CLS（累积布局偏移）**：元素意外位移程度，目标 ≤0.1。优化：图片/视频给 `width/height` 或 `aspect-ratio`、给广告/动态内容预留占位、避免插入内容把上面顶下去。\n- **INP（交互到绘制）**：见上一条，目标 ≤200ms。优化：拆分长任务、防抖非紧急更新、用 `useTransition`。\n\n**量化：** 用 `web-vitals` 库埋点上报，建立持续监控才能真正驱动优化。"
+  },
+  {
+    "id": "browser050",
+    "module": "browser",
+    "q": "什么是 XSS？如何防御？",
+    "a": "**参考答案：**\n\nXSS（Cross-Site Scripting，跨站脚本攻击）：攻击者把恶意脚本注入页面，在其他用户浏览器中执行，从而窃取 Cookie/Token、伪造操作、劫持会话。本质是**「数据被当成代码执行」**。\n\n**三种类型：**\n\n| 类型 | 恶意代码位置 | 特点 |\n| --- | --- | --- |\n| **存储型（持久型）** | 存入服务端数据库 | 评论、昵称、富文本被存下来，所有访问者都中招，危害最大 |\n| **反射型（非持久型）** | URL 参数中，服务端拼接回显 | 需诱导点击恶意链接，如搜索结果页回显关键词 |\n| **DOM 型** | 前端 JS 直接取 URL/输入写入 DOM | **不经过服务端**，纯客户端漏洞，如 `location.hash` → `innerHTML` |\n\n**防御手段：**\n\n1. **输入校验 + 输出转义（核心）**：不信任任何用户输入；按输出位置做对应转义 —— HTML 上下文转义 `< > & \" ' /`，属性用引号包裹并转义，URL 上下文用 `encodeURIComponent`，JS 上下文避免直接内联拼接。**转义要在输出时做，而非只在入库时做**。\n2. **CSP（Content-Security-Policy）**：如 `Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-xxx'`，禁止内联脚本与外域脚本，即使注入成功也无法执行，是纵深防御的关键一层。\n3. **HttpOnly Cookie**：给会话 Cookie 加 `HttpOnly`，JS 无法通过 `document.cookie` 读取，配合 `Secure` + `SameSite` 降低被盗用风险。\n4. **利用框架默认转义**：React/Vue 对插值默认转义，**不要**乱用 `dangerouslySetInnerHTML` / `v-html`；必须渲染富文本时用 **DOMPurify** 等白名单库先净化。\n5. **避免 `innerHTML` 拼接不可信内容**：优先 `textContent` / `createElement` + `setAttribute`；禁用 `eval`、`new Function`、`setTimeout(字符串)`、`document.write`，`href` 拦截 `javascript:` 协议。\n6. **其他加固**：富文本走标签/属性白名单，敏感操作二次校验，上传文件限制类型（防 HTML/SVG 挂马），配合 `X-Content-Type-Options: nosniff`。"
+  },
+  {
+    "id": "browser051",
+    "module": "browser",
+    "q": "什么是 CSRF？如何防御？",
+    "a": "**参考答案：**\n\nCSRF（Cross-Site Request Forgery，跨站请求伪造）：攻击者诱导**已登录**用户在第三方站点触发请求，浏览器自动携带该站点 Cookie，服务端误以为是用户本人操作。\n\n**攻击原理：**\n\n1. 用户登录 `bank.com`，浏览器保存了会话 Cookie；\n2. 用户在未退出的情况下访问恶意站点 `evil.com`；\n3. 恶意页面自动发起请求（`<img src=\"bank.com/transfer?to=hacker&amount=1000\">`、隐藏表单自动提交、`fetch` 带 `credentials`）；\n4. 浏览器**自动附带** `bank.com` 的 Cookie，服务端鉴权通过，转账被执行。\n\n**关键特征：**攻击者「**借用户身份发请求**」，全程**拿不到响应内容**，也不需要读取 Cookie —— 只利用了 Cookie 的自动携带机制。与 XSS 的区别：XSS 是**盗取/执行**（骗浏览器执行脚本），CSRF 是**冒用**（骗服务器信任请求）。\n\n**防御手段：**\n\n1. **SameSite Cookie（首选）**：设置 `Set-Cookie: session=xxx; SameSite=Lax; Secure; HttpOnly`。`Lax`（现代浏览器默认）阻止跨站 POST 与子资源请求带 Cookie；`Strict` 最严格但会影响外链跳转后的登录态；确需跨站时才用 `None` 且必须搭配 `Secure`。\n2. **CSRF Token**：服务端下发随机 Token 存于 Session，页面以隐藏域/`<meta>` 输出，请求放入自定义请求头或表单字段，服务端比对。攻击者跨域无法读取到 Token，是最通用的方案。\n3. **校验 Referer / Origin**：判断请求来源是否为可信域名。简单但不完全可靠（Referer 可能被隐私策略剥离，需处理为空的情况，通常作为辅助校验）。\n4. **双重提交 Cookie（Double Submit Cookie）**：把随机值同时写入 Cookie 与请求参数/请求头，服务端比对两者是否一致，适合无状态/分布式服务（无需服务端存 Session）。\n5. **重要操作二次验证**：转账、改密、删除等做短信/邮箱验证码、图形验证码或重新输入密码，从业务层阻断。\n6. **其他规范**：遵循 RESTful 语义（GET 不产生副作用）；使用自定义请求头（如 `X-Requested-With`）触发预检，借 CORS 拦截简单跨站请求；改用 `Authorization` 头传 Token（不自动携带，天然免疫 CSRF）。"
+  },
+  {
+    "id": "browser052",
+    "module": "browser",
+    "q": "localStorage、sessionStorage、Cookie 的区别？",
+    "a": "**参考答案：**\n\n| 维度 | localStorage | sessionStorage | Cookie |\n| --- | --- | --- | --- |\n| **容量** | 约 5MB（各浏览器 5~10MB） | 约 5MB | 约 **4KB**，且每域数量有限（约 50 个） |\n| **生命周期** | **永久**，除非手动或用户清理 | **当前标签页会话**，关闭标签页/窗口即清除 | **可设过期时间**（`Expires`/`Max-Age`）；不设则为会话 Cookie，关浏览器失效 |\n| **作用域** | 同源（协议 + 域名 + 端口）共享，多标签页互通 | 同源 + **同一标签页**，新开标签页不共享（刷新保留） | 按 **Domain + Path** 划分，可跨子域共享（`Domain=.a.com`），可用 `Path` 限定路径 |\n| **服务端交互** | 不参与请求，需手动取出携带 | 不参与请求 | **同源请求自动携带**在 `Cookie` 请求头中 |\n| **服务端可写** | 否，仅前端 JS | 否 | 是，服务端可通过 `Set-Cookie` 下发 |\n| **API** | `setItem/getItem/removeItem/clear`，同步、仅字符串 | 同 localStorage | `document.cookie` 字符串拼接，需自行封装解析 |\n| **安全性** | JS 可读 → 易被 XSS 窃取；无内置安全属性 | 同 localStorage | 支持 **`HttpOnly`**（JS 不可读，防 XSS 窃取）、**`Secure`**（仅 HTTPS）、**`SameSite`**（防 CSRF），安全能力最强 |\n| **事件通知** | 支持 `storage` 事件（跨标签页同步） | 不跨标签页，基本用不到 | 无 |\n\n**使用场景：**\n\n- **localStorage**：需长期保存且与服务端无关的数据 —— 主题/语言偏好、表单草稿、非敏感缓存（配合自定义过期时间戳）、埋点缓冲。\n- **sessionStorage**：仅本次会话有效的临时数据 —— 多步表单/向导的中间态、页面间一次性传参、单标签页的滚动位置与列表筛选条件。\n- **Cookie**：需要服务端参与鉴权的场景 —— 会话 ID / 登录态（务必 `HttpOnly + Secure + SameSite`）、A/B 实验分组、设备标识、CSRF Token。\n\n**补充：**\n\n- localStorage / sessionStorage 统称 **Web Storage**，API 同步、只存字符串，需 `JSON.stringify` / `JSON.parse` 转换；同步读写大数据会阻塞主线程。\n- Cookie 每次请求都随请求头发送，滥用会增加带宽开销，静态资源建议用独立无 Cookie 域名。\n- 存大量结构化数据、需要索引/事务或离线能力时，应改用 **IndexedDB**（异步、容量大）；敏感 Token 优先放内存或 `HttpOnly` Cookie，避免存入 Web Storage。"
+  }
 ]
