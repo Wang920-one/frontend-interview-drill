@@ -237,13 +237,16 @@
   <!-- 每日计划 -->
   <div class="plan sketch">
     <h3>📅 每日计划</h3>
-    <div class="plan-row">每天背
+    <div class="plan-row">每天新记
       <input id="goalInput" type="number" min="1" max="999" value="20" /> 题
     </div>
-    <div class="plan-info">全部 <b id="planTotal">0</b> 题 · 预计 <b id="planDays">0</b> 天背完</div>
-    <div class="today">今日已背 <b id="todayDone">0</b> / <b id="todayGoal">20</b>
+    <div class="plan-row">每天复习
+      <input id="revGoalInput" type="number" min="0" max="999" value="10" /> 题
+    </div>
+    <div class="plan-info">全部 <b id="planTotal">0</b> 题 · 预计 <b id="planDays">0</b> 天背完（按新记计）</div>
+    <div class="today">新记 <b id="todayNew">0</b>/<b id="todayGoal">20</b> · 复习 <b id="todayRev">0</b>/<b id="todayRevGoal">10</b></div>
+    <div class="today" style="margin-top:4px">合计 <b id="todayDone">0</b>/<b id="todayGoalAll">30</b> 还差 <span id="todayLeft">30</span> 题达标 ✦
       <div class="tbar"><i id="todayBar"></i></div>
-      还差 <span id="todayLeft">20</span> 题达标 ✦
     </div>
   </div>
 
@@ -386,10 +389,12 @@ let QUESTIONS = []; // 题目数据改为从 ./data/<module>.json 按需加载�
 /* ====== 状态 ====== */
 const LS_PROG='drill-progress-v1', LS_TODAY='drill-today', LS_GOAL='drill-goal', LS_REVIEW='drill-review-v1', LS_REV_SEED='drill-review-seeded';
 const LS_DAILY='drill-daily-v1';
+const LS_REV_GOAL='drill-rev-goal';
 let progress = JSON.parse(localStorage.getItem(LS_PROG)||'{}');
 let goal = parseInt(localStorage.getItem(LS_GOAL))||20;
+let revGoal = parseInt(localStorage.getItem(LS_REV_GOAL))||10;
 let today = JSON.parse(localStorage.getItem(LS_TODAY)||'{}');
-let daily = JSON.parse(localStorage.getItem(LS_DAILY)||'{}'); // 每日背题记录 { 'YYYY-MM-DD': {count, goal} }
+let daily = JSON.parse(localStorage.getItem(LS_DAILY)||'{}'); // 每日背题记录 { 'YYYY-MM-DD': {count, review, goal, revGoal} }
 let reviews = JSON.parse(localStorage.getItem(LS_REVIEW)||'{}');
 let curModule='all', curMode='seq', list=[], pos=0, pool=[];
 let drawerView='modules', drawerMod='all';
@@ -433,9 +438,12 @@ const $ = s=>document.querySelector(s);
 const elCard=$('#card');
 const todayStr=()=>new Date().toISOString().slice(0,10);
 function prevDateStr(s){ const [y,m,d]=s.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1,d)); dt.setUTCDate(dt.getUTCDate()-1); const z=n=>String(n).padStart(2,'0'); return dt.getUTCFullYear()+'-'+z(dt.getUTCMonth()+1)+'-'+z(dt.getUTCDate()); }
-function ensureToday(){ if(today.date!==todayStr()) today={date:todayStr(), ids:[]}; }
+function ensureToday(){ if(today.date!==todayStr() || !Array.isArray(today.ids) || !Array.isArray(today.reviewIds)) today={date:todayStr(), ids:[], reviewIds:[]}; }
 function saveToday(){ localStorage.setItem(LS_TODAY, JSON.stringify(today)); }
-function bumpToday(id, on){ ensureToday(); const i=today.ids.indexOf(id); if(on){ if(i<0) today.ids.push(id); } else { if(i>=0) today.ids.splice(i,1); } saveToday(); daily[today.date]={count:today.ids.length, goal:goal}; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); updatePlan(); }
+function toggleId(arr, id, on){ const i=arr.indexOf(id); if(on){ if(i<0) arr.push(id); } else { if(i>=0) arr.splice(i,1); } }
+function recordDaily(){ ensureToday(); const g=parseInt($('#goalInput').value)||goal, rg=parseInt($('#revGoalInput').value)||revGoal; daily[today.date]={count:today.ids.length, review:today.reviewIds.length, goal:g, revGoal:rg}; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); }
+function bumpToday(id, on){ ensureToday(); toggleId(today.ids, id, on); saveToday(); recordDaily(); updatePlan(); }
+function bumpReviewToday(id, on){ ensureToday(); toggleId(today.reviewIds, id, on); saveToday(); recordDaily(); updatePlan(); }
 
 /* 模块抽屉 */
 function renderDrawer(){
@@ -581,15 +589,21 @@ function updatePlan(){
   ensureToday();
   const total=QUESTIONS.length;
   goal=parseInt($('#goalInput').value)||goal;
+  revGoal=parseInt($('#revGoalInput').value)||0;
   const days=Math.ceil(total/goal);
   $('#planTotal').textContent=total;
   $('#planDays').textContent=days;
   $('#todayGoal').textContent=goal;
-  const done=today.ids.length;
+  $('#todayRevGoal').textContent=revGoal;
+  const newDone=today.ids.length, revDone=today.reviewIds.length;
+  $('#todayNew').textContent=newDone;
+  $('#todayRev').textContent=revDone;
+  const done=newDone+revDone, goalAll=goal+revGoal;
   $('#todayDone').textContent=done;
-  $('#todayLeft').textContent=Math.max(0,goal-done);
-  $('#todayBar').style.width=Math.min(100, goal?done/goal*100:0)+'%';
-  $('#todayBar').parentElement.classList.toggle('full', done>=goal && goal>0);
+  $('#todayGoalAll').textContent=goalAll;
+  $('#todayLeft').textContent=Math.max(0, goalAll-done);
+  $('#todayBar').style.width=Math.min(100, goalAll?done/goalAll*100:0)+'%';
+  $('#todayBar').parentElement.classList.toggle('full', done>=goalAll && goalAll>0);
 }
 
 /* 求职倒计时 */
@@ -779,7 +793,7 @@ function refreshBackupUI(){
   else { $('#notifState').textContent='当前：未开启（仅页面打开时提醒）'; $('#notifBtn').textContent='开启通知'; }
 }
 $('#exportBtn').onclick=()=>{
-  const data={ app:'frontend-interview-drill', version:4, exportedAt:new Date().toISOString(), progress:progress, reviews:reviews, goal:goal, cdTarget:cdTarget, revQuota:revQuota, revQuotaMod:revQuotaMod, revMinMod:revMinMod };
+  const data={ app:'frontend-interview-drill', version:5, exportedAt:new Date().toISOString(), progress:progress, reviews:reviews, goal:goal, revGoal:revGoal, cdTarget:cdTarget, daily:daily, revQuota:revQuota, revQuotaMod:revQuotaMod, revMinMod:revMinMod };
   const blob=new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='八股抽背进度_'+todayStr()+'.json';
@@ -813,16 +827,23 @@ function applyImport(mode){
     if(d.progress && typeof d.progress==='object') progress=d.progress;
     if(d.reviews && typeof d.reviews==='object') reviews=d.reviews;
     if(typeof d.goal==='number'){ goal=d.goal; $('#goalInput').value=goal; localStorage.setItem(LS_GOAL,goal); }
+    if(typeof d.revGoal==='number'){ revGoal=d.revGoal; $('#revGoalInput').value=revGoal; localStorage.setItem(LS_REV_GOAL,revGoal); }
     if(typeof d.cdTarget==='string'){ cdTarget=d.cdTarget; localStorage.setItem(LS_CD,cdTarget); }
-    if(typeof d.revQuota==='number'){ revQuota=d.revQuota; $('#revQuotaInput').value=revQuota; localStorage.setItem(LS_REV_QUOTA,revQuota); }
+    if(typeof d.revQuota==='number'){ revQuota=d.revQuota; }
+    if(revGoal>0){ revQuota=revGoal; } // 复习目标直接驱动复习配额
+    $('#revQuotaInput').value=revQuota; localStorage.setItem(LS_REV_QUOTA,revQuota);
     if(d.revQuotaMod && typeof d.revQuotaMod==='object'){ revQuotaMod=d.revQuotaMod; localStorage.setItem(LS_REV_QUOTA_MOD, JSON.stringify(revQuotaMod)); }
     if(d.revMinMod && typeof d.revMinMod==='object'){ revMinMod=d.revMinMod; localStorage.setItem(LS_REV_MIN_MOD, JSON.stringify(revMinMod)); }
+    if(d.daily && typeof d.daily==='object'){ daily=d.daily; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); }
     localStorage.setItem(LS_NOTIF, notifEnabled?'1':'0');
-  } else { // 合并：题目进度按 id 合并，设置项保留当前
+  } else { // 合并：题目进度按 id 合并，设置项带复习目标/每日记录
     if(d.progress && typeof d.progress==='object'){ for(const k in d.progress) progress[k]=d.progress[k]; }
     if(d.reviews && typeof d.reviews==='object'){ for(const k in d.reviews) reviews[k]=d.reviews[k]; }
+    if(typeof d.revGoal==='number'){ revGoal=d.revGoal; $('#revGoalInput').value=revGoal; localStorage.setItem(LS_REV_GOAL,revGoal); }
+    if(revGoal>0){ revQuota=revGoal; $('#revQuotaInput').value=revQuota; localStorage.setItem(LS_REV_QUOTA,revQuota); }
     if(d.revQuotaMod && typeof d.revQuotaMod==='object'){ for(const k in d.revQuotaMod) revQuotaMod[k]=d.revQuotaMod[k]; localStorage.setItem(LS_REV_QUOTA_MOD, JSON.stringify(revQuotaMod)); }
     if(d.revMinMod && typeof d.revMinMod==='object'){ for(const k in d.revMinMod) revMinMod[k]=d.revMinMod[k]; localStorage.setItem(LS_REV_MIN_MOD, JSON.stringify(revMinMod)); }
+    if(d.daily && typeof d.daily==='object'){ for(const k in d.daily) daily[k]=d.daily[k]; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); }
   }
   revToday={date:todayStr(), per:{}}; localStorage.setItem(LS_REV_TODAY, JSON.stringify(revToday));
   localStorage.setItem(LS_PROG, JSON.stringify(progress));
@@ -836,7 +857,7 @@ $('#importMergeBtn').onclick=()=>applyImport('merge');
 $('#importOverwriteBtn').onclick=()=>applyImport('overwrite');
 $('#closeImport').onclick=()=>{ pendingImport=null; $('#importOverlay').classList.remove('show'); };
 $('#importOverlay').onclick=e=>{ if(e.target.id==='importOverlay'){ pendingImport=null; $('#importOverlay').classList.remove('show'); } };
-$('#revQuotaInput').onchange=()=>{ revQuota=Math.max(1,parseInt($('#revQuotaInput').value)||10); localStorage.setItem(LS_REV_QUOTA,revQuota); if(curMode==='review'){ buildList(); renderRevPlan(); } };
+$('#revQuotaInput').onchange=()=>{ revQuota=Math.max(1,parseInt($('#revQuotaInput').value)||10); localStorage.setItem(LS_REV_QUOTA,revQuota); if(revQuota>0){ revGoal=revQuota; $('#revGoalInput').value=revGoal; localStorage.setItem(LS_REV_GOAL,revGoal); } if(curMode==='review'){ buildList(); renderRevPlan(); } };
 
 /* 翻牌 */
 elCard.onclick=()=>{
@@ -848,8 +869,8 @@ elCard.onclick=()=>{
 /* 评分 */
 document.querySelectorAll('.rate').forEach(r=>r.onclick=()=>{
   const q=list[pos]; if(!q) return; const v=r.dataset.rate;
-  if(progress[q.id]===v){ delete progress[q.id]; bumpToday(q.id,false); if(curMode==='review') unbumpRevToday(q.module, q.id); }
-  else { progress[q.id]=v; bumpToday(q.id,true); if(curMode==='review') bumpRevToday(q.module, q.id); }
+  if(progress[q.id]===v){ delete progress[q.id]; if(curMode==='review'){ bumpReviewToday(q.id,false); unbumpRevToday(q.module, q.id); } else { bumpToday(q.id,false); } }
+  else { progress[q.id]=v; if(curMode==='review'){ bumpReviewToday(q.id,true); bumpRevToday(q.module, q.id); } else { bumpToday(q.id,true); } }
   localStorage.setItem(LS_PROG, JSON.stringify(progress));
   recordReview(q.id, v);
   if(curMode==='review'){ buildList(); } else { showCard(); }
@@ -872,7 +893,14 @@ $('#randBtn').onclick=()=>{ if(list.length===0) return; if(pool.length===0) pool
 
 /* 每日目标 */
 $('#goalInput').value=goal;
-$('#goalInput').onchange=()=>{ goal=parseInt($('#goalInput').value)||1; localStorage.setItem(LS_GOAL,goal); ensureToday(); if(daily[today.date]){ daily[today.date].goal=goal; localStorage.setItem(LS_DAILY, JSON.stringify(daily)); } updatePlan(); };
+$('#revGoalInput').value=revGoal;
+$('#goalInput').onchange=()=>{ goal=parseInt($('#goalInput').value)||1; localStorage.setItem(LS_GOAL,goal); ensureToday(); updatePlan(); if(daily[today.date]) recordDaily(); };
+$('#revGoalInput').onchange=()=>{
+  revGoal=parseInt($('#revGoalInput').value)||0; localStorage.setItem(LS_REV_GOAL,revGoal);
+  if(revGoal>0){ revQuota=revGoal; $('#revQuotaInput').value=revQuota; localStorage.setItem(LS_REV_QUOTA,revQuota); } // 复习目标直接驱动复习配额
+  ensureToday(); updatePlan(); if(daily[today.date]) recordDaily();
+  if(curMode==='review'){ buildList(); } renderRevPlan();
+};
 
 /* 统计浮层 */
 function openStats(){
@@ -897,17 +925,17 @@ $('#overlay').onclick=e=>{ if(e.target.id==='overlay') $('#overlay').classList.r
 /* 计划记录表 */
 function openDaily(){
   const dates=Object.keys(daily).sort().reverse();
-  let total=0, met=0, streak=0;
+  let totalNew=0, totalRev=0, met=0, streak=0;
   let cur=todayStr();
-  while(daily[cur] && daily[cur].goal>0 && daily[cur].count>=daily[cur].goal){ streak++; cur=prevDateStr(cur); }
+  while(daily[cur] && (daily[cur].goal>0||daily[cur].revGoal>0) && ((daily[cur].count||0)+(daily[cur].review||0))>=(((daily[cur].goal||0)+(daily[cur].revGoal||0)))){ streak++; cur=prevDateStr(cur); }
   let rows='';
   dates.slice(0,30).forEach(d=>{
-    const r=daily[d]; const ok=r.goal>0 && r.count>=r.goal;
-    total+=r.count; if(ok) met++;
-    const pct=r.goal?Math.min(100, r.count/r.goal*100):0;
-    rows+=`<div class="row"><div class="name"><span>${d}</span><span>${r.count} / ${r.goal}${ok?' ✓':' ·'}</span></div><div class="sbar"><i style="width:${pct}%"></i></div></div>`;
+    const r=daily[d]; const g=(r.goal||0)+(r.revGoal||0); const c=(r.count||0)+(r.review||0); const ok=g>0 && c>=g;
+    totalNew+=(r.count||0); totalRev+=(r.review||0); if(ok) met++;
+    const pct=g?Math.min(100, c/g*100):0;
+    rows+=`<div class="row"><div class="name"><span>${d}</span><span>新 ${r.count||0} · 复 ${r.review||0} / ${g}${ok?' ✓':' ·'}</span></div><div class="sbar"><i style="width:${pct}%"></i></div></div>`;
   });
-  $('#dailySummary').textContent=`共记录 ${dates.length} 天 · 累计背 ${total} 题 · 达标 ${met} 天 · 连续达标 ${streak} 天`;
+  $('#dailySummary').textContent=`共记录 ${dates.length} 天 · 新记累计 ${totalNew} · 复习累计 ${totalRev} · 达标 ${met} 天 · 连续达标 ${streak} 天`;
   $('#dailyBody').innerHTML=rows||'<div class="total" style="color:#9a8f80">还没有记录，今天背几题试试 ✦</div>';
   $('#dailyOverlay').classList.add('show');
 }
@@ -964,10 +992,12 @@ async function boot(){
     document.body.appendChild(tip);
   }
   seedReviewsOnce();
-  renderDrawer(); buildList(); updatePlan(); updateCountdown(); updateRevUI(); renderRevPlan();
+  renderDrawer(); buildList(); updatePlan(); updateCountdown(); updateRevUI();
   appReady=true;
   restoreLast();
+  if(revGoal>0 && revGoal!==revQuota){ revQuota=revGoal; localStorage.setItem(LS_REV_QUOTA,revQuota); } // 复习目标直接驱动复习配额
   $('#revQuotaInput').value=revQuota;
+  renderRevPlan();
   // 通知初始化：之前开启过且已授权则自动启用
   if(notifEnabled && notifSupported() && Notification.permission==='granted'){ $('#notifBtn').textContent='关闭通知'; $('#notifState').textContent='当前：已开启（页面打开时到期会提醒）'; schedNotif(); }
   else if(notifEnabled){ notifEnabled=false; localStorage.setItem(LS_NOTIF,'0'); }
