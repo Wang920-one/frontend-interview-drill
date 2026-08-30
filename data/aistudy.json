@@ -280,5 +280,215 @@
     "module": "aistudy",
     "q": "`sync_to_drill.py` 这套管道做了哪几件事？为什么必须幂等？",
     "a": "**考察点**：工程化思维——脚本是给机器定时跑的，不是给人跑一次的；幂等是自动化脚本的底线。\n\n**标准解答**：- 它把每周面试题 md 变成刷题网页的一个模块：① 正则抓「三、逐题解读」区块 → 结构化成 `{id, module, q, a}`；② 双写两份副本（`interview-drill/deploy/data` 本地预览 + `_drill_repo/data` GitHub Pages 源）；③ 幂等注册模块——检测 `index.html` 的 `MODULES` 数组是否已有 `aistudy`，没有才插入；④ 支持 `--week YYYY-MM-DD`（只取该日所在周一~周日）与 `--push`。\n  - 为什么幂等：自动化每周日跑一次，重复跑不能重复插入模块、不能覆盖人工改动。按 `id` 去重 + 检测锚点是否已存在，保证「跑 N 次 == 跑 1 次」。\n\n**项目实践**：`docs/面试题/sync_to_drill.py`（174 行），08-21 种子导入 3 份历史面试题（08-13/08-17/08-20）共 33 题落库，`--push` 带 `GIT_TERMINAL_PROMPT=0` 与 90s 超时防挂死（沙箱无 GitHub 凭证，push 注定失败，需本机手动 `git push`）。"
+  },
+  {
+    "id": "aistudy-20260824-1",
+    "module": "aistudy",
+    "q": "用 LangChain 从零搭 RAG，分哪几步？",
+    "a": "**考察点**：是否真跑通过 RAG 全链路，还是只背概念；组件命名是否准确（新栈 `langchain-*` 拆分包）。\n\n**标准解答**：五步——① Loader 加载文档（`DirectoryLoader` + `TextLoader`）；② Splitter 切分（`RecursiveCharacterTextSplitter`）；③ Embedding 向量化（`OpenAIEmbeddings`）；④ VectorStore 入库/检索（`Chroma.from_documents` + `as_retriever`）；⑤ RetrievalQA 链组合检索与生成（`RetrievalQA.from_chain_type`，`chain_type=\"stuff\"`）。\n\n**项目实践**：`week6/day7_langchain_rag.py` 就是这条五步直线的落地：Loader→Splitter→`Chroma.from_documents(persist_directory=...)`→`RetrievalQA.from_chain_type(llm, chain_type=\"stuff\", retriever=vectorstore.as_retriever(search_kwargs={\"k\":3}), return_source_documents=True)`。08-24 已真跑通（`chroma_langchain/chroma.sqlite3` 282KB 为证）。"
+  },
+  {
+    "id": "aistudy-20260824-10",
+    "module": "aistudy",
+    "q": "`ModuleNotFoundError: langchain_classic` 怎么排查？",
+    "a": "**考察点**：定位能力——先查解释器还是先怪包。\n\n**标准解答**：先确认「用的是哪个 Python 解释器」，再怀疑包没装。虚拟环境并存时极易用错解释器：用系统/别的 Python 跑，自然找不到 venv 里装的 `langchain_classic`。用 `which/python -c \"import sys; print(sys.executable)\"` 看解释器路径，再进对应 venv 验证 `pip show langchain-classic`。\n\n**项目实践**：08-22 坑2 即用户直跑 `day5-6.py` 报缺 `langchain_classic`，根因是用了非 `week6/langchain_env` 的解释器；统一用 `.\\langchain_env\\Scripts\\python.exe` 即好。本工作区两套 venv 并存（`week6/langchain_env` 与 `part1/.venv`），跑前必确认。"
+  },
+  {
+    "id": "aistudy-20260824-11",
+    "module": "aistudy",
+    "q": "RAG/LLM 脚本跑不起来，你总结过哪些典型错误？结合 day7 七连坑谈。",
+    "a": "**考察点**：工程排错经验，是否真被坑过、能否系统化分层（依赖/路径/编码/API/向量库）。\n\n**标准解答**：day7 一口气踩了 7 个，可归为五类——① 依赖/导入错位：旧写法命中死包（`langchain 0.2.0` 的 `langchain.x` 导入），换成 `langchain-*` 拆分包；② 路径/CWD：`DirectoryLoader(\"./documents\")` 相对路径找错目录，用 `__file__` 拼绝对路径；③ 跨平台编码（最阴）：Windows 默认 GBK，`TextLoader` 不显式 `encoding` 会用 GBK 解 UTF-8 字节 → `UnicodeDecodeError` 被包成 `RuntimeError: Error loading`，必须 `loader_kwargs={\"encoding\":\"utf-8\"}`；④ API 层：`OpenAIEmbeddings.check_embedding_ctx_length=True` 会把文本 tokenize 成 ID 数组发给通义 → 400，关掉即好；⑤ 向量库：换 embedding 模型维度变化（64 vs 1536）Chroma 报维度冲突，`try/except` 后 `shutil.rmtree` 重建。\n\n**项目实践**：`week6/day7_langchain_rag.py` 08-24 从「写完没跑」推到「真 Key 端到端跑通」，终版含 `loader_kwargs={\"encoding\":\"utf-8\"}`(L26)、`check_embedding_ctx_length=False`(L48)、`try/except chromadb.errors.InvalidArgumentError → shutil.rmtree`(L54-70) 三处防御。证据：`chroma_langchain/chroma.sqlite3` 237568 字节是真实通义 1536 维向量落盘；提交 `6d720c58` 已入库。\n\n---"
+  },
+  {
+    "id": "aistudy-20260824-2",
+    "module": "aistudy",
+    "q": "`RecursiveCharacterTextSplitter` 参数怎么设？中文为何定制 `separators`？",
+    "a": "**考察点**：是否理解「切分」对检索质量的影响，而非无脑默认值。\n\n**标准解答**：`chunk_size` 控制单块最大长度（太小丢上下文、太大超 token 且检索不精准，常用 300~1000）；`chunk_overlap` 块间重叠（保留跨块语义，常用 50~200）；`separators` 决定优先按什么断开——英文默认按 `\\n`/` `，中文要用 `[\\n\\n,\\n,。,！,？, ,]` 才能按句/段切，避免把一个完整句子劈成两半。\n\n**项目实践**：`week6/day7_langchain_rag.py` 设 `chunk_size=300, chunk_overlap=50, separators=[\"\\n\\n\",\"\\n\",\"。\",\"！\",\"？\",\" \",\"\"]`，实测把 2379 字节 test.txt 切成 4 块；对比 week2 手写 RAG 的切分逻辑，这里靠框架参数而非手写循环。"
+  },
+  {
+    "id": "aistudy-20260824-3",
+    "module": "aistudy",
+    "q": "怎么用 OpenAI 兼容接口接国产模型？",
+    "a": "**考察点**：是否理解「OpenAI 兼容协议」这层抽象，能不依赖官方 SDK 接通义/DeepSeek。\n\n**标准解答**：国产模型大多提供 OpenAI 兼容 `base_url`。Embedding 用 `OpenAIEmbeddings(model=\"text-embedding-v1\", base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\", api_key=DASHSCOPE_API_KEY)`；对话用 `ChatOpenAI(model=\"deepseek-chat\", base_url=\"https://api.deepseek.com/v1\", api_key=...)`。核心就是把 `api_key` 和 `base_url` 指向对应厂商，模型名用厂商自己的。\n\n**项目实践**：`day7_langchain_rag.py` 正是「通义 Embedding + DeepSeek 生成」混用，两者都走 OpenAI 兼容 `base_url`；Key 从 `DASHSCOPE_API_KEY` / `DEEPSEEK_API_KEY` 环境变量读取，零硬编码。"
+  },
+  {
+    "id": "aistudy-20260824-4",
+    "module": "aistudy",
+    "q": "Chroma 怎么持久化？`chain_type=\"stuff\"` 和 `return_source_documents` 是什么？",
+    "a": "**考察点**：工程落地细节（持久化路径、链类型选择、可解释性）。\n\n**标准解答**：`Chroma.from_documents(documents=chunks, embedding=emb, persist_directory=\"绝对路径\")` 会在该目录生成 `chroma.sqlite3` + 集合子目录，下次直接 `Chroma(persist_directory=..., embedding=...)` 加载，不必重建。`chain_type=\"stuff\"` 把检索到的所有块直接拼进同一个 prompt（适合语料小、块少的场景，简单不丢信息）；`return_source_documents=True` 让 `invoke` 结果里带 `source_documents`，可在回答下展示引用出处，增强可信与可溯源。\n\n**项目实践**：day7 的 `persist_directory=os.path.join(BASE_DIR,\"chroma_langchain\")`（绝对路径），08-24 已生成真实 `chroma.sqlite3`；`ask()` 里 `for doc in result['source_documents']` 打印来源 `metadata['source']` 与内容前 50 字。"
+  },
+  {
+    "id": "aistudy-20260824-5",
+    "module": "aistudy",
+    "q": "手写 RAG（week2）vs LangChain 封装（week6）区别？",
+    "a": "**考察点**：有没有工程化视角，知道框架解决了什么、又藏了什么。\n\n**标准解答**：手写（week2）自己实现 embedding 调用、向量检索、prompt 拼接，可控、无黑盒，但重复造轮子、难组合；LangChain（week6）用 `Loader/Splitter/VectorStore/Chain` 标准件拼装，开发快、可替换组件（换 VectorStore 只改一行），代价是抽象层深、版本/依赖易踩坑（见题 11）。小项目/学习用手写加深理解，生产用框架提效。\n\n**项目实践**：week2 手写版在 `week2-RAG/`，week6 框架版即 `day7_langchain_rag.py`；两者 RAG 五步一一对应，框架版把 week2 的多段代码收敛成 5 个标准调用。"
+  },
+  {
+    "id": "aistudy-20260824-6",
+    "module": "aistudy",
+    "q": "ReAct agent vs OpenAI tools agent 区别？坑在哪？",
+    "a": "**考察点**：是否亲手对比过两种范式，知道 ReAct 的死循环问题。\n\n**标准解答**：ReAct 是「文本解析式」——模型输出 `Thought/Action/Action Input/Observation` 文本，框架用正则从文本里抠工具调用，脆弱、易格式错乱；tools agent（function calling）是模型原生结构化输出工具调用，框架直接解析 JSON，稳。`create_openai_tools_agent` 根治 ReAct 那种「凑不出格式→死循环烧光 `max_iterations`」的问题。\n\n**项目实践**：`week6/day5-6.py` 从手写 ReAct（week3-Agent）升级到 `create_openai_tools_agent`；08-22 记忆里记过「ReAct 死循环烧光 max_iterations → 换 tools agent 根治」。"
+  },
+  {
+    "id": "aistudy-20260824-7",
+    "module": "aistudy",
+    "q": "Agent 记忆怎么管理？Buffer vs Summary 怎么选？",
+    "a": "**考察点**：长对话场景下的记忆策略，有无踩过 token 爆炸。\n\n**标准解答**：`ConversationBufferMemory` 全量保留历史，简单但 token 随对话线性增长，长会话会爆上下文；`ConversationSummaryMemory` 用 LLM 把历史压缩成摘要，省 token 但丢细节（如「最喜欢的球星」这种具体事实推不出）。短对话用 Buffer，长对话用 Summary 或二者结合。\n\n**项目实践**：`week6/day4.py` 跑过 Summary Memory，实测「摘要压缩后细节丢失」；与 week4 后端把对话历史迁数据库持久化、支持多会话的思路一脉相承。"
+  },
+  {
+    "id": "aistudy-20260824-8",
+    "module": "aistudy",
+    "q": "`agent_scratchpad`（`MessagesPlaceholder`）起什么作用？",
+    "a": "**考察点**：tools agent 骨架是否真懂，而非套模板。\n\n**标准解答**：tools agent 的 prompt 里要留一个 `MessagesPlaceholder(\"agent_scratchpad\")`，框架把「工具调用↔工具返回」的中间过程（scratchpad）塞进这个占位符，模型下一轮才能看到之前的工具结果继续推理。缺了它就看不到工具返回值，agent 等于瞎子。\n\n**项目实践**：`week6/day5-6.py` 的 prompt 用 `MessagesPlaceholder(\"agent_scratchpad\")` 搭骨架；08-22 总结把它列为 Agent 主线知识点。"
+  },
+  {
+    "id": "aistudy-20260824-9",
+    "module": "aistudy",
+    "q": "你怎么管理 API Key？为什么不能硬编码？",
+    "a": "**考察点**：安全底线，是否踩过泄露坑。\n\n**标准解答**：绝不写死在源码/提交里。做法：代码里 `os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 `raise` 提示；运行时用环境变量（临时 `PowerShell $env:DEEPSEEK_API_KEY='...'`，永久 `[Environment]::SetEnvironmentVariable(...,\"User\")`）；`.env` 走 `gitignore` 不入库。硬编码一旦 push 到 GitHub，密钥扫描器秒捡，必须去后台作废轮换。\n\n**项目实践**：本工作区曾把真 Key `sk-5a32...7724` 明文写进 `week6/day4.py`、`test_langchain.py` 和 `week2/.env`（历史），08-22 已清洗为 `os.getenv`；但真 Key 至今未轮换，是连续多日的 P0 待办。day7 第 10 行 `os.environ[\"OPENAI_API_KEY\"]=os.getenv(\"DEEPSEEK_API_KEY\",\"\")` 即此模式。"
+  },
+  {
+    "id": "aistudy-20260826-1",
+    "module": "aistudy",
+    "q": "什么是 MCP（Model Context Protocol）？它解决了什么痛点？",
+    "a": "**考察点**：是否理解 MCP 的定位——它不是某个框架，而是一套开放协议；能不能用一句话讲清它和 Function Calling / 手写工具的区别。\n\n**标准解答**：MCP 是 Anthropic 推出的开放标准协议，用来给 LLM/Agent 统一接外部工具、数据源、服务的「接口规范」。它把「工具提供方（Server）」和「模型调用方（Client/Host）」解耦：Server 按协议暴露 tool/resource，Host（如 Claude Desktop、Agent 框架）按同一协议调用，双方不需要知道彼此实现。类比「AI 的 USB-C 接口」——任何符合协议的 Server 都能即插即用。\n  它解决的痛点：①之前每个 Agent 框架都要自己写一套工具调用胶水代码（langchain 的 tool、openai 的 function calling 各自为政）；②工具和模型强耦合，换模型/换工具成本高；③缺乏统一安全边界。MCP 用一套协议统一了这层。\n\n**项目实践**：本周 week7 就实战了 Server 端——`week7/server.py` 用官方 `mcp` SDK 暴露 add/list_files 等工具，未来可接入任意兼容 MCP 的 Host，而不用为某个 Agent 框架改写胶水代码。"
+  },
+  {
+    "id": "aistudy-20260826-2",
+    "module": "aistudy",
+    "q": "用 MCP Python SDK 写一个最小可用的 MCP Server，核心步骤是什么？",
+    "a": "**考察点**：能不能徒手写骨架，知道 FastMCP 的三个关键点（实例化 / 装饰器 / run）。\n\n**标准解答**：四步：① `from mcp.server.fastmcp import FastMCP`；② `mcp = FastMCP(\"服务名\")` 创建实例；③ 用 `@mcp.tool()` 装饰普通函数把工具暴露出去；④ `if __name__ == \"__main__\": mcp.run()` 启动（默认 stdio 传输，进程间通过 stdin/stdout 通信）。\n\n**项目实践**：`week7/server.py` 就是这个骨架——`mcp = FastMCP(\"Demo Server\")`，两个 `@mcp.tool()`（add/multiply），末尾 `mcp.run()`；standalone 跑 `cd week7 && .venv\\Scripts\\python.exe server.py` 即起一个 stdio Server。`requirements.txt` 锁 `mcp<2` 保证这行 import 永远可用。"
+  },
+  {
+    "id": "aistudy-20260826-3",
+    "module": "aistudy",
+    "q": "`@mcp.tool()` 装饰的函数，参数类型注解和 docstring 分别起什么作用？",
+    "a": "**考察点**：是否理解「工具给模型看」这件事——模型看不到代码，只能看到 Schema 和描述。\n\n**标准解答**：MCP SDK 会**自动**根据函数签名生成工具的 JSON Schema：参数类型注解（int/float/str 等）决定 Schema 里参数的类型，SDK 据此做类型校验和入参转换；**docstring 会被提取成工具的自然语言描述**（description），模型靠这段描述判断「什么时候该调这个工具、传什么参数」。所以 docstring 写得好不好，直接决定模型会不会用你的工具——等于给工具写「使用说明书」。\n\n**项目实践**：`week7/server.py` 里 `list_files(subdir: str = \".\")` 的类型注解生成了 `subdir` 参数 Schema，docstring 明确写「列出 week7 目录下的文件/文件夹……返回每个条目的名称」，模型就能正确理解该工具的用途与返回。"
+  },
+  {
+    "id": "aistudy-20260826-4",
+    "module": "aistudy",
+    "q": "为什么 `mcp>=2` 会导致 v1 的 `FastMCP` 代码直接跑不起来？FastMCP 与 MCPServer 有何区别？",
+    "a": "**考察点**：依赖版本治理意识；能不能说出「API 破坏性变更」这个真实踩过的坑。\n\n**标准解答**：`mcp` Python SDK 在 2.x 做了**破坏性变更**：把 v1 的 `FastMCP` 类改名为 `MCPServer`，且整体 API 形态改变。所以 v1 代码 `from mcp.server.fastmcp import FastMCP` 在 2.x 环境下会直接 `No module named 'mcp.server.fastmcp'`——因为那个子模块路径在 2.x 不存在了。FastMCP（v1）是「轻量装饰器式」写法（`@mcp.tool()` + `mcp.run()`），上手快；MCPServer（v2）是更底层的面向对象写法，概念更重。\n\n**项目实践**：今天 19:13 就踩了这个坑——venv 装了 `mcp 2.1.1`，import server.py 报 `No module named 'mcp.server.fast*'`（实为 `mcp.server.fastmcp`）。解决是锁 `mcp<2`（装 1.29.1），并在 `week7/requirements.txt` 写明注释 `mcp>=2 已改名为 MCPServer 且整体 API 破坏性变更，故锁 <2`。**教训：跑教程代码前先看它用的 SDK 大版本**。"
+  },
+  {
+    "id": "aistudy-20260826-5",
+    "module": "aistudy",
+    "q": "给 MCP 文件工具加「安全护栏」应该怎么做？为什么必须做？",
+    "a": "**考察点**：安全意识——给 AI 可调用的工具必须最小权限；能不能讲出具体实现。\n\n**标准解答**：文件类工具最危险的是「越权读系统文件」。做法：①用 `BASE_DIR = Path(__file__).resolve().parent` 把允许范围锚定在 Server 所在目录；②每次调用先把用户传入路径 `resolve()` 成绝对路径，再用 `str(target).startswith(str(BASE_DIR))` 校验，越界直接返回「拒绝访问」。再加二进制兜底：`try read_text(encoding=\"utf-8\") except UnicodeDecodeError` 防读二进制炸。为什么必须做：模型可能受 prompt injection 影响去拼 `../../etc/passwd` 这类路径，没有护栏就会真把敏感文件读出来泄露。\n\n**项目实践**：`week7/server.py` 的 `list_files` / `read_file` 都做了这套护栏——`target = (BASE_DIR / subdir).resolve()` 后 `if not str(target).startswith(str(BASE_DIR)): return \"拒绝访问：只允许读取 week7 目录内的文件\"`，越权路径被拦截；读文本失败用 `UnicodeDecodeError` 兜底。"
+  },
+  {
+    "id": "aistudy-20260826-6",
+    "module": "aistudy",
+    "q": "本地如何运行和调试一个 MCP Server（stdio 传输 + MCP Inspector）？",
+    "a": "**考察点**：能不能说出落地调试链路，而不只是写代码。\n\n**标准解答**：MCP Server 默认走 stdio（通过进程 stdin/stdout 通信，不占端口）。直接运行：`python server.py`（用本项目 venv 的解释器）。可视化调试用官方 **MCP Inspector**：`npx @modelcontextprotocol/inspector python server.py`（或 `inspector .venv/Scripts/python.exe server.py`），它会起一个本地 Web（如 http://localhost:6274）让你看到注册了哪些工具、手动调用、看返回。注意一定要用**当前 venv 的解释器**跑，否则装的 mcp 包找不到。\n\n**项目实践**：今天 `week7` 调试链路是——先 `.venv\\Scripts\\python.exe server.py` 验证启动无报错，再用 `npx @modelcontextprotocol/inspector .venv\\Scripts\\python.exe server.py` 开 http://localhost:6274 调 list_files/read_file 验证护栏生效、越权被拦。"
+  },
+  {
+    "id": "aistudy-20260826-7",
+    "module": "aistudy",
+    "q": "Q7（桥接）. MCP 与 Agent 的工具调用是什么关系？MCP 如何为 LLM/Agent 提供工具能力？",
+    "a": "**考察点**：能不能把本周 week7（MCP）和之前 week3（手写 ReAct）/week6（LangChain tools agent）串起来，说明「工具从哪来」。\n\n**标准解答**：Agent（如 week3 手写的 ReAct、week6 的 `create_openai_tools_agent`）需要「可调用的工具列表」来感知环境、执行动作。MCP 是这些工具的「标准化供给方式」：以前工具是写在 Agent 框架里的闭包/函数，现在可以是一个独立的 MCP Server，Agent 作为 MCP Client 在运行时去发现（list tools）并调用（call tool）。好处是工具可独立部署、跨模型复用、天然带协议层安全边界。一句话：MCP 负责「工具怎么暴露/调用」的协议，Agent 负责「什么时候调、调完怎么决策」的编排。\n\n**项目实践**：week3 `week3-Agent/react-agent` 手写 ReAct 时工具是硬编码进 prompt 的；week6 `week6/day5-6.py` 用 `create_openai_tools_agent` + `MessagesPlaceholder(agent_scratchpad)` 接 tools；下一步把 `week7/server.py` 暴露的 list_files/read_file 接到某个 MCP Client/Agent，就能让模型「看见并读取 week7 目录」——这就是 MCP 给 Agent 供工具的端到端验证。\n\n---"
+  },
+  {
+    "id": "aistudy-20260828-1",
+    "module": "aistudy",
+    "q": "MCP 的 Client 与 Server 是怎么通信的？stdio 传输具体是什么形态？",
+    "a": "MCP 的 Client 与 Server 是怎么通信的？stdio 传输具体是什么形态？"
+  },
+  {
+    "id": "aistudy-20260828-10",
+    "module": "aistudy",
+    "q": "ReAct（文本解析）与 OpenAI Tools Agent（function calling）两种范式怎么选？",
+    "a": "ReAct（文本解析）与 OpenAI Tools Agent（function calling）两种范式怎么选？"
+  },
+  {
+    "id": "aistudy-20260828-11",
+    "module": "aistudy",
+    "q": "你做过 Node 与 Python 的跨语言协同吗？讲讲 week7 的架构。",
+    "a": "你做过 Node 与 Python 的跨语言协同吗？讲讲 week7 的架构。"
+  },
+  {
+    "id": "aistudy-20260828-12",
+    "module": "aistudy",
+    "q": "MCP 工具被 Agent 调用失败时，你的排查顺序是什么？",
+    "a": "MCP 工具被 Agent 调用失败时，你的排查顺序是什么？"
+  },
+  {
+    "id": "aistudy-20260828-13",
+    "module": "aistudy",
+    "q": "`ExceptionGroup: unhandled errors in a TaskGroup` 把真实异常吞了，怎么办？",
+    "a": "`ExceptionGroup: unhandled errors in a TaskGroup` 把真实异常吞了，怎么办？"
+  },
+  {
+    "id": "aistudy-20260828-14",
+    "module": "aistudy",
+    "q": "LLM 应用里 API Key 应该如何管理？你踩过什么坑？",
+    "a": "LLM 应用里 API Key 应该如何管理？你踩过什么坑？"
+  },
+  {
+    "id": "aistudy-20260828-15",
+    "module": "aistudy",
+    "q": "【存量巩固】手写 RAG 与用 LangChain 框架搭 RAG，区别是什么？各自适合什么场景？",
+    "a": "【存量巩固】手写 RAG 与用 LangChain 框架搭 RAG，区别是什么？各自适合什么场景？"
+  },
+  {
+    "id": "aistudy-20260828-16",
+    "module": "aistudy",
+    "q": "【存量巩固】中文文档切分要注意什么？`chunk_size` / `overlap` 怎么取？",
+    "a": "【存量巩固】中文文档切分要注意什么？`chunk_size` / `overlap` 怎么取？"
+  },
+  {
+    "id": "aistudy-20260828-17",
+    "module": "aistudy",
+    "q": "【存量巩固】向量库里混入不同维度的 embedding 会怎样？如何兜底？",
+    "a": "【存量巩固】向量库里混入不同维度的 embedding 会怎样？如何兜底？"
+  },
+  {
+    "id": "aistudy-20260828-2",
+    "module": "aistudy",
+    "q": "Python SDK 连接 MCP Server 的标准流程？为什么不能把 `async with` 写在工具工厂函数里？",
+    "a": "Python SDK 连接 MCP Server 的标准流程？为什么不能把 `async with` 写在工具工厂函数里？"
+  },
+  {
+    "id": "aistudy-20260828-3",
+    "module": "aistudy",
+    "q": "mcp 1.x 与 2.x 有哪些破坏性变更？如何写出兼容两种版本的代码？",
+    "a": "mcp 1.x 与 2.x 有哪些破坏性变更？如何写出兼容两种版本的代码？"
+  },
+  {
+    "id": "aistudy-20260828-4",
+    "module": "aistudy",
+    "q": "如何在不依赖 LLM / Agent 的前提下，独立验证一个 MCP Server 是否正常？",
+    "a": "如何在不依赖 LLM / Agent 的前提下，独立验证一个 MCP Server 是否正常？"
+  },
+  {
+    "id": "aistudy-20260828-5",
+    "module": "aistudy",
+    "q": "如何把 MCP 工具接入 LangChain ReAct Agent？讲讲完整链路。",
+    "a": "如何把 MCP 工具接入 LangChain ReAct Agent？讲讲完整链路。"
+  },
+  {
+    "id": "aistudy-20260828-6",
+    "module": "aistudy",
+    "q": "LangChain `Tool` 的 `func` 与 `coroutine` 有何区别？只给 `func` 会踩什么坑？",
+    "a": "LangChain `Tool` 的 `func` 与 `coroutine` 有何区别？只给 `func` 会踩什么坑？"
+  },
+  {
+    "id": "aistudy-20260828-7",
+    "module": "aistudy",
+    "q": "`asyncio.run() cannot be called from a running event loop` 的根因与解法？",
+    "a": "`asyncio.run() cannot be called from a running event loop` 的根因与解法？"
+  },
+  {
+    "id": "aistudy-20260828-8",
+    "module": "aistudy",
+    "q": "anyio 报 `Attempted to exit cancel scope in a different task` 是什么原因？怎么修？",
+    "a": "anyio 报 `Attempted to exit cancel scope in a different task` 是什么原因？怎么修？"
+  },
+  {
+    "id": "aistudy-20260828-9",
+    "module": "aistudy",
+    "q": "ReAct Prompt 模板必须保留哪些变量？用 f-string 会导致什么问题？",
+    "a": "ReAct Prompt 模板必须保留哪些变量？用 f-string 会导致什么问题？"
   }
 ]
