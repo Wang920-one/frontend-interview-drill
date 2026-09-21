@@ -1,146 +1,170 @@
 [
- {
-  "id": "ai1",
-  "module": "ai",
-  "q": "前端如何接入大模型 API（流式输出）？",
-  "a": "以 OpenAI 兼容为例：\n① 调 /chat/completions 带 stream:true；② 用 **fetch + ReadableStream** 读响应体，按 SSE（data:{json} 换行）逐块解析；③ 取 choices[0].delta.content 增量拼到界面（打字机）；④ 结束标志 data:[DONE]。\n安全：**密钥必须放后端代理**，前端只调自建后端，避免泄露与 CORS；可加 AbortController 取消。"
- },
- {
-  "id": "ai2",
-  "module": "ai",
-  "q": "什么是 Function Calling / Tool Use？",
-  "a": "让模型**决定调用哪个函数**并产出参数 JSON，由你的后端真正执行，再把结果回传模型继续推理。\n流程：① 请求带 tools 定义（名称/JSON Schema 参数）；② 模型返回 tool_calls（函数名+参数）；③ 你执行（查天气/查库/下单）；④ 结果作 role:tool 回传；⑤ 模型综合生成最终回答。\n用途：接真实能力、多步任务、Agent。"
- },
- {
-  "id": "ai3",
-  "module": "ai",
-  "q": "RAG 基本流程？",
-  "a": "RAG = 检索增强生成，用私有/最新知识补 LLM 记忆。\n流程：① 知识**切块**；② 每块**向量化**存向量库（Milvus/pgvector）；③ 问题向量化；④ 相似度检索 topK；⑤ 拼进 Prompt（\"根据以下资料回答\"）给 LLM。\n缓解**幻觉**、支持私域。注意：切块大小/重叠、检索质量（BM25+向量混合）、重排 rerank、引用溯源。"
- },
- {
-  "id": "ai4",
-  "module": "ai",
-  "q": "SSE 与 WebSocket 区别？",
-  "a": "**SSE**（Server-Sent Events）基于 **HTTP**，服务端→客户端**单向**流式推送（EventSource），自动重连、简单、走标准 HTTP（好过代理）。适合 LLM 打字机、行情。**WebSocket** 全双工、**双向**实时（聊天/协作），需 ws 协议、握手、心跳。\n选型：只需服务端推（流式输出）用 SSE（更简单、兼容好）；双向交互用 WebSocket。注意：SSE 走文本流、断线重连内置。"
- },
- {
-  "id": "ai5",
-  "module": "ai",
-  "q": "AbortController 怎么取消请求？",
-  "a": "原生取消机制：创建 const ac=new AbortController()，fetch 传 signal:ac.signal；要取消调 ac.abort()，请求 reject（AbortError）。用途：① 用户**停止生成**（“停止”按钮）；② 组件**卸载**时取消未完成的请求防内存泄漏/状态错乱；③ 防竞态（旧请求慢于新请求）。\n注意：abort 后需在 catch 判 err.name==='AbortError' 静默处理。"
- },
- {
-  "id": "ai6",
-  "module": "ai",
-  "q": "前端流式 Markdown 怎么渲染？",
-  "a": "增量拼接：① fetch 流逐块取 delta.content 拼到字符串 state；② 用 **marked/markdown-it** 实时把已得文本转 HTML（可能半截，需容错）；③ 渲染到 DOM（打字机感）。坑：① 未闭合代码块/表格渲染乱——选稳的或缓冲完整块再渲染；② XSS（渲染前 sanitize，如 DOMPurify）；③ 代码高亮（highlight.js 增量）。\n优化：用虚拟列表或分段渲染防卡。"
- },
- {
-  "id": "ai7",
-  "module": "ai",
-  "q": "如何减少大模型幻觉？",
-  "a": "① **RAG** 注入真实资料（检索增强）；② **系统提示**约束（“不知道就说不知道，基于给定资料”）；③ **few-shot** 示例定格式；④ 要求**引用来源**；⑤ 关键事实**后校验**（再调模型核对/查知识库）；⑥ 限定领域/拒答越界；⑦ 温度 temperature 调低（更确定）；⑧ 人工审核闭环。\n权衡：零幻觉做不到，靠“检索+约束+校验”降概率。"
- },
- {
-  "id": "ai8",
-  "module": "ai",
-  "q": "向量数据库是什么？",
-  "a": "专门存**向量（embedding）**并做**相似度检索**（最近邻 ANN）的库。常见：**Milvus / Qdrant / Chroma / pgvector（PostgreSQL 插件）/ Weaviate**。索引：HNSW（图，快）、IVF（聚类）、PQ（压缩）。\n用途：RAG 检索、推荐、去重、语义搜索。对比：传统 DB 按精确匹配/SQL，向量 DB 按“语义相似”。注意：维度一致、需重排 rerank 提准。"
- },
- {
-  "id": "ai9",
-  "module": "ai",
-  "q": "Embedding 是什么？",
-  "a": "把文本/图转成**高维向量**（如 1536 维），**语义相近向量距离近**，使机器能算相似度（余弦）。作用：RAG 检索、聚类、分类、去重。流程：文本 → embedding 模型（text-embedding-3 等）→ 向量 → 存向量库 → 查询文本也 embedding → 相似度 topK。\n注意：① 模型要**同一**才能比；② 维度/归一化；③ 中英文用对应模型；④ 成本（量大会花）。"
- },
- {
-  "id": "ai10",
-  "module": "ai",
-  "q": "什么是 Agent / ReAct？",
-  "a": "**Agent** 让 LLM **自主规划+调工具**完成任务（不止聊天）。**ReAct** 推理（Thought）+ 行动（Action/工具调用）+ 观察（Observation）循环：模型想→调用工具（搜/算/查库）→看结果→再想…直至答。其它模式：Plan-Execute、Reflection（自反思）、Multi-Agent（多角色协作）。\n注意：① 设 **max_steps** 防死循环；② 工具结果回传；③ 成本控制（步数/模型）。"
- },
- {
-  "id": "ai11",
-  "module": "ai",
-  "q": "MCP 与 Function Calling 区别？",
-  "a": "**Function Calling**（OpenAI 系）模型调你定义的**函数**拿参数，你执行——**单次/模型厂商绑定**的“能力接口”。**MCP**（Model Context Protocol，Anthropic）**标准化协议**，统一“模型↔工具/数据源”的连接（类 USB-C），一个 MCP Server 可被**多模型/多客户端**复用，解耦工具提供方与模型。\n关系：MCP 是“怎么连工具”的标准；Function Calling 是模型“怎么表达要调工具”。趋势：MCP 让工具可插拔、跨模型共享。"
- },
- {
-  "id": "ai12",
-  "module": "ai",
-  "q": "端侧 AI（浏览器跑模型）？",
-  "a": "在**浏览器/设备本地**跑模型，不依赖云端。技术：① **WebGPU**（浏览器 GPU 加速，替代 WebGL）；② **Transformers.js**（HuggingFace，把模型跑前端，ONNX/WASM/WebGPU）；③ WASM 推理。好处：隐私（数据不出端）、零延迟/离线、省 API 费。\n代价：模型体积大（需量化/小模型）、首载慢、算力有限。用途：离线翻译/轻量分类/本地助手。"
- },
- {
-  "id": "ai13",
-  "module": "ai",
-  "q": "Prompt Engineering 常见技巧？",
-  "a": "① **清晰指令**（角色+任务+格式+约束）；② **Few-shot**（给示例定风格/格式）；③ **Chain-of-Thought**（“一步步想”提推理）；④ **结构化输出**（要求 JSON/固定字段，便于解析）；⑤ **分隔符**（### 隔离指令与输入）；⑥ **系统提示**定人设/边界；⑦ 迭代优化（测不同 phrasing）。\n注意：避免歧义、给“不知道就拒答”限制、限定输出长度。"
- },
- {
-  "id": "ai14",
-  "module": "ai",
-  "q": "长对话上下文怎么管理？",
-  "a": "问题：token 有限、长对话贵且慢、易丢重点。策略：① **滑动窗口**（保留最近 N 轮）；② **摘要压缩**（旧轮用 LLM 总结成摘要）；③ **检索相关历史**（RAG 存历史，只取相关）；④ **关键记忆**单独存（用户偏好/事实）；⑤ 系统提示精简；⑥ 设 max_tokens 截断。\n权衡：保留相关 vs 控成本；多轮对话必做裁剪防越界/爆 token。"
- },
- {
-  "id": "ai15",
-  "module": "ai",
-  "q": "调用大模型 API 的鉴权与限流？",
-  "a": "**鉴权** API Key 必须**放后端**（前端暴露=被盗刷）；后端代理转发、加自己的鉴权（用户登录态）。**限流** ① 用户级配额（每用户每日 N 次）；② 服务端调用 LLM 限流（防突发打爆额度）；③ 费用预警（预算上限）；④ 缓存相同问答（降调用）。\n**安全** HTTPS、Key 轮转、不落库明文；错误（401/429/500）分类处理（429 退避重试）。"
- },
- {
-  "id": "ai16",
-  "module": "ai",
-  "q": "大模型选型与成本考量？",
-  "a": "维度：① **能力**（推理/多模态/长上下文）；② **成本**（每千 token 价、输出比输入贵）；③ **延迟**（响应速度）；④ **上下文窗口**（长文档需大窗口或分段）；⑤ **私有化**（数据安全→本地/私有部署）；⑥ **生态**（工具/SDK）。\n策略：强任务用大模型、简单用小模型省钱；缓存高频问答；流式降感知延迟；按需切模型（路由）。"
- },
- {
-  "id": "aiW1",
-  "module": "ai",
-  "q": "前端怎么集成大模型 API？流式输出（SSE / fetch stream）怎么处理？",
-  "a": "**简要回答：**\n前端调大模型一般走「**后端代理 + 流式读取**」：浏览器 `fetch` 调自己的服务端，服务端转发模型厂商的 SSE 流，前端用 `ReadableStream` 逐块渲染，实现打字机效果。\n\n**拆解：**\n- 不要在前端直接放模型 Key（会被扒）；让 Node/BFF 代理并加 Key。\n- 模型返回 `text/event-stream`（SSE），前端用 `response.body.getReader()` + `TextDecoder` 边读边拼。\n- 解析：`data: {...}\n\n` 分段，取 `choices[0].delta.content` 追加到 UI。\n- 并用 `AbortController` 支持「停止生成」。\n\n**示例：**\n```\nconst r=await fetch('/api/chat',{method:'POST',body:JSON.stringify({q})});\nconst reader=r.body.getReader(), dec=new TextDecoder();\nwhile(true){ const {done,value}=await reader.read(); if(done)break;\n  text+=dec.decode(value); render(text); }\n```\n**追问：** 为什么不用普通 JSON 一次性返回？（长文本等待久、无反馈，流式体验好且能早出错早停。）"
- },
- {
-  "id": "aiW2",
-  "module": "ai",
-  "q": "前端 AI 辅助开发（Copilot / Cursor）的正确姿势？Prompt 工程要点？",
-  "a": "**简要回答：**\n2026 面试常考「会不会拆需求 + 写 Prompt + 审 AI 代码」。AI 是副驾：**人来定方向与把关，AI 出初稿**。\n\n**拆解：**\n- **拆需求**：把大任务拆成小、可验证的步骤，逐步让 AI 生成，而不是「一次性写整个系统」。\n- **写 Prompt**：给上下文（技术栈/约束/已有代码）+ 明确目标 + 输出格式 + 边界（「不要引入新依赖」）。\n- **审代码**：AI 会编（幻觉）、会漏边界（错误/空值/并发），必须人工 review + 跑测试。\n- **组合拳**：让 AI 写单测、写注释、解释报错、生成样板，把人从重复劳动解放到架构与判断。\n\n**追问：** 面试官为什么避开 AI 能直接答的题？（转向场景题/系统设计，考人类独有的权衡与经验。）"
- },
- {
-  "id": "aiW3",
-  "module": "ai",
-  "q": "什么是 RAG（检索增强生成）？前端能落地哪些相关能力？",
-  "a": "**简要回答：**\nRAG = 先**检索**相关资料，再把资料连同问题一起喂给大模型**生成**答案，解决「模型知识过时/不会你的私有数据」的问题。\n\n**拆解：**\n- 流程：文档切块 → 向量化（embedding）→ 存向量库 → 用户提问时检索最相关块 → 拼进 Prompt 让模型作答。\n- **前端能做的**：\n  1. 上传/管理知识库（切分、进度 UI）；\n  2. 调用 embedding/检索接口并展示「引用来源」；\n  3. 流式展示答案 + 高亮引用片段；\n  4. 前端本地向量检索（如用 transformers.js / 轻量库做端侧 RAG，保护隐私）。\n- 价值：客服机器人、内部文档问答、个人笔记助手。\n\n**追问：** RAG 和微调（fine-tune）怎么选？（要「私有/最新」知识用 RAG 成本低；要「改变说话/能力风格」才微调。）"
- },
- {
-  "id": "aiP1",
-  "module": "ai",
-  "q": "RAG 完整流程讲一下？（P0 实战版·带项目）",
-  "a": "两阶段：\n**离线索引**：文档 → 切块(chunk) → 向量化(embedding) → 存入向量库。\n**在线检索**：用户问题 → 向量化 → 相似度检索 topK → 拼进 Prompt（「根据以下资料回答」）→ LLM 生成。\n项目背书：我完整做过这条链路（**Chroma + 通义 text-embedding-v1 1536维 + DeepSeek**）。\n坑：换 embedding 模型必须**重建向量库**——我踩过旧库 64 维 vs 新模型 1536 维的冲突，后来加了维度检测自动重建。"
- },
- {
-  "id": "aiP2",
-  "module": "ai",
-  "q": "Function Calling 是怎么工作的？（P0 实战版·带项目）",
-  "a": "① 请求带 **tools 定义**（JSON Schema：名称/参数/类型/枚举）；② 模型判断意图后**不返回文本，返回 tool_calls**（函数名+符合 schema 的参数）；③ 你的代码真正执行；④ 结果回传模型继续推理。\n核心价值：**参数被 Schema 锁死**（枚举+类型强约束），比让模型自由生成 JSON 稳定得多。\n项目背书：我的 AI 数据看板（NL2Chart）就靠它——定义 **render_chart 工具**（chart_type 枚举 line/bar/pie/scatter），LLM 只输出意图参数（如 {chart_type:'line', x:'date', y:['sales']}），前端确定性拼 ECharts option。实测「趋势/对比/占比」三种问法，图表类型和字段映射全对。"
- },
- {
-  "id": "aiP3",
-  "module": "ai",
-  "q": "大模型幻觉是什么？怎么缓解？（P0 实战版·带项目）",
-  "a": "幻觉 = 生成**看似合理但事实错误**的内容。根因：LLM 本质是「预测下一个 token」，不是「查事实」，没学过的就编。\n缓解排序：① **RAG**（最有效，把「编」变「引用」）；② **降温度**（如 0.2，减少随机）；③ Prompt 约束（「不知道就说不知道」）；④ **输出校验**（结构化+规则校验）。\n项目背书：我的数据看板不让 LLM 手写 ECharts JSON（会编造字段名），而是 Function Calling 锁死参数、**只能从给定字段里选**——从机制上杜绝编造。temperature 设 0.2 保证稳定。"
- },
- {
-  "id": "aiP4",
-  "module": "ai",
-  "q": "RAG 和 Agent 是什么关系？区别与联系？（P0）",
-  "a": "**RAG 解决「知识」**——给模型喂外部资料，让它答得准。\n**Agent 解决「行动」**——给模型工具，让它能干活（自主规划+调用+迭代）。\n不是对立，而是**组合**：Agent 里可以有一个「检索工具」（就是 RAG），模型自主判断「这个问题需要查资料」时才去检索。\n一句话：**RAG 是 Agent 的一种工具**。\n项目背书：我的看板里 render_chart 是「行动」工具（Agent 能力），后续加「历史图表记忆」就是「知识」工具（RAG 能力），两者在同一个 Agent 里协作。"
- },
- {
-  "id": "aiP5",
-  "module": "ai",
-  "q": "RAG 效果不好，你怎么定位问题？（P0 实战）",
-  "a": "按链路**分环节排查**：\n① **先看检索对不对**——召回的片段和问题相关吗？不相关 → 问题在 embedding/切块/检索策略。\n② **检索对了但答错** → 问题在生成环节（Prompt 没用好、相关片段被长上下文淹没）。\n③ **数据里根本没有答案** → 不是 RAG 的锅，先补数据。\n优化路径：切块策略 → 换 embedding → **混合检索(BM25+向量) + rerank** → Prompt 优化。\n工程化做法：用**固定问题集做评估**（优化前后命中率对比），不凭感觉调——这是面试官最想听的答案。"
- }
+  {
+    "id": "ai1",
+    "module": "ai",
+    "q": "前端如何接入大模型 API（流式输出）？",
+    "a": "以 OpenAI 兼容为例：\n① 调 /chat/completions 带 stream:true；② 用 **fetch + ReadableStream** 读响应体，按 SSE（data:{json} 换行）逐块解析；③ 取 choices[0].delta.content 增量拼到界面（打字机）；④ 结束标志 data:[DONE]。\n安全：**密钥必须放后端代理**，前端只调自建后端，避免泄露与 CORS；可加 AbortController 取消。",
+    "priority": 1
+  },
+  {
+    "id": "ai2",
+    "module": "ai",
+    "q": "什么是 Function Calling / Tool Use？",
+    "a": "让模型**决定调用哪个函数**并产出参数 JSON，由你的后端真正执行，再把结果回传模型继续推理。\n流程：① 请求带 tools 定义（名称/JSON Schema 参数）；② 模型返回 tool_calls（函数名+参数）；③ 你执行（查天气/查库/下单）；④ 结果作 role:tool 回传；⑤ 模型综合生成最终回答。\n用途：接真实能力、多步任务、Agent。",
+    "priority": 1
+  },
+  {
+    "id": "ai3",
+    "module": "ai",
+    "q": "RAG 基本流程？",
+    "a": "RAG = 检索增强生成，用私有/最新知识补 LLM 记忆。\n流程：① 知识**切块**；② 每块**向量化**存向量库（Milvus/pgvector）；③ 问题向量化；④ 相似度检索 topK；⑤ 拼进 Prompt（\"根据以下资料回答\"）给 LLM。\n缓解**幻觉**、支持私域。注意：切块大小/重叠、检索质量（BM25+向量混合）、重排 rerank、引用溯源。",
+    "priority": 1
+  },
+  {
+    "id": "ai4",
+    "module": "ai",
+    "q": "SSE 与 WebSocket 区别？",
+    "a": "**SSE**（Server-Sent Events）基于 **HTTP**，服务端→客户端**单向**流式推送（EventSource），自动重连、简单、走标准 HTTP（好过代理）。适合 LLM 打字机、行情。**WebSocket** 全双工、**双向**实时（聊天/协作），需 ws 协议、握手、心跳。\n选型：只需服务端推（流式输出）用 SSE（更简单、兼容好）；双向交互用 WebSocket。注意：SSE 走文本流、断线重连内置。",
+    "priority": 1
+  },
+  {
+    "id": "ai5",
+    "module": "ai",
+    "q": "AbortController 怎么取消请求？",
+    "a": "原生取消机制：创建 const ac=new AbortController()，fetch 传 signal:ac.signal；要取消调 ac.abort()，请求 reject（AbortError）。用途：① 用户**停止生成**（“停止”按钮）；② 组件**卸载**时取消未完成的请求防内存泄漏/状态错乱；③ 防竞态（旧请求慢于新请求）。\n注意：abort 后需在 catch 判 err.name==='AbortError' 静默处理。",
+    "priority": 1
+  },
+  {
+    "id": "ai6",
+    "module": "ai",
+    "q": "前端流式 Markdown 怎么渲染？",
+    "a": "增量拼接：① fetch 流逐块取 delta.content 拼到字符串 state；② 用 **marked/markdown-it** 实时把已得文本转 HTML（可能半截，需容错）；③ 渲染到 DOM（打字机感）。坑：① 未闭合代码块/表格渲染乱——选稳的或缓冲完整块再渲染；② XSS（渲染前 sanitize，如 DOMPurify）；③ 代码高亮（highlight.js 增量）。\n优化：用虚拟列表或分段渲染防卡。",
+    "priority": 1
+  },
+  {
+    "id": "ai7",
+    "module": "ai",
+    "q": "如何减少大模型幻觉？",
+    "a": "① **RAG** 注入真实资料（检索增强）；② **系统提示**约束（“不知道就说不知道，基于给定资料”）；③ **few-shot** 示例定格式；④ 要求**引用来源**；⑤ 关键事实**后校验**（再调模型核对/查知识库）；⑥ 限定领域/拒答越界；⑦ 温度 temperature 调低（更确定）；⑧ 人工审核闭环。\n权衡：零幻觉做不到，靠“检索+约束+校验”降概率。",
+    "priority": 1
+  },
+  {
+    "id": "ai8",
+    "module": "ai",
+    "q": "向量数据库是什么？",
+    "a": "专门存**向量（embedding）**并做**相似度检索**（最近邻 ANN）的库。常见：**Milvus / Qdrant / Chroma / pgvector（PostgreSQL 插件）/ Weaviate**。索引：HNSW（图，快）、IVF（聚类）、PQ（压缩）。\n用途：RAG 检索、推荐、去重、语义搜索。对比：传统 DB 按精确匹配/SQL，向量 DB 按“语义相似”。注意：维度一致、需重排 rerank 提准。",
+    "priority": 1
+  },
+  {
+    "id": "ai9",
+    "module": "ai",
+    "q": "Embedding 是什么？",
+    "a": "把文本/图转成**高维向量**（如 1536 维），**语义相近向量距离近**，使机器能算相似度（余弦）。作用：RAG 检索、聚类、分类、去重。流程：文本 → embedding 模型（text-embedding-3 等）→ 向量 → 存向量库 → 查询文本也 embedding → 相似度 topK。\n注意：① 模型要**同一**才能比；② 维度/归一化；③ 中英文用对应模型；④ 成本（量大会花）。",
+    "priority": 1
+  },
+  {
+    "id": "ai10",
+    "module": "ai",
+    "q": "什么是 Agent / ReAct？",
+    "a": "**Agent** 让 LLM **自主规划+调工具**完成任务（不止聊天）。**ReAct** 推理（Thought）+ 行动（Action/工具调用）+ 观察（Observation）循环：模型想→调用工具（搜/算/查库）→看结果→再想…直至答。其它模式：Plan-Execute、Reflection（自反思）、Multi-Agent（多角色协作）。\n注意：① 设 **max_steps** 防死循环；② 工具结果回传；③ 成本控制（步数/模型）。",
+    "priority": 1
+  },
+  {
+    "id": "ai11",
+    "module": "ai",
+    "q": "MCP 与 Function Calling 区别？",
+    "a": "**Function Calling**（OpenAI 系）模型调你定义的**函数**拿参数，你执行——**单次/模型厂商绑定**的“能力接口”。**MCP**（Model Context Protocol，Anthropic）**标准化协议**，统一“模型↔工具/数据源”的连接（类 USB-C），一个 MCP Server 可被**多模型/多客户端**复用，解耦工具提供方与模型。\n关系：MCP 是“怎么连工具”的标准；Function Calling 是模型“怎么表达要调工具”。趋势：MCP 让工具可插拔、跨模型共享。",
+    "priority": 1
+  },
+  {
+    "id": "ai12",
+    "module": "ai",
+    "q": "端侧 AI（浏览器跑模型）？",
+    "a": "在**浏览器/设备本地**跑模型，不依赖云端。技术：① **WebGPU**（浏览器 GPU 加速，替代 WebGL）；② **Transformers.js**（HuggingFace，把模型跑前端，ONNX/WASM/WebGPU）；③ WASM 推理。好处：隐私（数据不出端）、零延迟/离线、省 API 费。\n代价：模型体积大（需量化/小模型）、首载慢、算力有限。用途：离线翻译/轻量分类/本地助手。",
+    "priority": 3
+  },
+  {
+    "id": "ai13",
+    "module": "ai",
+    "q": "Prompt Engineering 常见技巧？",
+    "a": "① **清晰指令**（角色+任务+格式+约束）；② **Few-shot**（给示例定风格/格式）；③ **Chain-of-Thought**（“一步步想”提推理）；④ **结构化输出**（要求 JSON/固定字段，便于解析）；⑤ **分隔符**（### 隔离指令与输入）；⑥ **系统提示**定人设/边界；⑦ 迭代优化（测不同 phrasing）。\n注意：避免歧义、给“不知道就拒答”限制、限定输出长度。",
+    "priority": 1
+  },
+  {
+    "id": "ai14",
+    "module": "ai",
+    "q": "长对话上下文怎么管理？",
+    "a": "问题：token 有限、长对话贵且慢、易丢重点。策略：① **滑动窗口**（保留最近 N 轮）；② **摘要压缩**（旧轮用 LLM 总结成摘要）；③ **检索相关历史**（RAG 存历史，只取相关）；④ **关键记忆**单独存（用户偏好/事实）；⑤ 系统提示精简；⑥ 设 max_tokens 截断。\n权衡：保留相关 vs 控成本；多轮对话必做裁剪防越界/爆 token。",
+    "priority": 1
+  },
+  {
+    "id": "ai15",
+    "module": "ai",
+    "q": "调用大模型 API 的鉴权与限流？",
+    "a": "**鉴权** API Key 必须**放后端**（前端暴露=被盗刷）；后端代理转发、加自己的鉴权（用户登录态）。**限流** ① 用户级配额（每用户每日 N 次）；② 服务端调用 LLM 限流（防突发打爆额度）；③ 费用预警（预算上限）；④ 缓存相同问答（降调用）。\n**安全** HTTPS、Key 轮转、不落库明文；错误（401/429/500）分类处理（429 退避重试）。",
+    "priority": 1
+  },
+  {
+    "id": "ai16",
+    "module": "ai",
+    "q": "大模型选型与成本考量？",
+    "a": "维度：① **能力**（推理/多模态/长上下文）；② **成本**（每千 token 价、输出比输入贵）；③ **延迟**（响应速度）；④ **上下文窗口**（长文档需大窗口或分段）；⑤ **私有化**（数据安全→本地/私有部署）；⑥ **生态**（工具/SDK）。\n策略：强任务用大模型、简单用小模型省钱；缓存高频问答；流式降感知延迟；按需切模型（路由）。",
+    "priority": 1
+  },
+  {
+    "id": "aiW1",
+    "module": "ai",
+    "q": "前端怎么集成大模型 API？流式输出（SSE / fetch stream）怎么处理？",
+    "a": "**简要回答：**\n前端调大模型一般走「**后端代理 + 流式读取**」：浏览器 `fetch` 调自己的服务端，服务端转发模型厂商的 SSE 流，前端用 `ReadableStream` 逐块渲染，实现打字机效果。\n\n**拆解：**\n- 不要在前端直接放模型 Key（会被扒）；让 Node/BFF 代理并加 Key。\n- 模型返回 `text/event-stream`（SSE），前端用 `response.body.getReader()` + `TextDecoder` 边读边拼。\n- 解析：`data: {...}\n\n` 分段，取 `choices[0].delta.content` 追加到 UI。\n- 并用 `AbortController` 支持「停止生成」。\n\n**示例：**\n```\nconst r=await fetch('/api/chat',{method:'POST',body:JSON.stringify({q})});\nconst reader=r.body.getReader(), dec=new TextDecoder();\nwhile(true){ const {done,value}=await reader.read(); if(done)break;\n  text+=dec.decode(value); render(text); }\n```\n**追问：** 为什么不用普通 JSON 一次性返回？（长文本等待久、无反馈，流式体验好且能早出错早停。）",
+    "priority": 1
+  },
+  {
+    "id": "aiW2",
+    "module": "ai",
+    "q": "前端 AI 辅助开发（Copilot / Cursor）的正确姿势？Prompt 工程要点？",
+    "a": "**简要回答：**\n2026 面试常考「会不会拆需求 + 写 Prompt + 审 AI 代码」。AI 是副驾：**人来定方向与把关，AI 出初稿**。\n\n**拆解：**\n- **拆需求**：把大任务拆成小、可验证的步骤，逐步让 AI 生成，而不是「一次性写整个系统」。\n- **写 Prompt**：给上下文（技术栈/约束/已有代码）+ 明确目标 + 输出格式 + 边界（「不要引入新依赖」）。\n- **审代码**：AI 会编（幻觉）、会漏边界（错误/空值/并发），必须人工 review + 跑测试。\n- **组合拳**：让 AI 写单测、写注释、解释报错、生成样板，把人从重复劳动解放到架构与判断。\n\n**追问：** 面试官为什么避开 AI 能直接答的题？（转向场景题/系统设计，考人类独有的权衡与经验。）",
+    "priority": 1
+  },
+  {
+    "id": "aiW3",
+    "module": "ai",
+    "q": "什么是 RAG（检索增强生成）？前端能落地哪些相关能力？",
+    "a": "**简要回答：**\nRAG = 先**检索**相关资料，再把资料连同问题一起喂给大模型**生成**答案，解决「模型知识过时/不会你的私有数据」的问题。\n\n**拆解：**\n- 流程：文档切块 → 向量化（embedding）→ 存向量库 → 用户提问时检索最相关块 → 拼进 Prompt 让模型作答。\n- **前端能做的**：\n  1. 上传/管理知识库（切分、进度 UI）；\n  2. 调用 embedding/检索接口并展示「引用来源」；\n  3. 流式展示答案 + 高亮引用片段；\n  4. 前端本地向量检索（如用 transformers.js / 轻量库做端侧 RAG，保护隐私）。\n- 价值：客服机器人、内部文档问答、个人笔记助手。\n\n**追问：** RAG 和微调（fine-tune）怎么选？（要「私有/最新」知识用 RAG 成本低；要「改变说话/能力风格」才微调。）",
+    "priority": 1
+  },
+  {
+    "id": "aiP1",
+    "module": "ai",
+    "q": "RAG 完整流程讲一下？（P0 实战版·带项目）",
+    "a": "两阶段：\n**离线索引**：文档 → 切块(chunk) → 向量化(embedding) → 存入向量库。\n**在线检索**：用户问题 → 向量化 → 相似度检索 topK → 拼进 Prompt（「根据以下资料回答」）→ LLM 生成。\n项目背书：我完整做过这条链路（**Chroma + 通义 text-embedding-v1 1536维 + DeepSeek**）。\n坑：换 embedding 模型必须**重建向量库**——我踩过旧库 64 维 vs 新模型 1536 维的冲突，后来加了维度检测自动重建。",
+    "priority": 1
+  },
+  {
+    "id": "aiP2",
+    "module": "ai",
+    "q": "Function Calling 是怎么工作的？（P0 实战版·带项目）",
+    "a": "① 请求带 **tools 定义**（JSON Schema：名称/参数/类型/枚举）；② 模型判断意图后**不返回文本，返回 tool_calls**（函数名+符合 schema 的参数）；③ 你的代码真正执行；④ 结果回传模型继续推理。\n核心价值：**参数被 Schema 锁死**（枚举+类型强约束），比让模型自由生成 JSON 稳定得多。\n项目背书：我的 AI 数据看板（NL2Chart）就靠它——定义 **render_chart 工具**（chart_type 枚举 line/bar/pie/scatter），LLM 只输出意图参数（如 {chart_type:'line', x:'date', y:['sales']}），前端确定性拼 ECharts option。实测「趋势/对比/占比」三种问法，图表类型和字段映射全对。",
+    "priority": 1
+  },
+  {
+    "id": "aiP3",
+    "module": "ai",
+    "q": "大模型幻觉是什么？怎么缓解？（P0 实战版·带项目）",
+    "a": "幻觉 = 生成**看似合理但事实错误**的内容。根因：LLM 本质是「预测下一个 token」，不是「查事实」，没学过的就编。\n缓解排序：① **RAG**（最有效，把「编」变「引用」）；② **降温度**（如 0.2，减少随机）；③ Prompt 约束（「不知道就说不知道」）；④ **输出校验**（结构化+规则校验）。\n项目背书：我的数据看板不让 LLM 手写 ECharts JSON（会编造字段名），而是 Function Calling 锁死参数、**只能从给定字段里选**——从机制上杜绝编造。temperature 设 0.2 保证稳定。",
+    "priority": 1
+  },
+  {
+    "id": "aiP4",
+    "module": "ai",
+    "q": "RAG 和 Agent 是什么关系？区别与联系？（P0）",
+    "a": "**RAG 解决「知识」**——给模型喂外部资料，让它答得准。\n**Agent 解决「行动」**——给模型工具，让它能干活（自主规划+调用+迭代）。\n不是对立，而是**组合**：Agent 里可以有一个「检索工具」（就是 RAG），模型自主判断「这个问题需要查资料」时才去检索。\n一句话：**RAG 是 Agent 的一种工具**。\n项目背书：我的看板里 render_chart 是「行动」工具（Agent 能力），后续加「历史图表记忆」就是「知识」工具（RAG 能力），两者在同一个 Agent 里协作。",
+    "priority": 1
+  },
+  {
+    "id": "aiP5",
+    "module": "ai",
+    "q": "RAG 效果不好，你怎么定位问题？（P0 实战）",
+    "a": "按链路**分环节排查**：\n① **先看检索对不对**——召回的片段和问题相关吗？不相关 → 问题在 embedding/切块/检索策略。\n② **检索对了但答错** → 问题在生成环节（Prompt 没用好、相关片段被长上下文淹没）。\n③ **数据里根本没有答案** → 不是 RAG 的锅，先补数据。\n优化路径：切块策略 → 换 embedding → **混合检索(BM25+向量) + rerank** → Prompt 优化。\n工程化做法：用**固定问题集做评估**（优化前后命中率对比），不凭感觉调——这是面试官最想听的答案。",
+    "priority": 1
+  }
 ]

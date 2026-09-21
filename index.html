@@ -184,6 +184,13 @@
 
   /* 记忆曲线复习 */
   .rev-badge{ display:inline-block; min-width:20px; background:var(--red); color:#fff; border-radius:10px; padding:0 6px; font-size:16px; line-height:1.4; }
+  /* 重点题优先级 */
+  .pri-badge{ display:inline-block; min-width:20px; background:var(--red); color:#fff; border-radius:10px; padding:0 6px; font-size:16px; line-height:1.4; }
+  .kplus-badge{ display:inline-block; min-width:20px; background:#ffb84a; color:#5a3500; border-radius:10px; padding:0 6px; font-size:16px; line-height:1.4; }
+  .pri-tag{ display:inline-block; margin-left:8px; padding:1px 8px; font-size:14px; font-weight:bold; border-radius:9px; border:1.5px solid var(--ink); vertical-align:middle; }
+  .pri-tag.p0{ background:#ff6b4a; color:#fff; }
+  .pri-tag.p1{ background:#ffb84a; color:#5a3500; }
+  .pri-tag.p2{ background:#d8d0c4; color:#5c524a; }
   #revBanner{ display:none; padding:10px 14px; margin-bottom:8px; background:#fff8e1; border:2.5px solid var(--ink);
     border-radius:14px 5px 14px 5px; box-shadow:var(--shadow); font-size:19px; color:#7a5b00; text-align:center; transform:rotate(-.3deg); }
   #revBanner .n{ color:var(--red); font-weight:bold; font-size:22px; }
@@ -269,6 +276,8 @@
     <div class="mode on" data-mode="seq">顺序</div>
     <div class="mode" data-mode="rand">抽背</div>
     <div class="mode" data-mode="wrong">错题本</div>
+    <div class="mode" data-mode="priority" id="priorityMode">⭐ 重点 <span class="pri-badge">0</span></div>
+    <div class="mode" data-mode="keyplus" id="keyplusMode">🌟 重点+ <span class="kplus-badge">0</span></div>
     <div class="mode" data-mode="review" id="reviewMode">复习 <span class="rev-badge">0</span></div>
   </div>
 
@@ -533,6 +542,12 @@ function buildList(){
       list=take; // 指定模块时也应用必刷下限
     }
     renderRevPlan();
+  } else if(curMode==='priority'){
+    // 重点题：只展示 priority===1 的题
+    list = base.filter(q=>(q.priority||2)===1);
+  } else if(curMode==='keyplus'){
+    // 重点+：P0 + P1 综合（priority<=2），排除 P2
+    list = base.filter(q=>(q.priority||2)<=2);
   } else {
     list = curMode==='wrong'? base.filter(q=>progress[q.id]&&progress[q.id]!=='know') : base.slice();
   }
@@ -547,6 +562,10 @@ function showEmpty(){
     const base = curModule==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===curModule);
     const stillDue = base.filter(q=> reviews[q.id] && reviews[q.id].due<=Date.now()).length;
     msg = stillDue>0 ? '📅 今日复习配额已用完！\n还差 '+stillDue+' 题没背完，明天按曲线继续 ✦' : '🎉 待复习队列已清空！\n已掌握的题目会在记忆曲线到期时自动回来';
+  } else if(curMode==='priority'){
+    msg='⭐ 当前模块没有 P0 必背题\n切回「全部模块」试试 ✦';
+  } else if(curMode==='keyplus'){
+    msg='🌟 当前模块没有 P0/P1 题\n切回「全部模块」试试 ✦';
   }
   elCard.querySelector('.front').innerHTML=`<div class="face-tag">EMPTY</div><div class="empty">${msg}</div>`; elCard.classList.remove('flip');
 }
@@ -565,7 +584,9 @@ function saveLast(){
 function showCard(){
   const q=list[pos]; if(!q){ showEmpty(); return; }
   const n=list.length;
-  elCard.querySelector('.front').innerHTML=`<div class="face-tag">${MOD_NAME[q.module]||q.module}</div><div class="face-idx">${pos+1}/${n}</div><div class="q">${q.q}</div><div class="hint">👆 点卡片翻看解析</div>`;
+  const pri=(q.priority||2);
+  const priTag = pri===1 ? '<span class="pri-tag p0">P0 必背</span>' : pri===2 ? '<span class="pri-tag p1">P1</span>' : '<span class="pri-tag p2">P2</span>';
+  elCard.querySelector('.front').innerHTML=`<div class="face-tag">${MOD_NAME[q.module]||q.module}${priTag}</div><div class="face-idx">${pos+1}/${n}</div><div class="q">${q.q}</div><div class="hint">👆 点卡片翻看解析</div>`;
   const qEl=elCard.querySelector('.front .q');
   qEl.style.animation='none'; void qEl.offsetWidth; qEl.style.animation='fadeUp .35s ease';
   $('#aTag').textContent='解析 · '+(MOD_NAME[q.module]||q.module);
@@ -638,6 +659,12 @@ function updateRevUI(){
   const rm=$('#reviewMode'); if(rm) rm.innerHTML=`复习 <span class="rev-badge">${n}</span>`;
   const banner=$('#revBanner');
   if(banner){ if(n>0){ banner.style.display=''; banner.querySelector('.n').textContent=n; } else banner.style.display='none'; }
+  // 重点题总数（priority===1 的题）
+  const pn=QUESTIONS.filter(q=>(q.priority||2)===1).length;
+  const pm=$('#priorityMode'); if(pm) pm.innerHTML=`⭐ 重点 <span class="pri-badge">${pn}</span>`;
+  // 重点+总数（priority<=2，P0+P1）
+  const kp=QUESTIONS.filter(q=>(q.priority||2)<=2).length;
+  const kpm=$('#keyplusMode'); if(kpm) kpm.innerHTML=`🌟 重点+ <span class="kplus-badge">${kp}</span>`;
 }
 function forgetCurveSVG(level){
   const iv = level>=0 ? SR_LEVELS[Math.min(level,SR_LEVELS.length-1)] : 1;

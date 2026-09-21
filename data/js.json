@@ -3,330 +3,385 @@
     "id": "js001",
     "module": "js",
     "q": "var、let、const 的区别？",
-    "a": "**var**：函数作用域，存在变量提升（声明提到函数顶部，值为 undefined），可重复声明、可重新赋值。\n**let**：块级作用域（{} 内有效），有暂时性死区 TDZ（声明前访问报错），不可重复声明，可重新赋值。\n**const**：同 let 的作用域与 TDZ，区别是**绑定不可变**——基本类型值不能改；对象/数组是引用不能改，但内部属性可改。\n实践：默认用 const，需重新绑定再用 let，避免 var。"
+    "a": "**var**：函数作用域，存在变量提升（声明提到函数顶部，值为 undefined），可重复声明、可重新赋值。\n**let**：块级作用域（{} 内有效），有暂时性死区 TDZ（声明前访问报错），不可重复声明，可重新赋值。\n**const**：同 let 的作用域与 TDZ，区别是**绑定不可变**——基本类型值不能改；对象/数组是引用不能改，但内部属性可改。\n实践：默认用 const，需重新绑定再用 let，避免 var。",
+    "priority": 1
   },
   {
     "id": "js002",
     "module": "js",
     "q": "事件循环（Event Loop）是怎么工作的？",
-    "a": "**JS 单线程，靠事件循环调度异步。** 每轮流程：执行一个宏任务 → 清空所有微任务 → 渲染（渲染是渲染管线的一步，并不是宏任务）→ 取下一个宏任务。\n\n**宏任务：** script（整体代码）、setTimeout/setInterval、setImmediate、I/O、UI 交互事件。\n**微任务：** Promise.then/catch/finally、queueMicrotask、MutationObserver。\n\n**渲染时机：** 浏览器在微任务清空后、下一轮宏任务前执行渲染；`requestAnimationFrame` 回调在**渲染前**触发（每帧一次），适合做视觉更新，比 setTimeout 时机更准。\n\n**Node.js 事件循环阶段（libuv）：**\ntimers → pending I/O callbacks → idle/prepare → **poll**（取 I/O 回调）→ **check**（setImmediate）→ close callbacks。\n- `process.nextTick` **不在上述阶段内**：它在每个阶段切换前、微任务之前立即执行（优先级高于微任务），过度使用会饿死事件循环。\n- `setImmediate` 在 check 阶段，`setTimeout(fn,0)` 在 timers 阶段；同一轮内谁先取决于调用时机。\n\n**常见坑：** setTimeout 晚于 Promise.then 输出（微任务先清）；`process.nextTick` 比所有 then 都早；渲染不是宏任务。"
+    "a": "**JS 单线程，靠事件循环调度异步。** 每轮流程：执行一个宏任务 → 清空所有微任务 → 渲染（渲染是渲染管线的一步，并不是宏任务）→ 取下一个宏任务。\n\n**宏任务：** script（整体代码）、setTimeout/setInterval、setImmediate、I/O、UI 交互事件。\n**微任务：** Promise.then/catch/finally、queueMicrotask、MutationObserver。\n\n**渲染时机：** 浏览器在微任务清空后、下一轮宏任务前执行渲染；`requestAnimationFrame` 回调在**渲染前**触发（每帧一次），适合做视觉更新，比 setTimeout 时机更准。\n\n**Node.js 事件循环阶段（libuv）：**\ntimers → pending I/O callbacks → idle/prepare → **poll**（取 I/O 回调）→ **check**（setImmediate）→ close callbacks。\n- `process.nextTick` **不在上述阶段内**：它在每个阶段切换前、微任务之前立即执行（优先级高于微任务），过度使用会饿死事件循环。\n- `setImmediate` 在 check 阶段，`setTimeout(fn,0)` 在 timers 阶段；同一轮内谁先取决于调用时机。\n\n**常见坑：** setTimeout 晚于 Promise.then 输出（微任务先清）；`process.nextTick` 比所有 then 都早；渲染不是宏任务。",
+    "priority": 1
   },
   {
     "id": "js003",
     "module": "js",
     "q": "什么是闭包？有什么用？",
-    "a": "函数与其**词法作用域**的组合——内部函数能访问外部变量，即使外部已返回。\n原理：作用域链在定义时确定并随函数一起保存。\n用途：① 私有变量（模块模式，外部无法直接改）；② 函数工厂/柯里化；③ 防抖节流里保存 timer；④ 循环中用 let 保留每次迭代值。\n注意：不当保留大对象会占内存，用完置 null。"
+    "a": "函数与其**词法作用域**的组合——内部函数能访问外部变量，即使外部已返回。\n原理：作用域链在定义时确定并随函数一起保存。\n用途：① 私有变量（模块模式，外部无法直接改）；② 函数工厂/柯里化；③ 防抖节流里保存 timer；④ 循环中用 let 保留每次迭代值。\n注意：不当保留大对象会占内存，用完置 null。",
+    "priority": 1
   },
   {
     "id": "js004",
     "module": "js",
     "q": "原型链是什么？继承如何实现？",
-    "a": "每个**函数**有 prototype（显式原型），每个**对象**有 __proto__（隐式原型，指向构造函数的 prototype）。访问属性时沿 __proto__ 向上查找，形成**原型链**，顶端是 Object.prototype → null。\n继承实现：① **原型链继承**（引用属性共享，缺陷大）；② **构造函数继承**（call 父类）；③ **组合继承**（call + 原型，最常用）；④ **寄生组合继承**（Object.create，ES5 最优）；⑤ ES6 **class extends** 语法糖（基于寄生组合）。"
+    "a": "每个**函数**有 prototype（显式原型），每个**对象**有 __proto__（隐式原型，指向构造函数的 prototype）。访问属性时沿 __proto__ 向上查找，形成**原型链**，顶端是 Object.prototype → null。\n继承实现：① **原型链继承**（引用属性共享，缺陷大）；② **构造函数继承**（call 父类）；③ **组合继承**（call + 原型，最常用）；④ **寄生组合继承**（Object.create，ES5 最优）；⑤ ES6 **class extends** 语法糖（基于寄生组合）。",
+    "priority": 1
   },
   {
     "id": "js005",
     "module": "js",
     "q": "深拷贝和浅拷贝区别？如何实现深拷贝？",
-    "a": "**浅拷贝**只复制第一层，嵌套对象仍共享引用（Object.assign、{...obj}、concat），改嵌套会影响原对象。\n**深拷贝**完全独立。实现：① **JSON.parse(JSON.stringify)** 简单但有坑——丢函数/undefined/Symbol、循环引用报错；② **structuredClone**（现代原生，支持循环引用，不支持函数）；③ 手写递归（WeakMap 缓存破循环）；④ lodash **cloneDeep**。"
+    "a": "**浅拷贝**只复制第一层，嵌套对象仍共享引用（Object.assign、{...obj}、concat），改嵌套会影响原对象。\n**深拷贝**完全独立。实现：① **JSON.parse(JSON.stringify)** 简单但有坑——丢函数/undefined/Symbol、循环引用报错；② **structuredClone**（现代原生，支持循环引用，不支持函数）；③ 手写递归（WeakMap 缓存破循环）；④ lodash **cloneDeep**。",
+    "priority": 1
   },
   {
     "id": "js006",
     "module": "js",
     "q": "this 的指向规则？",
-    "a": "this 取决于**调用方式**而非定义位置：① **普通函数**调用（非严格）→ window；② **对象方法** obj.fn() → obj；③ **new Fn()** → 新建实例；④ **call/apply/bind** 显式绑定 → 指定对象；⑤ **箭头函数**无自身 this，取**外层词法** this（适合回调/定时器）。\n优先级：new > 显式 > 隐式 > 默认。"
+    "a": "this 取决于**调用方式**而非定义位置：① **普通函数**调用（非严格）→ window；② **对象方法** obj.fn() → obj；③ **new Fn()** → 新建实例；④ **call/apply/bind** 显式绑定 → 指定对象；⑤ **箭头函数**无自身 this，取**外层词法** this（适合回调/定时器）。\n优先级：new > 显式 > 隐式 > 默认。",
+    "priority": 1
   },
   {
     "id": "js007",
     "module": "js",
     "q": "new 一个对象发生了什么？",
-    "a": "四步：① 创建空对象，原型指向**构造函数的 prototype**；② 执行构造函数，this 绑定该对象；③ 若构造函数**显式 return 对象**则用它，否则返回新对象；④ 返回实例。\n手写：function _new(Fn,...args){ const o=Object.create(Fn.prototype); const r=Fn.apply(o,args); return r instanceof Object?r:o; } 注意：箭头函数不能作构造函数（无 prototype）。"
+    "a": "四步：① 创建空对象，原型指向**构造函数的 prototype**；② 执行构造函数，this 绑定该对象；③ 若构造函数**显式 return 对象**则用它，否则返回新对象；④ 返回实例。\n手写：function _new(Fn,...args){ const o=Object.create(Fn.prototype); const r=Fn.apply(o,args); return r instanceof Object?r:o; } 注意：箭头函数不能作构造函数（无 prototype）。",
+    "priority": 1
   },
   {
     "id": "js008",
     "module": "js",
     "q": "Promise 的状态与链式调用？",
-    "a": "三种状态：**pending → fulfilled / rejected**，状态一旦确定**不可逆**。\n**.then(onF,onR)** 返回新 Promise，支持**链式**；异常向下传直到 .catch；.finally 无论成败都执行。**微任务**：.then 回调进微任务队列。\n静态方法：Promise.all（全成功/一失败即败）、allSettled（都要结果）、race（谁先）、any（谁先成功）。避免 **Promise 穿透**（.then() 无回调参数会透传值）。"
+    "a": "三种状态：**pending → fulfilled / rejected**，状态一旦确定**不可逆**。\n**.then(onF,onR)** 返回新 Promise，支持**链式**；异常向下传直到 .catch；.finally 无论成败都执行。**微任务**：.then 回调进微任务队列。\n静态方法：Promise.all（全成功/一失败即败）、allSettled（都要结果）、race（谁先）、any（谁先成功）。避免 **Promise 穿透**（.then() 无回调参数会透传值）。",
+    "priority": 1
   },
   {
     "id": "js009",
     "module": "js",
     "q": "async/await 是什么？如何处理错误？",
-    "a": "**async** 函数返回 Promise；**await** 暂停等待 Promise 落地（fulfilled 取值 / rejected 抛错），让异步代码**像同步**书写。\n错误处理：① **try/catch** 包 await（推荐）；② .catch 接在调用后；③ 循环里 await 是串行（需并发用 Promise.all）。注意：await 会**串行阻塞**，大量独立请求用 Promise.all 提速。"
+    "a": "**async** 函数返回 Promise；**await** 暂停等待 Promise 落地（fulfilled 取值 / rejected 抛错），让异步代码**像同步**书写。\n错误处理：① **try/catch** 包 await（推荐）；② .catch 接在调用后；③ 循环里 await 是串行（需并发用 Promise.all）。注意：await 会**串行阻塞**，大量独立请求用 Promise.all 提速。",
+    "priority": 1
   },
   {
     "id": "js010",
     "module": "js",
     "q": "手写防抖 debounce？",
-    "a": "防抖：触发后延迟 N 秒执行，期间再触发**重设计时**。function debounce(fn,delay){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),delay); }; }\n节流（时间戳版）：function throttle(fn,wait){ let last=0; return (...a)=>{ const now=Date.now(); if(now-last>=wait){ fn(...a); last=now; } }; } 防抖用于搜索/resize，节流用于 scroll/拖拽。"
+    "a": "防抖：触发后延迟 N 秒执行，期间再触发**重设计时**。function debounce(fn,delay){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),delay); }; }\n节流（时间戳版）：function throttle(fn,wait){ let last=0; return (...a)=>{ const now=Date.now(); if(now-last>=wait){ fn(...a); last=now; } }; } 防抖用于搜索/resize，节流用于 scroll/拖拽。",
+    "priority": 1
   },
   {
     "id": "js011",
     "module": "js",
     "q": "map、filter、reduce 区别？",
-    "a": "**map** 遍历映射，返回**等长新数组**（每个元素转换）。**filter** 按条件**过滤**，返回子数组（保留真值项）。\n**reduce** 累加器，把数组**聚合成任意值**（求和/分组/拍平），reduce((acc,cur,i,arr)=>...,初始值)。注意：map 不应做副作用；forEach 不能 break（需 some/every）。"
+    "a": "**map** 遍历映射，返回**等长新数组**（每个元素转换）。**filter** 按条件**过滤**，返回子数组（保留真值项）。\n**reduce** 累加器，把数组**聚合成任意值**（求和/分组/拍平），reduce((acc,cur,i,arr)=>...,初始值)。注意：map 不应做副作用；forEach 不能 break（需 some/every）。",
+    "priority": 1
   },
   {
     "id": "js012",
     "module": "js",
     "q": "for...of 与 forEach 区别？",
-    "a": "**for...of** 可遍历**任何可迭代对象**（Array/Map/Set/String/NodeList），支持 **break/continue/return** 中断，能用 await（串行）。\n**forEach** 是数组方法，回调里 **break 无效**，且**异步回调会并行**、无法 await 顺序等待。遍历对象用 for...in 或 Object.keys/entries。"
+    "a": "**for...of** 可遍历**任何可迭代对象**（Array/Map/Set/String/NodeList），支持 **break/continue/return** 中断，能用 await（串行）。\n**forEach** 是数组方法，回调里 **break 无效**，且**异步回调会并行**、无法 await 顺序等待。遍历对象用 for...in 或 Object.keys/entries。",
+    "priority": 1
   },
   {
     "id": "js013",
     "module": "js",
     "q": "typeof、instanceof、Object.prototype.toString 区别？",
-    "a": "**typeof** 返回基础类型字符串；**null → 'object'**（历史 bug）、函数 → 'function'、其余对象 → 'object'，**无法细分**对象。\n**instanceof** 顺着**原型链**判断构造关系（a instanceof Array），**跨 iframe 失效**，不能判原始类型。**Object.prototype.toString.call(x)** 最准，返回 [object Type]（Array/Null/Date 全可辨），是万能判型法。"
+    "a": "**typeof** 返回基础类型字符串；**null → 'object'**（历史 bug）、函数 → 'function'、其余对象 → 'object'，**无法细分**对象。\n**instanceof** 顺着**原型链**判断构造关系（a instanceof Array），**跨 iframe 失效**，不能判原始类型。**Object.prototype.toString.call(x)** 最准，返回 [object Type]（Array/Null/Date 全可辨），是万能判型法。",
+    "priority": 1
   },
   {
     "id": "js014",
     "module": "js",
     "q": "== 和 === 区别？",
-    "a": "**=== 严格相等**：类型不同直接 false，不转换（推荐）。**== 宽松相等**：会做**隐式类型转换**再比，规则多易错：NaN≠NaN，'0'==false 为 true，null==undefined 为 true 但都 ≠ 其他。\n实践：**始终用 ===**；仅 null 检查可用 ==（null==undefined）。"
+    "a": "**=== 严格相等**：类型不同直接 false，不转换（推荐）。**== 宽松相等**：会做**隐式类型转换**再比，规则多易错：NaN≠NaN，'0'==false 为 true，null==undefined 为 true 但都 ≠ 其他。\n实践：**始终用 ===**；仅 null 检查可用 ==（null==undefined）。",
+    "priority": 1
   },
   {
     "id": "js015",
     "module": "js",
     "q": "事件委托（事件代理）？",
-    "a": "把子元素事件**委托给父元素**监听，利用事件**冒泡**；点击子元素时冒泡到父，父用 **event.target** 判断实际源。\n优点：① 减少监听器、省内存；② 动态新增子元素**自动生效**（无需重新绑定）；③ 统一逻辑。注意：focus/blur 不冒泡（用 focusin/out）；适合列表/表格。"
+    "a": "把子元素事件**委托给父元素**监听，利用事件**冒泡**；点击子元素时冒泡到父，父用 **event.target** 判断实际源。\n优点：① 减少监听器、省内存；② 动态新增子元素**自动生效**（无需重新绑定）；③ 统一逻辑。注意：focus/blur 不冒泡（用 focusin/out）；适合列表/表格。",
+    "priority": 1
   },
   {
     "id": "js016",
     "module": "js",
     "q": "以下代码输出顺序是？",
-    "a": "**题目：** 以下代码输出顺序是？\n```js\nconsole.log(1);\nsetTimeout(() => console.log(2), 0);\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);\n```\n**输出：1 4 3 2。**\n**原因：** 同步代码先跑（1、4）→ 微任务 Promise.then **先于**宏任务 setTimeout 清空 → 最后才执行宏任务（2）。口诀：**每轮一个宏任务 + 清空所有微任务 → 渲染**。"
+    "a": "**题目：** 以下代码输出顺序是？\n```js\nconsole.log(1);\nsetTimeout(() => console.log(2), 0);\nPromise.resolve().then(() => console.log(3));\nconsole.log(4);\n```\n**输出：1 4 3 2。**\n**原因：** 同步代码先跑（1、4）→ 微任务 Promise.then **先于**宏任务 setTimeout 清空 → 最后才执行宏任务（2）。口诀：**每轮一个宏任务 + 清空所有微任务 → 渲染**。",
+    "priority": 1
   },
   {
     "id": "js017",
     "module": "js",
     "q": "什么是函数柯里化？",
-    "a": "把**多参函数**转成**依次接收单参**并返回新函数，直到参数齐了才执行。const add=a=>b=>a+b; add(2)(3);\n用途：① **参数复用**（固定部分参数如 tax(rate)）；② 延迟执行；③ 配合 compose 函数式组合。实质是闭包保存已传参数。"
+    "a": "把**多参函数**转成**依次接收单参**并返回新函数，直到参数齐了才执行。const add=a=>b=>a+b; add(2)(3);\n用途：① **参数复用**（固定部分参数如 tax(rate)）；② 延迟执行；③ 配合 compose 函数式组合。实质是闭包保存已传参数。",
+    "priority": 1
   },
   {
     "id": "js018",
     "module": "js",
     "q": "CommonJS 与 ES Module 区别？",
-    "a": "**CommonJS**（Node）：require/module.exports，**运行时**加载、值**拷贝**（缓存后拿导出对象副本），同步。\n**ESM**（前端）：import/export，**编译期**静态分析、支持 Tree-shaking、值**引用**（绑定）、异步加载。互操作：Node 用 ESM 需 .mjs 或 package.json type:module。"
+    "a": "**CommonJS**（Node）：require/module.exports，**运行时**加载、值**拷贝**（缓存后拿导出对象副本），同步。\n**ESM**（前端）：import/export，**编译期**静态分析、支持 Tree-shaking、值**引用**（绑定）、异步加载。互操作：Node 用 ESM 需 .mjs 或 package.json type:module。",
+    "priority": 1
   },
   {
     "id": "js019",
     "module": "js",
     "q": "为什么 0.1 + 0.2 !== 0.3？",
-    "a": "JS 数字按 **IEEE 754 双精度浮点**存储，二进制无法精确表示 0.1/0.2（无限循环），计算产生微小误差 → 0.30000000000000004。\n处理：① 转整数运算（(0.1*10+0.2*10)/10）；② toFixed 再 Number；③ 用 **decimal.js** 等精确库；④ 比较用 Math.abs(a-b)<1e-9。"
+    "a": "JS 数字按 **IEEE 754 双精度浮点**存储，二进制无法精确表示 0.1/0.2（无限循环），计算产生微小误差 → 0.30000000000000004。\n处理：① 转整数运算（(0.1*10+0.2*10)/10）；② toFixed 再 Number；③ 用 **decimal.js** 等精确库；④ 比较用 Math.abs(a-b)<1e-9。",
+    "priority": 1
   },
   {
     "id": "js020",
     "module": "js",
     "q": "call、apply、bind 区别？",
-    "a": "三者都是**显式绑定 this**。**call(this,a,b,...)** 参数**逐个**传，立即执行。**apply(this,[arr])** 参数**数组**传，立即执行。**bind(this,...)** 返回**新函数不立即执行**（柯里化/事件监听固定 this）。\n经典用：apply 求数组最大 Math.max.apply(null,arr)、类数组转真数组。"
+    "a": "三者都是**显式绑定 this**。**call(this,a,b,...)** 参数**逐个**传，立即执行。**apply(this,[arr])** 参数**数组**传，立即执行。**bind(this,...)** 返回**新函数不立即执行**（柯里化/事件监听固定 this）。\n经典用：apply 求数组最大 Math.max.apply(null,arr)、类数组转真数组。",
+    "priority": 1
   },
   {
     "id": "js021",
     "module": "js",
     "q": "什么是ES6？它的主要特性有哪些？",
-    "a": "**参考答案：**\n\nES6（ECMAScript 2015）是JavaScript的第六个版本，是JavaScript语言的重大更新。主要特性包括：\n\n- let和const关键字\n- 箭头函数\n- 模板字符串\n- 解构赋值\n- 默认参数\n- 扩展运算符\n- Promise\n- 类（Class）\n- 模块化（import/export）\n- Symbol数据类型\n- Map和Set数据结构\n- 生成器函数（Generator）"
+    "a": "**参考答案：**\n\nES6（ECMAScript 2015）是JavaScript的第六个版本，是JavaScript语言的重大更新。主要特性包括：\n\n- let和const关键字\n- 箭头函数\n- 模板字符串\n- 解构赋值\n- 默认参数\n- 扩展运算符\n- Promise\n- 类（Class）\n- 模块化（import/export）\n- Symbol数据类型\n- Map和Set数据结构\n- 生成器函数（Generator）",
+    "priority": 1
   },
   {
     "id": "js022",
     "module": "js",
     "q": "let、const和var的区别是什么？",
-    "a": "**var / let / const 区别（补充易考点）：**\n- **作用域：** var 函数作用域，let/const 块级作用域。\n- **提升与 TDZ：** var 提升并初始化为 undefined；let/const 提升但进入暂时性死区，声明前访问报错。\n- **重复声明：** var 允许，let/const 不允许。\n- **重新赋值：** var/let 可改，const 绑定不可改（对象内部属性可改）。\n- **初始化：** const 必须初始化。\n\n**两个易考细节：**\n- **var 全局声明挂到 window：** 全局 `var a = 1` 等价于 `window.a = 1`；而 `let a = 1` / `const` 不会挂到 window（存在脚本作用域）。\n- **for 循环里 let 每次迭代新建绑定：** 这是经典闭包面试题的解法——\n```js\nfor (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0); // 0 1 2（每次 i 都是新绑定）\n}\n// var 则共享一个 i -> 输出 3 3 3\n```"
+    "a": "**var / let / const 区别（补充易考点）：**\n- **作用域：** var 函数作用域，let/const 块级作用域。\n- **提升与 TDZ：** var 提升并初始化为 undefined；let/const 提升但进入暂时性死区，声明前访问报错。\n- **重复声明：** var 允许，let/const 不允许。\n- **重新赋值：** var/let 可改，const 绑定不可改（对象内部属性可改）。\n- **初始化：** const 必须初始化。\n\n**两个易考细节：**\n- **var 全局声明挂到 window：** 全局 `var a = 1` 等价于 `window.a = 1`；而 `let a = 1` / `const` 不会挂到 window（存在脚本作用域）。\n- **for 循环里 let 每次迭代新建绑定：** 这是经典闭包面试题的解法——\n```js\nfor (let i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0); // 0 1 2（每次 i 都是新绑定）\n}\n// var 则共享一个 i -> 输出 3 3 3\n```",
+    "priority": 1
   },
   {
     "id": "js023",
     "module": "js",
     "q": "什么是箭头函数？它与普通函数有什么区别？",
-    "a": "**箭头函数没有自己的 this、arguments、super、new.target**，这些值来自外层词法作用域。\n\n**与普通函数的关键区别：**\n- **this：** 箭头取外层 this，且 `call/apply/bind` **无法改变**箭头的 this（它们只能改普通函数的 this）。\n- **arguments：** 箭头没有 arguments，用 rest `...args` 代替。\n- **构造函数：** 箭头不能 `new`（无 prototype、无 [[Construct]]）。\n- **prototype / 提升：** 无 prototype；也不存在变量提升（仍是块级 + TDZ）。\n- **super / new.target：** 箭头没有 super，也没有 new.target。\n- **generator：** 不能用 `function*` 形式，不能成为 generator。\n\n**不适合的场景（误用会出 bug）：**\n- 对象字面量方法（this 指向外层而非对象）。\n- 原型方法（this 不指向实例）。\n- `addEventListener` 回调（this 不指向触发事件的元素）。\n- Vue 选项式 methods（this 不指向组件实例）。\n- 任何需要动态 this 的函数。\n\n**适合：** 回调、定时器、数组方法等需要继承外层 this 的地方。"
+    "a": "**箭头函数没有自己的 this、arguments、super、new.target**，这些值来自外层词法作用域。\n\n**与普通函数的关键区别：**\n- **this：** 箭头取外层 this，且 `call/apply/bind` **无法改变**箭头的 this（它们只能改普通函数的 this）。\n- **arguments：** 箭头没有 arguments，用 rest `...args` 代替。\n- **构造函数：** 箭头不能 `new`（无 prototype、无 [[Construct]]）。\n- **prototype / 提升：** 无 prototype；也不存在变量提升（仍是块级 + TDZ）。\n- **super / new.target：** 箭头没有 super，也没有 new.target。\n- **generator：** 不能用 `function*` 形式，不能成为 generator。\n\n**不适合的场景（误用会出 bug）：**\n- 对象字面量方法（this 指向外层而非对象）。\n- 原型方法（this 不指向实例）。\n- `addEventListener` 回调（this 不指向触发事件的元素）。\n- Vue 选项式 methods（this 不指向组件实例）。\n- 任何需要动态 this 的函数。\n\n**适合：** 回调、定时器、数组方法等需要继承外层 this 的地方。",
+    "priority": 1
   },
   {
     "id": "js024",
     "module": "js",
     "q": "什么是模板字符串？它有什么优势？",
-    "a": "**参考答案：**\n\n模板字符串使用反引号（\\`）包围，可以包含占位符（\\${expression}）。优势：\n\n- 支持多行字符串\n- 支持变量插值\n- 支持表达式计算\n- 更直观的字符串拼接\n- 支持标签模板功能"
+    "a": "**参考答案：**\n\n模板字符串使用反引号（\\`）包围，可以包含占位符（\\${expression}）。优势：\n\n- 支持多行字符串\n- 支持变量插值\n- 支持表达式计算\n- 更直观的字符串拼接\n- 支持标签模板功能",
+    "priority": 1
   },
   {
     "id": "js025",
     "module": "js",
     "q": "解构赋值是什么？",
-    "a": "**参考答案：**\n\n解构赋值是一种从数组或对象中提取值并赋给变量的语法。\n\n```JavaScript\n// 数组解构\nconst [a, b, c] = [1, 2, 3];\nconst [x, , z] = [1, 2, 3]; // 跳过中间元素\n\n// 对象解构\nconst {name, age} = {name: 'John', age: 30};\nconst {name: userName, age: userAge} = obj; // 重命名\n```"
+    "a": "**参考答案：**\n\n解构赋值是一种从数组或对象中提取值并赋给变量的语法。\n\n```JavaScript\n// 数组解构\nconst [a, b, c] = [1, 2, 3];\nconst [x, , z] = [1, 2, 3]; // 跳过中间元素\n\n// 对象解构\nconst {name, age} = {name: 'John', age: 30};\nconst {name: userName, age: userAge} = obj; // 重命名\n```",
+    "priority": 1
   },
   {
     "id": "js026",
     "module": "js",
     "q": "什么是扩展运算符（...）？它有哪些用途？",
-    "a": "**参考答案：**\n\n扩展运算符（...）可以将可迭代对象展开。用途包括：\n\n- 数组展开：`[...arr1, ...arr2]`\n- 对象展开：`{...obj1, ...obj2}`\n- 函数参数展开：`func(...args)`\n- 复制数组/对象：`[...arr]`、`{...obj}`\n- 将类数组对象转为数组：`[...nodeList]`"
+    "a": "**参考答案：**\n\n扩展运算符（...）可以将可迭代对象展开。用途包括：\n\n- 数组展开：`[...arr1, ...arr2]`\n- 对象展开：`{...obj1, ...obj2}`\n- 函数参数展开：`func(...args)`\n- 复制数组/对象：`[...arr]`、`{...obj}`\n- 将类数组对象转为数组：`[...nodeList]`",
+    "priority": 1
   },
   {
     "id": "js027",
     "module": "js",
     "q": "什么是剩余参数（rest parameters）？",
-    "a": "**参考答案：**\n\n剩余参数使用...语法，将多个参数收集到一个数组中：\n\n```JavaScript\nfunction sum(...numbers) {\n  return numbers.reduce((a, b) => a + b, 0);\n}\nsum(1, 2, 3, 4); // numbers = [1, 2, 3, 4]\n```\n\n剩余参数必须是最后一个参数，一个函数只能有一个剩余参数。"
+    "a": "**参考答案：**\n\n剩余参数使用...语法，将多个参数收集到一个数组中：\n\n```JavaScript\nfunction sum(...numbers) {\n  return numbers.reduce((a, b) => a + b, 0);\n}\nsum(1, 2, 3, 4); // numbers = [1, 2, 3, 4]\n```\n\n剩余参数必须是最后一个参数，一个函数只能有一个剩余参数。",
+    "priority": 1
   },
   {
     "id": "js028",
     "module": "js",
     "q": "ES6中的默认参数是如何工作的？",
-    "a": "**参考答案：**\n\nES6允许为函数参数设置默认值：\n\n```JavaScript\nfunction greet(name = 'World') {\n  return `Hello, ${name}!`;\n}\n```\n\n- 只有当参数为undefined时才使用默认值\n- 默认参数可以是表达式或函数调用\n- 默认参数可以引用前面的参数\n- 有默认值的参数应该放在后面"
+    "a": "**参考答案：**\n\nES6允许为函数参数设置默认值：\n\n```JavaScript\nfunction greet(name = 'World') {\n  return `Hello, ${name}!`;\n}\n```\n\n- 只有当参数为undefined时才使用默认值\n- 默认参数可以是表达式或函数调用\n- 默认参数可以引用前面的参数\n- 有默认值的参数应该放在后面",
+    "priority": 1
   },
   {
     "id": "js029",
     "module": "js",
     "q": "什么是Promise？它解决了什么问题？",
-    "a": "**Promise 是表示异步最终结果的容器，三种状态：** pending → fulfilled / rejected，**状态一旦 settled 不可逆**（再次 resolve/reject 无效）。\n\n**关键机制：**\n- **链式：** `.then(onF, onR)` 返回**一个新的 Promise**，所以能链式 `.then().then()`；回调返回值会被自动 `Promise.resolve` 包裹。\n- **错误冒泡：** 任意环节抛错或 reject 会沿链向下，直到最近的 `.catch`；`.then` 的第二个参数只捕获它前面那一步的错误。\n- **微任务：** `.then/.catch/.finally` 回调进**微任务队列**，在当前宏任务结束后、渲染前执行（这也是 Promise 总在 setTimeout 前输出的原因）。\n\n**静态方法（为什么重要）：**\n- `Promise.all(iter)`：全 fulfilled 才成功；**任一 reject 立即失败（短路）**。需要全部成功时用。\n- `Promise.race(iter)`：谁先 settle 用谁。常用于超时控制 `Promise.race([req, timeout])`。\n- `Promise.allSettled(iter)`：全部 settle 后返回每个的状态，不短路。批量任务需全部结果（含失败）时用。\n- `Promise.any(iter)`：任一 fulfilled 即成功；全部 reject 才失败（ES2021）。取最快成功的请求。\n\n```js\nPromise.all([fetchA(), fetchB()])\n  .then(([a, b]) => doSomething(a, b))\n  .catch(err => handle(err)); // 任一失败落到这里\n```"
+    "a": "**Promise 是表示异步最终结果的容器，三种状态：** pending → fulfilled / rejected，**状态一旦 settled 不可逆**（再次 resolve/reject 无效）。\n\n**关键机制：**\n- **链式：** `.then(onF, onR)` 返回**一个新的 Promise**，所以能链式 `.then().then()`；回调返回值会被自动 `Promise.resolve` 包裹。\n- **错误冒泡：** 任意环节抛错或 reject 会沿链向下，直到最近的 `.catch`；`.then` 的第二个参数只捕获它前面那一步的错误。\n- **微任务：** `.then/.catch/.finally` 回调进**微任务队列**，在当前宏任务结束后、渲染前执行（这也是 Promise 总在 setTimeout 前输出的原因）。\n\n**静态方法（为什么重要）：**\n- `Promise.all(iter)`：全 fulfilled 才成功；**任一 reject 立即失败（短路）**。需要全部成功时用。\n- `Promise.race(iter)`：谁先 settle 用谁。常用于超时控制 `Promise.race([req, timeout])`。\n- `Promise.allSettled(iter)`：全部 settle 后返回每个的状态，不短路。批量任务需全部结果（含失败）时用。\n- `Promise.any(iter)`：任一 fulfilled 即成功；全部 reject 才失败（ES2021）。取最快成功的请求。\n\n```js\nPromise.all([fetchA(), fetchB()])\n  .then(([a, b]) => doSomething(a, b))\n  .catch(err => handle(err)); // 任一失败落到这里\n```",
+    "priority": 1
   },
   {
     "id": "js030",
     "module": "js",
     "q": "ES6的类（Class）是如何工作的？",
-    "a": "**class 是基于原型的语法糖，但有几处比 function 更严格/特殊：**\n\n- **无提升 + TDZ：** class 声明不会被提升，声明前访问报 ReferenceError（不同于函数声明会提升）。\n- **隐式严格模式：** class 内部代码默认严格模式。\n- **原型方法不可枚举：** 类方法定义在 prototype 上且 `enumerable:false`（普通函数手动挂原型是可枚举的）。\n- **必须用 new 调用：** 直接 `Person()` 报错 `Class constructor cannot be invoked without 'new'`。\n- **extends / super：** 子类构造函数必须先 `super()` 才能访问 `this`（super 负责初始化父实例）；静态方法也会沿继承链继承。\n- **getter / setter：** 用 `get x(){}`、`set x(v){}` 定义访问器，像属性一样读写但走方法逻辑。\n- **static：** `static` 方法/属性挂在类自身而非实例，实例无法访问。\n- **私有字段 `#x`：** `#` 开头，外部访问抛 SyntaxError（真正私有，区别于下划线约定），仅类内部可访问。\n\n```js\nclass User extends Person {\n  #token;                  // 私有字段\n  constructor(name) { super(name); this.#token = 'x'; }\n  get token() { return this.#token; }  // 访问器\n  static create(n) { return new User(n); }\n}\n```"
+    "a": "**class 是基于原型的语法糖，但有几处比 function 更严格/特殊：**\n\n- **无提升 + TDZ：** class 声明不会被提升，声明前访问报 ReferenceError（不同于函数声明会提升）。\n- **隐式严格模式：** class 内部代码默认严格模式。\n- **原型方法不可枚举：** 类方法定义在 prototype 上且 `enumerable:false`（普通函数手动挂原型是可枚举的）。\n- **必须用 new 调用：** 直接 `Person()` 报错 `Class constructor cannot be invoked without 'new'`。\n- **extends / super：** 子类构造函数必须先 `super()` 才能访问 `this`（super 负责初始化父实例）；静态方法也会沿继承链继承。\n- **getter / setter：** 用 `get x(){}`、`set x(v){}` 定义访问器，像属性一样读写但走方法逻辑。\n- **static：** `static` 方法/属性挂在类自身而非实例，实例无法访问。\n- **私有字段 `#x`：** `#` 开头，外部访问抛 SyntaxError（真正私有，区别于下划线约定），仅类内部可访问。\n\n```js\nclass User extends Person {\n  #token;                  // 私有字段\n  constructor(name) { super(name); this.#token = 'x'; }\n  get token() { return this.#token; }  // 访问器\n  static create(n) { return new User(n); }\n}\n```",
+    "priority": 1
   },
   {
     "id": "js031",
     "module": "js",
     "q": "ES6模块化（import/export）是如何工作的？",
-    "a": "**ES Module（编译期静态分析、值引用）：**\n\n- **live binding（活绑定）：** `export` 导出的是**绑定**而非值的拷贝。模块内改动导出变量，导入方立即可见（CommonJS 是导出对象副本，改了不反映）。导入方只读、不能重新赋值。\n- **tree-shaking：** 依赖静态 `import/export` 结构，打包器（webpack/rollup）才能静态分析并删除未使用导出；`export default` 也需有名字才好摇树。**动态行为（如 `eval`、运行时决定导出）会破坏摇树。**\n- **动态 import()：** `import('./m.js')` 返回 **Promise**，支持按需/条件加载，是代码分割（路由懒加载）的基础。\n- **`<script type=module>`：** 默认 **defer**（DOM 解析完才执行、按出现顺序）、需遵守 **CORS**（跨域要服务端允许）、自动严格模式、顶层 `this` 为 undefined。\n- **循环依赖：** ESM 因 live binding 能容忍循环引用（先拿到绑定，后填充值）；但若模块初始化阶段就用到对方尚未赋值的值，会得到 `undefined`——应避免或重构依赖。\n\n```js\nexport let count = 0;      // 活绑定\nexport function inc() { count++; }\nimport { count } from './m.js'; // 始终拿到最新值\n```"
+    "a": "**ES Module（编译期静态分析、值引用）：**\n\n- **live binding（活绑定）：** `export` 导出的是**绑定**而非值的拷贝。模块内改动导出变量，导入方立即可见（CommonJS 是导出对象副本，改了不反映）。导入方只读、不能重新赋值。\n- **tree-shaking：** 依赖静态 `import/export` 结构，打包器（webpack/rollup）才能静态分析并删除未使用导出；`export default` 也需有名字才好摇树。**动态行为（如 `eval`、运行时决定导出）会破坏摇树。**\n- **动态 import()：** `import('./m.js')` 返回 **Promise**，支持按需/条件加载，是代码分割（路由懒加载）的基础。\n- **`<script type=module>`：** 默认 **defer**（DOM 解析完才执行、按出现顺序）、需遵守 **CORS**（跨域要服务端允许）、自动严格模式、顶层 `this` 为 undefined。\n- **循环依赖：** ESM 因 live binding 能容忍循环引用（先拿到绑定，后填充值）；但若模块初始化阶段就用到对方尚未赋值的值，会得到 `undefined`——应避免或重构依赖。\n\n```js\nexport let count = 0;      // 活绑定\nexport function inc() { count++; }\nimport { count } from './m.js'; // 始终拿到最新值\n```",
+    "priority": 1
   },
   {
     "id": "js032",
     "module": "js",
     "q": "Symbol数据类型有什么特点和用途？",
-    "a": "**Symbol 是 ES6 新增的原始类型，表示唯一值。但它“私有”是误区！**\n\n**关键纠正：**\n- `Object.getOwnPropertySymbols(obj)` 能拿到对象所有 Symbol 键；`Reflect.ownKeys(obj)` 也会返回 Symbol 键。\n- 所以 Symbol 只是**避免命名冲突（collision-resistant）**，并非真正私有；真正私有请用 `#私有字段`。\n\n**特点：**\n- 每个 `Symbol()` 都唯一，`Symbol('a') !== Symbol('a')`；`description` 只是描述，不参与唯一性。\n- **不能 new**（`new Symbol()` 报错），它是原始值。\n- 作为属性键时不会被 `for...in`、`Object.keys`、`Object.getOwnPropertyNames` 遍历到（但可被上面的方法读到）。\n\n**全局注册表：**\n- `Symbol.for('key')`：在全局注册表按描述查找，有则复用、无则创建（**可跨模块共享**）。\n- `Symbol.keyFor(sym)`：取全局 Symbol 的 key，非全局 Symbol 返回 undefined。\n\n**Well-known Symbols（内置语言钩子）：** `Symbol.iterator`（可迭代）、`Symbol.asyncIterator`（异步可迭代）、`Symbol.toPrimitive`（类型转换）、`Symbol.toStringTag`（Object.prototype.toString 显示）、`Symbol.hasInstance` 等。\n\n```js\nconst s = Symbol('id');\nconst obj = {};\nobj[s] = 123;\nObject.getOwnPropertySymbols(obj); // [Symbol(id)] —— 仍可读取！\n```"
+    "a": "**Symbol 是 ES6 新增的原始类型，表示唯一值。但它“私有”是误区！**\n\n**关键纠正：**\n- `Object.getOwnPropertySymbols(obj)` 能拿到对象所有 Symbol 键；`Reflect.ownKeys(obj)` 也会返回 Symbol 键。\n- 所以 Symbol 只是**避免命名冲突（collision-resistant）**，并非真正私有；真正私有请用 `#私有字段`。\n\n**特点：**\n- 每个 `Symbol()` 都唯一，`Symbol('a') !== Symbol('a')`；`description` 只是描述，不参与唯一性。\n- **不能 new**（`new Symbol()` 报错），它是原始值。\n- 作为属性键时不会被 `for...in`、`Object.keys`、`Object.getOwnPropertyNames` 遍历到（但可被上面的方法读到）。\n\n**全局注册表：**\n- `Symbol.for('key')`：在全局注册表按描述查找，有则复用、无则创建（**可跨模块共享**）。\n- `Symbol.keyFor(sym)`：取全局 Symbol 的 key，非全局 Symbol 返回 undefined。\n\n**Well-known Symbols（内置语言钩子）：** `Symbol.iterator`（可迭代）、`Symbol.asyncIterator`（异步可迭代）、`Symbol.toPrimitive`（类型转换）、`Symbol.toStringTag`（Object.prototype.toString 显示）、`Symbol.hasInstance` 等。\n\n```js\nconst s = Symbol('id');\nconst obj = {};\nobj[s] = 123;\nObject.getOwnPropertySymbols(obj); // [Symbol(id)] —— 仍可读取！\n```",
+    "priority": 1
   },
   {
     "id": "js033",
     "module": "js",
     "q": "Map和Set数据结构有什么特点？",
-    "a": "**参考答案：**\n\n**Map特点：**\n\n- 键值对集合，键可以是任意类型\n- 有序，按插入顺序遍历\n- size属性获取大小\n- 方法：set、get、has、delete、clear\n\n**Set特点：**\n\n- 值的集合，值唯一\n- 有序，按插入顺序遍历\n- size属性获取大小\n- 方法：add、has、delete、clear\n- 可用于数组去重"
+    "a": "**参考答案：**\n\n**Map特点：**\n\n- 键值对集合，键可以是任意类型\n- 有序，按插入顺序遍历\n- size属性获取大小\n- 方法：set、get、has、delete、clear\n\n**Set特点：**\n\n- 值的集合，值唯一\n- 有序，按插入顺序遍历\n- size属性获取大小\n- 方法：add、has、delete、clear\n- 可用于数组去重",
+    "priority": 1
   },
   {
     "id": "js034",
     "module": "js",
     "q": "什么是生成器函数（Generator）？",
-    "a": "**Generator 用 `function*` 定义，可暂停/恢复，返回迭代器。**\n\n**next(v) 双向通信：** 传给 `next(v)` 的 `v` 会成为**上一次 yield 表达式的返回值**（不是新 yield 的产出值）。\n```js\nfunction* g() {\n  const a = yield 1;     // 第一次 next 产出 1；第二次 next(10) 时 a = 10\n  const b = yield a + 1;\n  return b;\n}\nconst it = g();\nit.next();       // {value:1, done:false}\nit.next(10);     // a=10 -> yield 11 -> {value:11, done:false}\nit.next(20);     // b=20 -> return 20 -> {value:20, done:true}\n```\n\n**yield* 委托：** 把执行权交给另一个可迭代对象/generator，逐个产出其值。\n```js\nfunction* inner() { yield 2; yield 3; }\nfunction* outer() { yield 1; yield* inner(); yield 4; } // 产出 1,2,3,4\n```\n\n**控制方法：**\n- `gen.throw(err)`：在暂停处抛错，可被内部 try/catch 捕获；不捕获则向外抛。\n- `gen.return(v)`：立即结束，返回 `{value:v, done:true}`。\n\n**与迭代器协议：** generator 对象自带 `next/return/throw` 且 `Symbol.iterator` 指向自身，天然满足可迭代协议。\n\n**async/await = generator + 自动执行器：** 手动写执行器（如 co 库）太繁琐，语言于是提供 `async/await` 自动驱动。\n**应用：** `redux-saga` 用 generator 管理副作用（take/effect 都是 yield 出来的指令，由 saga middleware 驱动）。"
+    "a": "**Generator 用 `function*` 定义，可暂停/恢复，返回迭代器。**\n\n**next(v) 双向通信：** 传给 `next(v)` 的 `v` 会成为**上一次 yield 表达式的返回值**（不是新 yield 的产出值）。\n```js\nfunction* g() {\n  const a = yield 1;     // 第一次 next 产出 1；第二次 next(10) 时 a = 10\n  const b = yield a + 1;\n  return b;\n}\nconst it = g();\nit.next();       // {value:1, done:false}\nit.next(10);     // a=10 -> yield 11 -> {value:11, done:false}\nit.next(20);     // b=20 -> return 20 -> {value:20, done:true}\n```\n\n**yield* 委托：** 把执行权交给另一个可迭代对象/generator，逐个产出其值。\n```js\nfunction* inner() { yield 2; yield 3; }\nfunction* outer() { yield 1; yield* inner(); yield 4; } // 产出 1,2,3,4\n```\n\n**控制方法：**\n- `gen.throw(err)`：在暂停处抛错，可被内部 try/catch 捕获；不捕获则向外抛。\n- `gen.return(v)`：立即结束，返回 `{value:v, done:true}`。\n\n**与迭代器协议：** generator 对象自带 `next/return/throw` 且 `Symbol.iterator` 指向自身，天然满足可迭代协议。\n\n**async/await = generator + 自动执行器：** 手动写执行器（如 co 库）太繁琐，语言于是提供 `async/await` 自动驱动。\n**应用：** `redux-saga` 用 generator 管理副作用（take/effect 都是 yield 出来的指令，由 saga middleware 驱动）。",
+    "priority": 1
   },
   {
     "id": "js035",
     "module": "js",
     "q": "什么是迭代器（Iterator）和可迭代对象？",
-    "a": "**迭代器（Iterator）：** 实现了 `next()` 方法、返回 `{value, done}` 的对象。\n**可迭代对象（Iterable）：** 实现了 `Symbol.iterator` 方法（返回迭代器）的对象。\n\n**手写可迭代对象：**\n```js\nconst range = {\n  from: 1, to: 3,\n  [Symbol.iterator]() {\n    let cur = this.from;\n    return {\n      next: () => {\n        if (cur <= this.to) return { value: cur++, done: false };\n        return { value: undefined, done: true };\n      }\n    };\n  }\n};\nfor (const x of range) console.log(x); // 1 2 3\n```\n\n**依赖迭代协议的特性（底层都靠 Symbol.iterator）：**\n- `for...of` 遍历\n- **解构赋值** `const [a, b] = iterable`\n- **扩展运算符** `[...iterable]`\n- `Array.from(iterable)`、Set/Map 构造、`Promise.all` 入参等\n\n没有 `Symbol.iterator` 的对象用 `for...of` 会抛 `TypeError: x is not iterable`。"
+    "a": "**迭代器（Iterator）：** 实现了 `next()` 方法、返回 `{value, done}` 的对象。\n**可迭代对象（Iterable）：** 实现了 `Symbol.iterator` 方法（返回迭代器）的对象。\n\n**手写可迭代对象：**\n```js\nconst range = {\n  from: 1, to: 3,\n  [Symbol.iterator]() {\n    let cur = this.from;\n    return {\n      next: () => {\n        if (cur <= this.to) return { value: cur++, done: false };\n        return { value: undefined, done: true };\n      }\n    };\n  }\n};\nfor (const x of range) console.log(x); // 1 2 3\n```\n\n**依赖迭代协议的特性（底层都靠 Symbol.iterator）：**\n- `for...of` 遍历\n- **解构赋值** `const [a, b] = iterable`\n- **扩展运算符** `[...iterable]`\n- `Array.from(iterable)`、Set/Map 构造、`Promise.all` 入参等\n\n没有 `Symbol.iterator` 的对象用 `for...of` 会抛 `TypeError: x is not iterable`。",
+    "priority": 1
   },
   {
     "id": "js036",
     "module": "js",
     "q": "for...of和for...in的区别是什么？",
-    "a": "**参考答案：**\n\n- **for...in**：遍历对象的可枚举属性名（包括继承的）\n- **for...of**：遍历可迭代对象的值\n\n```JavaScript\nconst arr = [1, 2, 3];\narr.name = 'array';\n\nfor (let key in arr) {\n  console.log(key); // 0, 1, 2, name\n}\n\nfor (let value of arr) {\n  console.log(value); // 1, 2, 3\n}\n```"
+    "a": "**参考答案：**\n\n- **for...in**：遍历对象的可枚举属性名（包括继承的）\n- **for...of**：遍历可迭代对象的值\n\n```JavaScript\nconst arr = [1, 2, 3];\narr.name = 'array';\n\nfor (let key in arr) {\n  console.log(key); // 0, 1, 2, name\n}\n\nfor (let value of arr) {\n  console.log(value); // 1, 2, 3\n}\n```",
+    "priority": 1
   },
   {
     "id": "js037",
     "module": "js",
     "q": "什么是Proxy？它有什么用途？",
-    "a": "**Proxy 给目标对象套一层拦截，读写等操作先过 handler。**\n```js\nconst p = new Proxy(target, {\n  get(t, k, r) { return Reflect.get(t, k, r); },\n  set(t, k, v, r) { return Reflect.set(t, k, v, r); }\n});\n```\n\n**为什么需要它（对比 Object.defineProperty）：**\n- **Vue2（defineProperty）：** 只能劫持已存在的属性；**新增/删除属性、数组索引修改、length 变化**检测不到，需 `Vue.set`/`Vue.delete` 兜底。\n- **Vue3（Proxy）：** 拦截**任意属性增删、数组 index/length、Map/Set** 等，原生支持，无需 patch。\n\n**必须配合 Reflect：** 在 handler 里用 `Reflect.get/set/...` 转发默认行为，而不是手动 `target[k]`——这样能正确传递 `receiver`（保证 getter 的 this 指向 proxy，且能触发嵌套响应式、继承属性收集）。\n\n**约 13 个陷阱（traps）：** get / set / has / deleteProperty / ownKeys / getOwnPropertyDescriptor / defineProperty / preventExtensions / getPrototypeOf / setPrototypeOf / isExtensible / apply / construct。\n\n**局限：**\n- 无法 polyfill 到旧浏览器（Proxy 不可模拟）。\n- 有**性能开销**（每次访问都过一层函数），大量属性需注意。\n- 需**惰性递归**：嵌套对象只有被访问（get）时才包 Proxy，否则一次性递归代价大。"
+    "a": "**Proxy 给目标对象套一层拦截，读写等操作先过 handler。**\n```js\nconst p = new Proxy(target, {\n  get(t, k, r) { return Reflect.get(t, k, r); },\n  set(t, k, v, r) { return Reflect.set(t, k, v, r); }\n});\n```\n\n**为什么需要它（对比 Object.defineProperty）：**\n- **Vue2（defineProperty）：** 只能劫持已存在的属性；**新增/删除属性、数组索引修改、length 变化**检测不到，需 `Vue.set`/`Vue.delete` 兜底。\n- **Vue3（Proxy）：** 拦截**任意属性增删、数组 index/length、Map/Set** 等，原生支持，无需 patch。\n\n**必须配合 Reflect：** 在 handler 里用 `Reflect.get/set/...` 转发默认行为，而不是手动 `target[k]`——这样能正确传递 `receiver`（保证 getter 的 this 指向 proxy，且能触发嵌套响应式、继承属性收集）。\n\n**约 13 个陷阱（traps）：** get / set / has / deleteProperty / ownKeys / getOwnPropertyDescriptor / defineProperty / preventExtensions / getPrototypeOf / setPrototypeOf / isExtensible / apply / construct。\n\n**局限：**\n- 无法 polyfill 到旧浏览器（Proxy 不可模拟）。\n- 有**性能开销**（每次访问都过一层函数），大量属性需注意。\n- 需**惰性递归**：嵌套对象只有被访问（get）时才包 Proxy，否则一次性递归代价大。",
+    "priority": 1
   },
   {
     "id": "js038",
     "module": "js",
     "q": "什么是Reflect？它与Proxy有什么关系？",
-    "a": "**Reflect 是与 Proxy handler 一一对应的内置对象，把语言内部操作变成函数调用。**\n\n**Proxy handler 为什么必须用 `Reflect.get(target, key, receiver)`：** 第三个参数 `receiver` 决定**getter 内部 `this` 的指向**。\n```js\nconst proto = { get x() { return this.val; } };\nconst obj = Object.create(proto); obj.val = 1;\nconst p = new Proxy(obj, {\n  get(t, k, r) { return Reflect.get(t, k, r); } // r 是 proxy 自身\n});\np.x; // Reflect 用 receiver=p -> this=p，继续走 proxy 拦截\n```\n- 若直接写 `target[k]`，则 getter 的 `this` 是 `target` 而非 proxy，嵌套对象/继承属性的读取**绕过 Proxy**，响应式依赖收集（Vue3）就断了。\n- `receiver` 让原型链上的 getter 也被 proxy 拦截，保证整条链都可观测。\n\n**Reflect 的设计动机：**\n- 把 `in`、`delete`、`new` 等操作**函数化**，统一返回可预期结果（如 `Reflect.deleteProperty` 返回布尔，而 `delete` 语句在严格模式才报错）。\n- 与 Proxy **一一配对**：handler 默认实现就是调用对应 Reflect 方法，方便“先拦截再转发”。\n- 提供 `Reflect.construct`、`Reflect.apply` 等更安全的反射入口。"
+    "a": "**Reflect 是与 Proxy handler 一一对应的内置对象，把语言内部操作变成函数调用。**\n\n**Proxy handler 为什么必须用 `Reflect.get(target, key, receiver)`：** 第三个参数 `receiver` 决定**getter 内部 `this` 的指向**。\n```js\nconst proto = { get x() { return this.val; } };\nconst obj = Object.create(proto); obj.val = 1;\nconst p = new Proxy(obj, {\n  get(t, k, r) { return Reflect.get(t, k, r); } // r 是 proxy 自身\n});\np.x; // Reflect 用 receiver=p -> this=p，继续走 proxy 拦截\n```\n- 若直接写 `target[k]`，则 getter 的 `this` 是 `target` 而非 proxy，嵌套对象/继承属性的读取**绕过 Proxy**，响应式依赖收集（Vue3）就断了。\n- `receiver` 让原型链上的 getter 也被 proxy 拦截，保证整条链都可观测。\n\n**Reflect 的设计动机：**\n- 把 `in`、`delete`、`new` 等操作**函数化**，统一返回可预期结果（如 `Reflect.deleteProperty` 返回布尔，而 `delete` 语句在严格模式才报错）。\n- 与 Proxy **一一配对**：handler 默认实现就是调用对应 Reflect 方法，方便“先拦截再转发”。\n- 提供 `Reflect.construct`、`Reflect.apply` 等更安全的反射入口。",
+    "priority": 1
   },
   {
     "id": "js039",
     "module": "js",
     "q": "什么是WeakMap和WeakSet？它们与Map、Set有什么区别？",
-    "a": "**重要纠正：WeakMap/WeakSet 只有「键」必须是对象（或 Symbol，WeakMap 允许非注册 Symbol 作键），「值」可以是任意类型！** 原说法“键/值必须是对象”是错的。WeakSet 的**元素（即值）必须是对象**。\n\n**“弱”的含义：** 键不再被其他地方引用时，该条目可被垃圾回收；因此**不可遍历、无 size、无 clear**（无法枚举，GC 时机不确定）。\n\n**WeakMap：** 键是弱引用（必须是对象，或 Symbol），值任意类型。\n**WeakSet：** 元素必须是对象（无“值”概念）。\n\n**典型用途：**\n- **DOM 节点 ↔ 数据映射：** `wm.set(domNode, meta)`，节点移除后元数据自动回收，不会内存泄漏。\n- **深拷贝破循环引用：** `const seen = new WeakMap()` 缓存已拷贝对象，避免循环引用死循环。\n- **类的私有数据：** 用 WeakMap 存实例私有状态（ES2022 之前没有 `#` 字段时的方案）。\n\n**对比 Map/Set：** 弱引用不可遍历 vs 强引用可遍历；前者靠 GC 回收，后者需手动 delete 防泄漏。"
+    "a": "**重要纠正：WeakMap/WeakSet 只有「键」必须是对象（或 Symbol，WeakMap 允许非注册 Symbol 作键），「值」可以是任意类型！** 原说法“键/值必须是对象”是错的。WeakSet 的**元素（即值）必须是对象**。\n\n**“弱”的含义：** 键不再被其他地方引用时，该条目可被垃圾回收；因此**不可遍历、无 size、无 clear**（无法枚举，GC 时机不确定）。\n\n**WeakMap：** 键是弱引用（必须是对象，或 Symbol），值任意类型。\n**WeakSet：** 元素必须是对象（无“值”概念）。\n\n**典型用途：**\n- **DOM 节点 ↔ 数据映射：** `wm.set(domNode, meta)`，节点移除后元数据自动回收，不会内存泄漏。\n- **深拷贝破循环引用：** `const seen = new WeakMap()` 缓存已拷贝对象，避免循环引用死循环。\n- **类的私有数据：** 用 WeakMap 存实例私有状态（ES2022 之前没有 `#` 字段时的方案）。\n\n**对比 Map/Set：** 弱引用不可遍历 vs 强引用可遍历；前者靠 GC 回收，后者需手动 delete 防泄漏。",
+    "priority": 1
   },
   {
     "id": "js040",
     "module": "js",
     "q": "什么是暂时性死区（Temporal Dead Zone）？",
-    "a": "**参考答案：**\n\n暂时性死区是指let和const声明的变量在声明之前不能被访问的区域。\n\n```JavaScript\nconsole.log(a); // ReferenceError\nlet a = 1;\n\nfunction func() {\n  console.log(b); // ReferenceError\n  let b = 2;\n}\n```\n\n特点：\n\n- 从块级作用域开始到变量声明之前\n- 访问会抛出ReferenceError\n- typeof操作符也会报错\n- 确保变量先声明后使用"
+    "a": "**参考答案：**\n\n暂时性死区是指let和const声明的变量在声明之前不能被访问的区域。\n\n```JavaScript\nconsole.log(a); // ReferenceError\nlet a = 1;\n\nfunction func() {\n  console.log(b); // ReferenceError\n  let b = 2;\n}\n```\n\n特点：\n\n- 从块级作用域开始到变量声明之前\n- 访问会抛出ReferenceError\n- typeof操作符也会报错\n- 确保变量先声明后使用",
+    "priority": 1
   },
   {
     "id": "js041",
     "module": "js",
     "q": "ES6中的对象字面量有哪些增强？",
-    "a": "**参考答案：**\n\nES6对象字面量增强包括：\n\n1. **属性简写**：`{name, age}` 等价于 `{name: name, age: age}`\n2. **方法简写**：`{method() {}}` 等价于 `{method: function() {}}`\n3. **计算属性名**：`{[key]: value}`\n4. **可以使用表达式作为属性名**\n5. **super关键字**：在方法中调用原型方法\n\n```JavaScript\nconst name = 'John';\nconst obj = {\n  name,                    // 属性简写\n  greet() {},             // 方法简写\n  [name + 'Key']: 'value' // 计算属性名\n};\n```"
+    "a": "**参考答案：**\n\nES6对象字面量增强包括：\n\n1. **属性简写**：`{name, age}` 等价于 `{name: name, age: age}`\n2. **方法简写**：`{method() {}}` 等价于 `{method: function() {}}`\n3. **计算属性名**：`{[key]: value}`\n4. **可以使用表达式作为属性名**\n5. **super关键字**：在方法中调用原型方法\n\n```JavaScript\nconst name = 'John';\nconst obj = {\n  name,                    // 属性简写\n  greet() {},             // 方法简写\n  [name + 'Key']: 'value' // 计算属性名\n};\n```",
+    "priority": 1
   },
   {
     "id": "js042",
     "module": "js",
     "q": "什么是数组的新方法？",
-    "a": "**参考答案：**\n\nES6为数组新增了多个方法：\n\n- **Array.from()**：将类数组对象转为数组\n- **Array.of()**：创建数组，避免Array构造函数的怪异行为\n- **find()**：找到第一个满足条件的元素\n- **findIndex()**：找到第一个满足条件的元素索引\n- **includes()**：判断数组是否包含某个值\n- **fill()**：用指定值填充数组\n- **keys()、values()、entries()**：返回迭代器"
+    "a": "**参考答案：**\n\nES6为数组新增了多个方法：\n\n- **Array.from()**：将类数组对象转为数组\n- **Array.of()**：创建数组，避免Array构造函数的怪异行为\n- **find()**：找到第一个满足条件的元素\n- **findIndex()**：找到第一个满足条件的元素索引\n- **includes()**：判断数组是否包含某个值\n- **fill()**：用指定值填充数组\n- **keys()、values()、entries()**：返回迭代器",
+    "priority": 1
   },
   {
     "id": "js043",
     "module": "js",
     "q": "什么是字符串的新方法？ES6为字符串添加了哪些方法？",
-    "a": "**参考答案：**\n\nES6为字符串新增的方法：\n\n- **includes()**：判断是否包含子字符串\n- **startsWith()**：判断是否以指定字符串开头\n- **endsWith()**：判断是否以指定字符串结尾\n- **repeat()**：重复字符串指定次数\n- **padStart()**：在开头填充字符串到指定长度\n- **padEnd()**：在末尾填充字符串到指定长度\n\n```JavaScript\n'hello'.includes('ell'); // true\n'hello'.startsWith('he'); // true\n'hello'.repeat(2); // 'hellohello'\n```"
+    "a": "**参考答案：**\n\nES6为字符串新增的方法：\n\n- **includes()**：判断是否包含子字符串\n- **startsWith()**：判断是否以指定字符串开头\n- **endsWith()**：判断是否以指定字符串结尾\n- **repeat()**：重复字符串指定次数\n- **padStart()**：在开头填充字符串到指定长度\n- **padEnd()**：在末尾填充字符串到指定长度\n\n```JavaScript\n'hello'.includes('ell'); // true\n'hello'.startsWith('he'); // true\n'hello'.repeat(2); // 'hellohello'\n```",
+    "priority": 1
   },
   {
     "id": "js044",
     "module": "js",
     "q": "什么是参数解构？",
-    "a": "**参考答案：**\n\n参数解构是在函数参数中直接解构传入的对象或数组：\n\n```JavaScript\n// 对象参数解构\nfunction greet({name, age = 18}) {\n  console.log(`Hello ${name}, age ${age}`);\n}\ngreet({name: 'John', age: 25});\n\n// 数组参数解构\nfunction sum([a, b]) {\n  return a + b;\n}\nsum([1, 2]);\n\n// 嵌套解构\nfunction process({user: {name, email}}) {\n  console.log(name, email);\n}\n```"
+    "a": "**参考答案：**\n\n参数解构是在函数参数中直接解构传入的对象或数组：\n\n```JavaScript\n// 对象参数解构\nfunction greet({name, age = 18}) {\n  console.log(`Hello ${name}, age ${age}`);\n}\ngreet({name: 'John', age: 25});\n\n// 数组参数解构\nfunction sum([a, b]) {\n  return a + b;\n}\nsum([1, 2]);\n\n// 嵌套解构\nfunction process({user: {name, email}}) {\n  console.log(name, email);\n}\n```",
+    "priority": 1
   },
   {
     "id": "js045",
     "module": "js",
     "q": "什么是尾调用优化？ES6如何支持尾调用优化？",
-    "a": "**参考答案：**\n\n尾调用是指函数的最后一步调用另一个函数。尾调用优化是指在尾调用时不增加新的栈帧，而是复用当前栈帧。\n\nES6在严格模式下支持尾调用优化：\n\n```JavaScript\n'use strict';\nfunction factorial(n, acc = 1) {\n  if (n <= 1) return acc;\n  return factorial(n - 1, n * acc); // 尾调用\n}\n```\n\n条件：\n\n- 严格模式\n- 尾调用不访问当前栈帧的变量\n- 尾调用是函数的最后一个操作"
+    "a": "**参考答案：**\n\n尾调用是指函数的最后一步调用另一个函数。尾调用优化是指在尾调用时不增加新的栈帧，而是复用当前栈帧。\n\nES6在严格模式下支持尾调用优化：\n\n```JavaScript\n'use strict';\nfunction factorial(n, acc = 1) {\n  if (n <= 1) return acc;\n  return factorial(n - 1, n * acc); // 尾调用\n}\n```\n\n条件：\n\n- 严格模式\n- 尾调用不访问当前栈帧的变量\n- 尾调用是函数的最后一个操作",
+    "priority": 3
   },
   {
     "id": "js046",
     "module": "js",
     "q": "什么是标签模板？它有什么用途？",
-    "a": "**参考答案：**\n\n标签模板是模板字符串的高级形式，允许用函数解析模板字符串：\n\n```JavaScript\nfunction highlight(strings, ...values) {\n  return strings.reduce((result, string, i) => {\n    return result + string + (values[i] ? `<mark>${values[i]}</mark>` : '');\n  }, '');\n}\n\nconst name = 'John';\nconst age = 25;\nconst result = highlight`Hello ${name}, you are ${age} years old`;\n```\n\n用途：\n\n- 字符串处理和转换\n- 模板引擎\n- 国际化\n- 防止XSS攻击"
+    "a": "**参考答案：**\n\n标签模板是模板字符串的高级形式，允许用函数解析模板字符串：\n\n```JavaScript\nfunction highlight(strings, ...values) {\n  return strings.reduce((result, string, i) => {\n    return result + string + (values[i] ? `<mark>${values[i]}</mark>` : '');\n  }, '');\n}\n\nconst name = 'John';\nconst age = 25;\nconst result = highlight`Hello ${name}, you are ${age} years old`;\n```\n\n用途：\n\n- 字符串处理和转换\n- 模板引擎\n- 国际化\n- 防止XSS攻击",
+    "priority": 1
   },
   {
     "id": "js047",
     "module": "js",
     "q": "ES6中的正则表达式有哪些新特性？",
-    "a": "**参考答案：**\n\nES6为正则表达式添加了新特性：\n\n1. **u标志**：Unicode模式，正确处理大于\\uFFFF的Unicode字符\n2. **y标志**：粘连模式，从lastIndex位置开始匹配\n3. **RegExp构造函数增强**：可以接受正则表达式作为参数\n4. **新方法**：flags属性获取修饰符\n\n```JavaScript\nconst regex = /\\u{1D306}/u; // Unicode模式\nconst sticky = /hello/y;    // 粘连模式\nregex.flags; // 'u'\n```"
+    "a": "**参考答案：**\n\nES6为正则表达式添加了新特性：\n\n1. **u标志**：Unicode模式，正确处理大于\\uFFFF的Unicode字符\n2. **y标志**：粘连模式，从lastIndex位置开始匹配\n3. **RegExp构造函数增强**：可以接受正则表达式作为参数\n4. **新方法**：flags属性获取修饰符\n\n```JavaScript\nconst regex = /\\u{1D306}/u; // Unicode模式\nconst sticky = /hello/y;    // 粘连模式\nregex.flags; // 'u'\n```",
+    "priority": 1
   },
   {
     "id": "js048",
     "module": "js",
     "q": "什么是二进制和八进制字面量？",
-    "a": "**参考答案：**\n\nES6提供了二进制和八进制数值的新写法：\n\n```JavaScript\n// 二进制（0b或0B开头）\nconst binary = 0b1010; // 10\nconst binary2 = 0B1010; // 10\n\n// 八进制（0o或0O开头）\nconst octal = 0o755; // 493\nconst octal2 = 0O755; // 493\n\n// 检测方法\nNumber.isFinite(binary); // true\nNumber.isInteger(octal); // true\n```\n\n注意：严格模式下不支持0开头的八进制写法。"
+    "a": "**参考答案：**\n\nES6提供了二进制和八进制数值的新写法：\n\n```JavaScript\n// 二进制（0b或0B开头）\nconst binary = 0b1010; // 10\nconst binary2 = 0B1010; // 10\n\n// 八进制（0o或0O开头）\nconst octal = 0o755; // 493\nconst octal2 = 0O755; // 493\n\n// 检测方法\nNumber.isFinite(binary); // true\nNumber.isInteger(octal); // true\n```\n\n注意：严格模式下不支持0开头的八进制写法。",
+    "priority": 1
   },
   {
     "id": "js049",
     "module": "js",
     "q": "ES6中的Number对象有哪些新方法？",
-    "a": "**参考答案：**\n\nES6为Number对象新增了多个方法：\n\n- **Number.isFinite()**：检测数值是否有限\n- **Number.isNaN()**：检测是否为NaN\n- **Number.parseInt()**：解析整数\n- **Number.parseFloat()**：解析浮点数\n- **Number.isInteger()**：判断是否为整数\n- **Number.isSafeInteger()**：判断是否在安全整数范围内\n- **Number.EPSILON**：最小精度常量\n- **Number.MAX_SAFE_INTEGER/MIN_SAFE_INTEGER**：安全整数范围"
+    "a": "**参考答案：**\n\nES6为Number对象新增了多个方法：\n\n- **Number.isFinite()**：检测数值是否有限\n- **Number.isNaN()**：检测是否为NaN\n- **Number.parseInt()**：解析整数\n- **Number.parseFloat()**：解析浮点数\n- **Number.isInteger()**：判断是否为整数\n- **Number.isSafeInteger()**：判断是否在安全整数范围内\n- **Number.EPSILON**：最小精度常量\n- **Number.MAX_SAFE_INTEGER/MIN_SAFE_INTEGER**：安全整数范围",
+    "priority": 1
   },
   {
     "id": "js050",
     "module": "js",
     "q": "什么是Object.assign()？它有什么特点和用途？",
-    "a": "**Object.assign(target, ...sources) 把源对象的可枚举自有属性复制到目标对象（浅拷贝）。**\n```js\nconst t = { a: 1 };\nObject.assign(t, { b: 2 }, { c: 3 }); // t 变成 {a:1, b:2, c:3}\n```\n\n**易被忽略的细节：**\n- **触发目标 setter：** 赋值走 `[[Set]]`，若 target 有同名 setter 会被调用（不同于 `Object.defineProperty` 直接写）。\n- **会拷贝可枚举的 Symbol 属性**（Symbol 键也会被复制过去）。\n- **getter 是“读取值”而非“复制描述符”：** 源对象的 getter 会被**执行**取其当前值；目标得到的是普通数据属性。要连描述符一起拷，用 `Object.defineProperties(target, Object.getOwnPropertyDescriptors(source))`。\n- **null / undefined 源被忽略：** `Object.assign({}, null, undefined)` 不报错，直接跳过。\n- 同名属性后者覆盖前者；返回值是被修改的 target。\n\n**用途：** 对象合并、克隆（浅）、给对象批量加属性。"
+    "a": "**Object.assign(target, ...sources) 把源对象的可枚举自有属性复制到目标对象（浅拷贝）。**\n```js\nconst t = { a: 1 };\nObject.assign(t, { b: 2 }, { c: 3 }); // t 变成 {a:1, b:2, c:3}\n```\n\n**易被忽略的细节：**\n- **触发目标 setter：** 赋值走 `[[Set]]`，若 target 有同名 setter 会被调用（不同于 `Object.defineProperty` 直接写）。\n- **会拷贝可枚举的 Symbol 属性**（Symbol 键也会被复制过去）。\n- **getter 是“读取值”而非“复制描述符”：** 源对象的 getter 会被**执行**取其当前值；目标得到的是普通数据属性。要连描述符一起拷，用 `Object.defineProperties(target, Object.getOwnPropertyDescriptors(source))`。\n- **null / undefined 源被忽略：** `Object.assign({}, null, undefined)` 不报错，直接跳过。\n- 同名属性后者覆盖前者；返回值是被修改的 target。\n\n**用途：** 对象合并、克隆（浅）、给对象批量加属性。",
+    "priority": 1
   },
   {
     "id": "js051",
     "module": "js",
     "q": "手写 Promise.all（高级版：不短路、错误聚合、按索引保序）",
-    "a": "**高级版（不短路 / allSettled 风格）：** 收集全部结果、按原索引保序、成功失败一起返回，不因单个 reject 而中断（区别于原生 Promise.all）。\n\n**核心要点：**\n- 用 `results[i]=x` 按索引写入：异步完成顺序 ≠ 输入顺序，用 push 会乱序。\n- `Promise.resolve(v)` 包装非 Promise 值（含 thenable）。\n- 计数 `++n === len` 时才 resolve（成功失败都计入）。\n- `n` 必须用 `let`：原代码写成 `const n=0` 再 `++n` 会抛 `TypeError: Assignment to constant variable`。\n\n**高级版代码（可直接运行）：**\n```js\nfunction promiseAllEnhanced(iter) {\n  return new Promise((resolve) => {\n    const arr = Array.from(iter);\n    const out = new Array(arr.length);\n    let n = 0; // 关键：必须是 let\n    if (arr.length === 0) return resolve([]);\n    arr.forEach((v, i) => {\n      Promise.resolve(v).then(\n        (x) => { out[i] = { status: 'fulfilled', value: x };\n                 if (++n === arr.length) resolve(out); },\n        (e) => { out[i] = { status: 'rejected', reason: e };\n                 if (++n === arr.length) resolve(out); }\n      );\n    });\n  });\n}\n```\n\n**原生 Promise.all（对比，会短路）：** 任意一个 reject 立即整体 reject，不再等其余。\n```js\nPromise.all([Promise.resolve(1), Promise.reject('err'), Promise.resolve(3)])\n  .then(console.log)\n  .catch(e => console.log('rejected on first:', e)); // 立即输出 err，不等 3\n```"
+    "a": "**高级版（不短路 / allSettled 风格）：** 收集全部结果、按原索引保序、成功失败一起返回，不因单个 reject 而中断（区别于原生 Promise.all）。\n\n**核心要点：**\n- 用 `results[i]=x` 按索引写入：异步完成顺序 ≠ 输入顺序，用 push 会乱序。\n- `Promise.resolve(v)` 包装非 Promise 值（含 thenable）。\n- 计数 `++n === len` 时才 resolve（成功失败都计入）。\n- `n` 必须用 `let`：原代码写成 `const n=0` 再 `++n` 会抛 `TypeError: Assignment to constant variable`。\n\n**高级版代码（可直接运行）：**\n```js\nfunction promiseAllEnhanced(iter) {\n  return new Promise((resolve) => {\n    const arr = Array.from(iter);\n    const out = new Array(arr.length);\n    let n = 0; // 关键：必须是 let\n    if (arr.length === 0) return resolve([]);\n    arr.forEach((v, i) => {\n      Promise.resolve(v).then(\n        (x) => { out[i] = { status: 'fulfilled', value: x };\n                 if (++n === arr.length) resolve(out); },\n        (e) => { out[i] = { status: 'rejected', reason: e };\n                 if (++n === arr.length) resolve(out); }\n      );\n    });\n  });\n}\n```\n\n**原生 Promise.all（对比，会短路）：** 任意一个 reject 立即整体 reject，不再等其余。\n```js\nPromise.all([Promise.resolve(1), Promise.reject('err'), Promise.resolve(3)])\n  .then(console.log)\n  .catch(e => console.log('rejected on first:', e)); // 立即输出 err，不等 3\n```",
+    "priority": 1
   },
   {
     "id": "js052",
     "module": "js",
     "q": "手写防抖（debounce）和节流（throttle），并说明区别",
-    "a": "**防抖 debounce：** 频繁触发时，只在最后一次触发后等 delay 才执行（搜索框、resize）。\n**节流 throttle：** 固定窗口内最多执行一次（scroll、拖拽、按钮连点）。\n\n**坑：箭头函数会丢 this。** 返回 `()=>{}` 箭头时，事件处理器里 `this` 指向外层而非触发元素。改用**普通函数**，事件场景里 `this` 才是当前元素；用 `fn.apply(this, args)` 把 this 透传给原函数。\n```js\nfunction debounce(fn, delay, immediate = false) {\n  let timer = null;\n  function debounced(...args) {\n    const ctx = this;                    // 普通函数：this = 触发元素\n    clearTimeout(timer);\n    if (immediate && !timer) { fn.apply(ctx, args); }\n    timer = setTimeout(() => {\n      timer = null;\n      if (!immediate) fn.apply(ctx, args);\n    }, delay);\n  }\n  debounced.cancel = () => { clearTimeout(timer); timer = null; }; // 取消防抖\n  return debounced;\n}\n```\n\n**选项与扩展：**\n- `immediate`（leading）：首次立即执行、随后冷却（防连点常用）。\n- `cancel()`：清掉待执行的定时器，避免组件卸载后误触发。\n- 节流同理用普通函数 + `fn.apply(this, args)`，可加 leading/trailing 控制首尾执行。"
+    "a": "**防抖 debounce：** 频繁触发时，只在最后一次触发后等 delay 才执行（搜索框、resize）。\n**节流 throttle：** 固定窗口内最多执行一次（scroll、拖拽、按钮连点）。\n\n**坑：箭头函数会丢 this。** 返回 `()=>{}` 箭头时，事件处理器里 `this` 指向外层而非触发元素。改用**普通函数**，事件场景里 `this` 才是当前元素；用 `fn.apply(this, args)` 把 this 透传给原函数。\n```js\nfunction debounce(fn, delay, immediate = false) {\n  let timer = null;\n  function debounced(...args) {\n    const ctx = this;                    // 普通函数：this = 触发元素\n    clearTimeout(timer);\n    if (immediate && !timer) { fn.apply(ctx, args); }\n    timer = setTimeout(() => {\n      timer = null;\n      if (!immediate) fn.apply(ctx, args);\n    }, delay);\n  }\n  debounced.cancel = () => { clearTimeout(timer); timer = null; }; // 取消防抖\n  return debounced;\n}\n```\n\n**选项与扩展：**\n- `immediate`（leading）：首次立即执行、随后冷却（防连点常用）。\n- `cancel()`：清掉待执行的定时器，避免组件卸载后误触发。\n- 节流同理用普通函数 + `fn.apply(this, args)`，可加 leading/trailing 控制首尾执行。",
+    "priority": 1
   },
   {
     "id": "js053",
     "module": "js",
     "q": "手写深拷贝，处理循环引用、Date、RegExp、Map/Set",
-    "a": "**简要回答：**\n深拷贝要**递归复制所有层级**，并用 `WeakMap` 记录已拷贝对象解决循环引用，对特殊内置类型单独处理。\n\n**拆解：**\n- 原始类型/null 直接返回。\n- `Date` → `new Date(x)`；`RegExp` → `new RegExp(x.source, x.flags)`。\n- `Map/Set` → 新建并递归拷贝每一项（Map 要 `set(k, clone(v))`）。\n- 普通对象/数组 → `WeakMap` 查表防循环引用，再逐键递归。\n- 内置 `JSON.parse(JSON.stringify())` 的坑：丢函数/Symbol/undefined、循环引用报错、Date 变字符串。\n\n**示例（核心）：**\n```\nfunction deepClone(x, m=new WeakMap()){\n  if(x===null || typeof x!=='object') return x;\n  if(m.has(x)) return m.get(x);\n  if(x instanceof Date) return new Date(x);\n  if(x instanceof RegExp) return new RegExp(x.source, x.flags);\n  const r = Array.isArray(x)?[]:{}; m.set(x,r);\n  for(const k of Object.keys(x)) r[k]=deepClone(x[k],m);\n  return r;\n}\n```\n**追问：** 为什么用 WeakMap 而非 Map？（不阻止 GC，避免内存泄漏。）"
+    "a": "**简要回答：**\n深拷贝要**递归复制所有层级**，并用 `WeakMap` 记录已拷贝对象解决循环引用，对特殊内置类型单独处理。\n\n**拆解：**\n- 原始类型/null 直接返回。\n- `Date` → `new Date(x)`；`RegExp` → `new RegExp(x.source, x.flags)`。\n- `Map/Set` → 新建并递归拷贝每一项（Map 要 `set(k, clone(v))`）。\n- 普通对象/数组 → `WeakMap` 查表防循环引用，再逐键递归。\n- 内置 `JSON.parse(JSON.stringify())` 的坑：丢函数/Symbol/undefined、循环引用报错、Date 变字符串。\n\n**示例（核心）：**\n```\nfunction deepClone(x, m=new WeakMap()){\n  if(x===null || typeof x!=='object') return x;\n  if(m.has(x)) return m.get(x);\n  if(x instanceof Date) return new Date(x);\n  if(x instanceof RegExp) return new RegExp(x.source, x.flags);\n  const r = Array.isArray(x)?[]:{}; m.set(x,r);\n  for(const k of Object.keys(x)) r[k]=deepClone(x[k],m);\n  return r;\n}\n```\n**追问：** 为什么用 WeakMap 而非 Map？（不阻止 GC，避免内存泄漏。）",
+    "priority": 1
   },
   {
     "id": "js054",
     "module": "js",
     "q": "数组去重有哪些方法？各有什么优缺点？",
-    "a": "**简要回答：**\n按数据特征选：基本类型用 Set 最简；对象按 key 用 Map；要保顺序和兼容旧环境用 filter+includes。\n\n**拆解：**\n- **[...new Set(arr)]**：最简洁，O(n)，但**引用类型（对象）去重无效**（按引用比较）。\n- **filter + indexOf**：`arr.filter((v,i)=>arr.indexOf(v)===i)`，O(n²)，对象同样无效。\n- **对象/Map 按业务 key**：如 `arr.filter((v,i)=> !seen.has(v.id) && seen.add(v.id))` 按字段去重（处理对象数组的实用写法）。\n- **NaN 处理**：`indexOf(NaN)` 找不到 NaN，Set 能正确去重 NaN。\n\n**示例（对象数组按 id）：**\n```\nconst seen=new Map(); const uniq=arr.filter(x=>seen.has(x.id)?false:seen.set(x.id,1));\n```\n**追问：** 为什么 Set 去重不了对象？（两个 `{}` 引用不同，Set 判等用 SameValueZero，对象比的是引用。）"
+    "a": "**简要回答：**\n按数据特征选：基本类型用 Set 最简；对象按 key 用 Map；要保顺序和兼容旧环境用 filter+includes。\n\n**拆解：**\n- **[...new Set(arr)]**：最简洁，O(n)，但**引用类型（对象）去重无效**（按引用比较）。\n- **filter + indexOf**：`arr.filter((v,i)=>arr.indexOf(v)===i)`，O(n²)，对象同样无效。\n- **对象/Map 按业务 key**：如 `arr.filter((v,i)=> !seen.has(v.id) && seen.add(v.id))` 按字段去重（处理对象数组的实用写法）。\n- **NaN 处理**：`indexOf(NaN)` 找不到 NaN，Set 能正确去重 NaN。\n\n**示例（对象数组按 id）：**\n```\nconst seen=new Map(); const uniq=arr.filter(x=>seen.has(x.id)?false:seen.set(x.id,1));\n```\n**追问：** 为什么 Set 去重不了对象？（两个 `{}` 引用不同，Set 判等用 SameValueZero，对象比的是引用。）",
+    "priority": 1
   },
   {
     "id": "js055",
     "module": "js",
     "q": "虚拟列表（Virtual List）的核心实现思路？",
-    "a": "**简要回答：**\n只渲染**可视区域 + 上下缓冲**的少量节点，用「占位撑高 + 绝对定位/translate 偏移」模拟完整长列表，万级数据也不卡。\n\n**拆解：**\n1. 容器固定高度 `overflow:auto`；内部一个「总高」撑开滚动条（= `itemCount * itemHeight`）。\n2. 滚动时算 `start = floor(scrollTop / itemHeight)`，取 `[start-buffer, end+buffer]` 渲染。\n3. 渲染项用 `transform: translateY(start*itemHeight)` 或 `padding-top` 定位到正确位置。\n4. **不定高**：用「预估高度 + 测量缓存 + 二分查找下标」或 ResizeObserver 修正（react-window/virtual 思路）。\n\n**示例（定高）：**\n```\nconst start=Math.floor(scrollTop/H), end=start+visibleCount;\nlist.style.transform=`translateY(${start*H}px)`;\nrender(data.slice(start, end+buffer));\n```\n**追问：** 为什么比「分页」体验好？（无限滚动无翻页感，且 DOM 节点数恒定。）"
+    "a": "**简要回答：**\n只渲染**可视区域 + 上下缓冲**的少量节点，用「占位撑高 + 绝对定位/translate 偏移」模拟完整长列表，万级数据也不卡。\n\n**拆解：**\n1. 容器固定高度 `overflow:auto`；内部一个「总高」撑开滚动条（= `itemCount * itemHeight`）。\n2. 滚动时算 `start = floor(scrollTop / itemHeight)`，取 `[start-buffer, end+buffer]` 渲染。\n3. 渲染项用 `transform: translateY(start*itemHeight)` 或 `padding-top` 定位到正确位置。\n4. **不定高**：用「预估高度 + 测量缓存 + 二分查找下标」或 ResizeObserver 修正（react-window/virtual 思路）。\n\n**示例（定高）：**\n```\nconst start=Math.floor(scrollTop/H), end=start+visibleCount;\nlist.style.transform=`translateY(${start*H}px)`;\nrender(data.slice(start, end+buffer));\n```\n**追问：** 为什么比「分页」体验好？（无限滚动无翻页感，且 DOM 节点数恒定。）",
+    "priority": 1
   }
 ]

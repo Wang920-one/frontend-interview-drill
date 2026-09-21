@@ -3,78 +3,266 @@
     "id": "rs1",
     "module": "resume",
     "q": "安全管控平台性能优化你做了什么？",
-    "a": "问题：多数据源实时刷新导致**卡顿/内存涨**。\n做法：① 交互用**防抖**，避免高频刷新重复渲染；② 组件**销毁时释放**实例、定时器、事件监听、ECharts dispose → 消除**内存泄漏**；③ 大数据用**虚拟列表/分片渲染**、requestAnimationFrame 节流；④ 首屏**懒加载**模块、按需拉数据 → 首屏明显提速。"
+    "a": "问题：多数据源实时刷新导致**卡顿/内存涨**。\n做法：① 交互用**防抖**，避免高频刷新重复渲染；② 组件**销毁时释放**实例、定时器、事件监听、ECharts dispose → 消除**内存泄漏**；③ 大数据用**虚拟列表/分片渲染**、requestAnimationFrame 节流；④ 首屏**懒加载**模块、按需拉数据 → 首屏明显提速。",
+    "priority": 1
   },
   {
     "id": "rs2",
     "module": "resume",
     "q": "Three.js 3D 巡检的难点你怎么攻克的？",
-    "a": "① **大体积 .gltf 动态加载**：DRACO 压缩 + 分块/按需加载，LoadingManager 控进度，防主线程卡。\n② **多层级坐标转换**：模型局部↔世界↔屏幕，用矩阵（localToWorld/投影）统一避免错位。\n③ **精准点击交互**：Raycaster 发射射线求交，命中设备高亮并**数据下钻**（弹属性/跳详情）。\n④ 性能：实例化、LOD、及时 dispose → 巡检效率 +50%。"
+    "a": "① **大体积 .gltf 动态加载**：DRACO 压缩 + 分块/按需加载，LoadingManager 控进度，防主线程卡。\n② **多层级坐标转换**：模型局部↔世界↔屏幕，用矩阵（localToWorld/投影）统一避免错位。\n③ **精准点击交互**：Raycaster 发射射线求交，命中设备高亮并**数据下钻**（弹属性/跳详情）。\n④ 性能：实例化、LOD、及时 dispose → 巡检效率 +50%。",
+    "priority": 3
   },
   {
     "id": "rs3",
     "module": "resume",
     "q": "心理健康 AI 助手的技术栈与架构？",
-    "a": "前端：Vue3+TypeScript+Pinia 管会话状态；ECharts 做**情绪可视化看板**（按对话情绪打分画趋势）。\n后端：Node.js+NestJS，Provider/Service 封装 LLM 调用，Controller 暴露 /chat；**流式**返回（SSE）打字机。\n安全：**密钥走服务端代理**，前端不直连大模型；对话上下文管理与情绪打标在后端。体现 Vue3 全栈 + AI 应用能力。"
+    "a": "前端：Vue3+TypeScript+Pinia 管会话状态；ECharts 做**情绪可视化看板**（按对话情绪打分画趋势）。\n后端：Node.js+NestJS，Provider/Service 封装 LLM 调用，Controller 暴露 /chat；**流式**返回（SSE）打字机。\n安全：**密钥走服务端代理**，前端不直连大模型；对话上下文管理与情绪打标在后端。体现 Vue3 全栈 + AI 应用能力。",
+    "priority": 1
   },
   {
     "id": "rs4",
     "module": "resume",
     "q": "简历里的性能优化怎么量化？",
-    "a": "避免空话，给**可度量结果**：① 首屏加载 **FCP/LCP 从 Xs→Ys（-N%）**；② 包体积 **从 XMB→YMB（-N%）**；③ 帧率 **FPS 30→60**；④ 接口 **P95 从 Xms→Yms**；⑤ 内存 **下降 N%**（泄漏消除）；⑥ 巡检效率 **+50%**。\n方法：Chrome Lighthouse/Performance 测、埋点对比、AB。面试：能说清“做了什么→怎么测→提升多少”最加分。"
+    "a": "避免空话，给**可度量结果**：① 首屏加载 **FCP/LCP 从 Xs→Ys（-N%）**；② 包体积 **从 XMB→YMB（-N%）**；③ 帧率 **FPS 30→60**；④ 接口 **P95 从 Xms→Yms**；⑤ 内存 **下降 N%**（泄漏消除）；⑥ 巡检效率 **+50%**。\n方法：Chrome Lighthouse/Performance 测、埋点对比、AB。面试：能说清“做了什么→怎么测→提升多少”最加分。",
+    "priority": 1
   },
   {
     "id": "rs5",
     "module": "resume",
     "q": "Git 常用与协作流程？",
-    "a": "常用：分支（feature/develop/main）、commit（小粒度）、merge/rebase（变基清历史）、stash（暂存）、cherry-pick（摘提交）。协作：① **feature 分支开发** → PR/MR → Code Review → 合并；② 冲突解决（merge 工具）；③ rebase 保持线性（勿对公共分支 rebase）；④ **git flow / trunk-based**。\n注意：别 force push 公共分支；提交信息规范（Conventional Commits）。"
+    "a": "常用：分支（feature/develop/main）、commit（小粒度）、merge/rebase（变基清历史）、stash（暂存）、cherry-pick（摘提交）。协作：① **feature 分支开发** → PR/MR → Code Review → 合并；② 冲突解决（merge 工具）；③ rebase 保持线性（勿对公共分支 rebase）；④ **git flow / trunk-based**。\n注意：别 force push 公共分支；提交信息规范（Conventional Commits）。",
+    "priority": 1
   },
   {
     "id": "rs6",
     "module": "resume",
     "q": "遇到最难的技术问题？",
-    "a": "STAR 法答：① **Situation** 背景；② **Task** 目标；③ **Action** 你做了什么（定位→根因→方案）；④ **Result** 结果。前端常难：① 大屏**内存泄漏**（DevTools 快照对比定位未 dispose 的 ECharts/Three 实例）；② 3D **坐标错位**（矩阵转换统一）；③ 复杂状态错乱（拆 store/用 reducer）；④ 性能卡顿（分包+虚拟列表）。\n关键：体现**独立思考+工具排查**，不只说“问了别人”。"
+    "a": "STAR 法答：① **Situation** 背景；② **Task** 目标；③ **Action** 你做了什么（定位→根因→方案）；④ **Result** 结果。前端常难：① 大屏**内存泄漏**（DevTools 快照对比定位未 dispose 的 ECharts/Three 实例）；② 3D **坐标错位**（矩阵转换统一）；③ 复杂状态错乱（拆 store/用 reducer）；④ 性能卡顿（分包+虚拟列表）。\n关键：体现**独立思考+工具排查**，不只说“问了别人”。",
+    "priority": 1
   },
   {
     "id": "rs7",
     "module": "resume",
     "q": "怎么做技术选型？",
-    "a": "维度：① **需求匹配**（功能/性能/体量）；② **团队熟悉度**（降学习成本）；③ **生态/社区**（文档/库/坑少）；④ **可维护性/可测试**；⑤ **长期成本**（维护/招人）；⑥ **风险**（新框架稳定性）。过程：列候选→对比（矩阵）→小验证（PoC）→决策→复盘。\n例：大屏用 ECharts（开箱快）；3D 用 Three.js；全栈用 NestJS（TS 友好）；跨端用 UniApp。注意：别追新，适合最重要。"
+    "a": "维度：① **需求匹配**（功能/性能/体量）；② **团队熟悉度**（降学习成本）；③ **生态/社区**（文档/库/坑少）；④ **可维护性/可测试**；⑤ **长期成本**（维护/招人）；⑥ **风险**（新框架稳定性）。过程：列候选→对比（矩阵）→小验证（PoC）→决策→复盘。\n例：大屏用 ECharts（开箱快）；3D 用 Three.js；全栈用 NestJS（TS 友好）；跨端用 UniApp。注意：别追新，适合最重要。",
+    "priority": 3
   },
   {
     "id": "rs8",
     "module": "resume",
     "q": "大屏实时数据结构怎么设计？",
-    "a": "挑战：多数据源高频刷新、实时、不卡。设计：① 数据**分层**（原始/聚合/视图）；② 用 **WebSocket/SSE** 推增量（非全量）；③ 前端**聚合缓存**（按维度存 Map，增量更新对应 key）；④ 渲染**节流/虚拟**（rAF 合帧、虚拟列表）；⑤ ECharts 用 dataset + 增量 setOption；⑥ 异常兜底（断线重连、loading）。\n注意：解耦“数据层”与“视图层”（观察者模式）。"
+    "a": "挑战：多数据源高频刷新、实时、不卡。设计：① 数据**分层**（原始/聚合/视图）；② 用 **WebSocket/SSE** 推增量（非全量）；③ 前端**聚合缓存**（按维度存 Map，增量更新对应 key）；④ 渲染**节流/虚拟**（rAF 合帧、虚拟列表）；⑤ ECharts 用 dataset + 增量 setOption；⑥ 异常兜底（断线重连、loading）。\n注意：解耦“数据层”与“视图层”（观察者模式）。",
+    "priority": 1
   },
   {
     "id": "rs9",
     "module": "resume",
     "q": "前端测试与质量保障？",
-    "a": "分层：① **单测**（Vitest/Jest，测函数/Hook，覆盖率）；② **组件测**（Testing Library，模拟交互）；③ **E2E**（Playwright/Cypress，跑全流程）；④ **类型检查**（TS tsc）兜底。质量门：CI 跑 lint+test+构建；**Code Review**；监控（Sentry 线上报错）。\n平衡：核心逻辑必测，UI 少测（维护贵）。注意：不是 100% 覆盖才好，测关键路径。"
+    "a": "分层：① **单测**（Vitest/Jest，测函数/Hook，覆盖率）；② **组件测**（Testing Library，模拟交互）；③ **E2E**（Playwright/Cypress，跑全流程）；④ **类型检查**（TS tsc）兜底。质量门：CI 跑 lint+test+构建；**Code Review**；监控（Sentry 线上报错）。\n平衡：核心逻辑必测，UI 少测（维护贵）。注意：不是 100% 覆盖才好，测关键路径。",
+    "priority": 1
   },
   {
     "id": "rs10",
     "module": "resume",
     "q": "项目复盘与改进？",
-    "a": "复盘：① 回顾目标 vs 结果；② 好的/差的；③ 根因；④ 行动项（怎么改）。前端改进常见：① 抽**公共组件/组合式函数**（降重复）；② 补**类型**（少 bug）；③ 加**监控**（早发现）；④ 性能**常态化**（Lighthouse 卡点）；⑤ 文档/注释（接手快）；⑥ 自动化（部署/测试）。\n体现：**持续迭代意识**——做完不是终点，复盘促成长。"
+    "a": "复盘：① 回顾目标 vs 结果；② 好的/差的；③ 根因；④ 行动项（怎么改）。前端改进常见：① 抽**公共组件/组合式函数**（降重复）；② 补**类型**（少 bug）；③ 加**监控**（早发现）；④ 性能**常态化**（Lighthouse 卡点）；⑤ 文档/注释（接手快）；⑥ 自动化（部署/测试）。\n体现：**持续迭代意识**——做完不是终点，复盘促成长。",
+    "priority": 1
   },
   {
     "id": "resume011",
     "module": "resume",
     "q": "如何写一份有效的前端简历？",
-    "a": "**结构**：个人信息 / 技能栈 / 项目经历 / 工作履历 / 教育。\n**项目写法（STAR）**：背景(Situation)-任务(Task)-动作(Action)-结果(Result)，并用 **量化成果**（性能提升 X%、体积减少 Y%、QPS Z）证明价值，避免只写职责。\n**针对 JD 定制**：提取 JD 关键词（框架/语言/工具）写进技能与项目，提高匹配度。\n**一页纸优先**：精炼表达，重点前置。\n**技术深度 > 罗列**：讲清原理与取舍（如为什么选虚拟列表、怎么定位内存泄漏），而非堆技术名词。\n**附作品集 / GitHub 链接**：可点开的代码或线上 Demo 远胜空描述。"
+    "a": "**结构**：个人信息 / 技能栈 / 项目经历 / 工作履历 / 教育。\n**项目写法（STAR）**：背景(Situation)-任务(Task)-动作(Action)-结果(Result)，并用 **量化成果**（性能提升 X%、体积减少 Y%、QPS Z）证明价值，避免只写职责。\n**针对 JD 定制**：提取 JD 关键词（框架/语言/工具）写进技能与项目，提高匹配度。\n**一页纸优先**：精炼表达，重点前置。\n**技术深度 > 罗列**：讲清原理与取舍（如为什么选虚拟列表、怎么定位内存泄漏），而非堆技术名词。\n**附作品集 / GitHub 链接**：可点开的代码或线上 Demo 远胜空描述。",
+    "priority": 1
   },
   {
     "id": "resume012",
     "module": "resume",
     "q": "简历如何做 ATS（招聘系统）友好优化？",
-    "a": "**用标准 section 命名**：Experience / Skills / Education / Projects 等英文规范标题，方便 ATS 识别。\n**避免图片 / 图表 / 表格 / 花哨排版**：ATS 多为文本解析，复杂视觉元素会被忽略或错乱。\n**关键词匹配 JD 硬技能**：把 JD 中明确的技能词（React、TypeScript、Webpack 等）自然写进简历，提升筛选命中。\n**用可解析的标准字体与 PDF**：优先标准字体（如 Arial/宋体），导出常规 PDF，避免 OCR 失真。\n**避免照片 / 特殊字符 / 两栏复杂布局**：这些易被误读或丢失字段。\n**文件名规范**：姓名-岗位-年限.pdf（如 张三-前端-3年.pdf），便于 HR 归档检索。"
+    "a": "**用标准 section 命名**：Experience / Skills / Education / Projects 等英文规范标题，方便 ATS 识别。\n**避免图片 / 图表 / 表格 / 花哨排版**：ATS 多为文本解析，复杂视觉元素会被忽略或错乱。\n**关键词匹配 JD 硬技能**：把 JD 中明确的技能词（React、TypeScript、Webpack 等）自然写进简历，提升筛选命中。\n**用可解析的标准字体与 PDF**：优先标准字体（如 Arial/宋体），导出常规 PDF，避免 OCR 失真。\n**避免照片 / 特殊字符 / 两栏复杂布局**：这些易被误读或丢失字段。\n**文件名规范**：姓名-岗位-年限.pdf（如 张三-前端-3年.pdf），便于 HR 归档检索。",
+    "priority": 1
   },
   {
     "id": "resume013",
     "module": "resume",
     "q": "前端简历常见踩坑有哪些？",
-    "a": "**只写职责不写成果**：罗列“负责开发”而无结果，看不出价值。\n**技术栈堆砌无深度**：列一堆框架却讲不清用法与原理，易被深挖问倒。\n**项目无数据量化**：缺 X% / QPS / 耗时 等指标，说服力弱。\n**一份简历投所有岗位（不定制）**：关键词不匹配，ATS 与面试官都无感。\n**排版花哨导致 ATS 漏读**：用图表/分栏/图片，关键信息被解析失败。\n**联系方式 / 作品集缺失**：HR 想约却找不到入口，或无法验证能力。\n**拼写与中英文混用混乱**：术语不一致（React/REACT/react）、错字，显不专业。"
+    "a": "**只写职责不写成果**：罗列“负责开发”而无结果，看不出价值。\n**技术栈堆砌无深度**：列一堆框架却讲不清用法与原理，易被深挖问倒。\n**项目无数据量化**：缺 X% / QPS / 耗时 等指标，说服力弱。\n**一份简历投所有岗位（不定制）**：关键词不匹配，ATS 与面试官都无感。\n**排版花哨导致 ATS 漏读**：用图表/分栏/图片，关键信息被解析失败。\n**联系方式 / 作品集缺失**：HR 想约却找不到入口，或无法验证能力。\n**拼写与中英文混用混乱**：术语不一致（React/REACT/react）、错字，显不专业。",
+    "priority": 1
+  },
+  {
+    "id": "resume014",
+    "module": "resume",
+    "q": "一句话介绍 AI 数据大屏项目",
+    "a": "**考察点**：项目定位、求职抓手。\n\n**标准解答**：用户用**自然语言描述需求**，系统自动生成可上屏的 ECharts 图表；后端 FastAPI + Function Calling 一次性出图，或用 ReAct Agent 让模型自主调用 6 个工具（list_fields/filter_data/render_chart/switch_theme/explain_insight/final_answer）出图+文字洞察。\n\n**关键设计**：**LLM 只负责理解意图，不负责画图代码**——渲染完全由前端确定性拼装 ECharts option。\n\n**求职叙事**：同时讲清 Function Calling、Agent、SSE、前后端分离、设计取舍五件事。",
+    "priority": 1
+  },
+  {
+    "id": "resume015",
+    "module": "resume",
+    "q": "AI 数据大屏的整体架构怎么画？前端/后端/LLM 三层怎么分工？",
+    "a": "**考察点**：系统架构理解、模块职责划分。\n\n**标准解答**：\n- **浏览器**：生成页 StudioView（输入+思考步骤+卡片）+ 大屏展示页 ScreenView（拖拽+主题+持久化）；共享层 store.js（跨页状态+localStorage）+ chart.js（确定性拼 ECharts option）。\n- **后端 FastAPI (8001)**：main.py 路由（/api/health /upload /chat /chat/stream /agent/stream）；llm.py（旧：一次性 FC）；agent.py（新：ReAct 循环生成器）；agent_tools.py（6 工具+字段校验）；chart_tool.py（render_chart JSON Schema）；Pydantic 强校验。\n- **LLM**：DeepSeek（OpenAI 兼容，temperature=0.2），通过 tools/tool_choice='auto' 接 Agent。\n\n**两条主控流**：① 上传：CSV→/api/upload→推断字段类型→{data, fields, preview}→store.rawData；② 出图：问题+字段清单→LLM→spec→SSE→chart.js 确定性渲染。\n\n**项目实践**：`backend/app/` 9 个 .py 文件；`frontend/src/` views 两页+共享层 4 模块。",
+    "priority": 1
+  },
+  {
+    "id": "resume016",
+    "module": "resume",
+    "q": "为什么用 Function Calling 而不是让 LLM 直接生成 ECharts option JSON？",
+    "a": "**考察点**：核心设计决策、LLM 输出空间治理。\n\n**标准解答**：\n- **直接生成 JSON 的痛点**：ECharts option 是一个**巨大的允许自由发挥的 JSON**（嵌套层级深、字段上百个），LLM 写 JSON 极易漏字段、语法错、前端 `JSON.parse` 失败 → 整页崩；调试极难定位。\n- **Function Calling 方案**：让 LLM 只填 5 个**受控字段**：`chart_type`（line/bar/pie/scatter 4 选 1）、`x_field`、`y_fields`（数组）、`aggregation`（sum/avg/count/max/min 5 选 1）、`filter`（可选）。\n- **JSON Schema 三把锁**：`enum` 锁死类型取值、`required` 保证必填、`description` 写清语义（折线=趋势、饼图=占比）。\n- **结果**：LLM 输出稳定、可校验、可序列化；渲染完全由前端确定性代码控制，**永不会出现\"模型心情不好画错图\"**。\n\n**关键洞察**：**不让 LLM 做它不擅长的事**——只让它\"理解意图\"，确定性逻辑交给前端。",
+    "priority": 1
+  },
+  {
+    "id": "resume017",
+    "module": "resume",
+    "q": "JSON Schema 怎么锁死参数空间？给个真实字段定义例子。",
+    "a": "**考察点**：Function Calling 工程落地、Schema 设计。\n\n**标准解答**：`backend/app/chart_tool.py` 中 `render_chart` 工具的 JSON Schema 示例：\n```python\n\"chart_type\": {\n    \"type\": \"string\",\n    \"enum\": [\"line\", \"bar\", \"pie\", \"scatter\"],\n    \"description\": \"图表类型：line=折线(趋势)、bar=柱状(对比)、pie=饼图(占比)、scatter=散点(分布)\"\n},\n\"y_fields\": {\n    \"type\": \"array\",\n    \"items\": {\"type\": \"string\"},\n    \"description\": \"y 轴字段名列表（可多个），必须是可用数据字段之一\"\n}\n```\n\n**三把锁**：\n1. **`type`**：强制类型（string/array/object），避免类型错乱。\n2. **`enum`**：枚举锁死可选值，杜绝 LLM 写出 `chart_type: \"柱状\"` 这种自由发挥。\n3. **`description`**：**给模型看的说明书**——决定模型何时选这个工具、传什么参数。写不好 → 选错工具/传错参。\n\n**字段名约束**：字段清单通过 system prompt 注入真实字段，LLM 不能编造——从根本上杜绝\"老图表空图\"。",
+    "priority": 1
+  },
+  {
+    "id": "resume018",
+    "module": "resume",
+    "q": "ReAct Agent 和旧接口 Workflow 的本质区别是什么？",
+    "a": "**考察点**：Agent vs Workflow 范式理解、面试高频对比题。\n\n**标准解答**：\n- **旧接口 `/api/chat/stream`（Workflow）**：一次 LLM 调用，工具只调一次，路径**写死**——LLM 出 spec → 渲染 → 结束，tool 回执是硬编码的 \"图表已渲染成功\"。\n- **Agent 接口 `/api/agent/stream`（ReAct）**：`while` 循环，多轮工具调用，**模型自主决定调哪个、调几次**。每次工具的**真实结果**（observation）回灌给模型，模型据此决定下一步，直到调用 `final_answer` 收尾。\n\n**关键差异表**：\n| 维度 | Workflow | ReAct Agent |\n|---|---|---|\n| 调用次数 | 1 次 | N 次循环 |\n| 字段错了 | 直接失败/空图 | 自我纠正（先用 list_fields 看） |\n| 出图+洞察 | 只出图 | 出图同时给文字洞察 |\n| 可解释性 | 无 | 前端展示\"思考步骤条\" |\n| 延迟 | ~1s | ~2-3s/图 |\n\n**本质区分**：Workflow 路径写死（写死的代码路径），Agent 模型动态决策（动态决策的 LLM）。\n\n**项目实践**：两接口并存，开关默认 Agent 模式，面试时可一键对比。",
+    "priority": 1
+  },
+  {
+    "id": "resume019",
+    "module": "resume",
+    "q": "AI 数据大屏的 6 个工具是什么？谁执行？observation 是什么？",
+    "a": "**考察点**：Agent 工具设计、职责分离。\n\n**标准解答**（`backend/app/agent_tools.py`）：\n\n| 工具 | 谁执行 | 真实 observation |\n|---|---|---|\n| `list_fields` | 后端 | 返回可用字段清单 |\n| `filter_data` | 后端 | 筛选后行数 + 前 3 行样例 |\n| `render_chart` | 后端校验 | 字段存在性校验，不过则驳回 |\n| `explain_insight` | 后端计算 | 最高项/占比/均值一句话结论 |\n| `switch_theme` | 前端 | 换主题（推 frontend_action） |\n| `final_answer` | — | 收尾总结 |\n\n**关键设计点**：\n- **真实 observation 回灌是 Agent 的灵魂**——`list_fields` 返回真字段、`filter_data` 返回真行数、`explain_insight` 真算统计。模型据此自纠。\n- **前端动作工具分流**：`switch_theme` 后端无法自己执行，后端 yield `frontend_action` 事件，前端收到后 `applyTheme()`；图表重建由 `watch(currentTheme)` 自动完成。\n- **字段校验兜底**：`validate_spec` 在出图前检查字段是否存在，不存在就告诉模型\"请用可用字段重试\"——根治空图。",
+    "priority": 1
+  },
+  {
+    "id": "resume020",
+    "module": "resume",
+    "q": "ReAct Agent 怎么防死循环？MAX_STEPS 和重复检测怎么工作？",
+    "a": "**考察点**：Agent 工程可靠性、死循环防御。\n\n**标准解答**：`backend/app/agent.py` 的 `run_agent` 用**双重保险**：\n\n1. **硬上限 `MAX_STEPS=8`**：`for _ in range(MAX_STEPS):` 限定最多 8 步，超过直接终止。即使模型陷入\"我再想想\"的循环，最多 8 步必停。\n\n2. **重复检测**：连续 **3 次**同一组（工具名+参数）调用 → 强制终止。\n```python\nsig = (name, json.dumps(args, sort_keys=True))\nif sig == prev_sig: repeat += 1\nif repeat >= MAX_REPEAT: \n    yield {\"type\": \"error\", \"message\": \"检测到重复调用，已终止循环\"}; break\n```\n\n**第三保险**：`final_answer` 工具主动收尾——模型主动调用它即视为任务完成。\n\n**为什么必须做**：LLM 可能陷入两种循环——① 真死循环（反复调同一工具）；② 假循环（格式错误被驳回又重发）。两个机制分别对付两种情况。\n\n**项目实践**：`tests/test_agent.py` 用 mock LLM 模拟死循环场景，断言 `run_agent` 触发 `error` 事件后退出。",
+    "priority": 1
+  },
+  {
+    "id": "resume021",
+    "module": "resume",
+    "q": "什么是 \"真实 observation 回灌\"？为什么它是 Agent 的灵魂？",
+    "a": "**考察点**：Agent 与 Workflow 的本质区别。\n\n**标准解答**：\n- **observation 回灌**：工具执行后，把**真实结果**作为 `role:\"tool\"` 消息追加到 messages 里，让模型下一轮能看到。\n- **Workflow 是\"假 observation\"**：旧接口写死 `\"图表已渲染成功\"` 这种**与真实结果无关的占位字符串**，模型拿到也不能纠正。\n- **Agent 是\"真 observation\"**：\n  - `filter_data(args)` 真执行，返回 `{\"count\": 5, \"sample\": [...]}`，模型据此决定\"筛了 5 行，太少了，改成只看华北\"。\n  - `list_fields()` 返回真字段清单，模型据此\"原来没有 city 字段，只有 province\"。\n  - `render_chart` 通过 `validate_spec` 校验，**字段不存在时直接告诉模型\"字段 X 不存在\"**，模型换字段重试——这就是空图的根治。\n\n**灵魂所在**：模型不是按预设剧本走，而是**根据真实反馈动态决策**——这是 Agent 的本质。\n\n**反例**：如果回灌是假数据（\"渲染成功\"），模型收不到任何有效信号，只能瞎猜——退化成 Workflow。",
+    "priority": 1
+  },
+  {
+    "id": "resume022",
+    "module": "resume",
+    "q": "前端确定性渲染是什么？为什么 buildOption 必须是纯函数？",
+    "a": "**考察点**：前端架构、函数式设计、LLM 输出治理。\n\n**标准解答**：`frontend/src/chart.js` 的 `buildOption(spec, rawData)` 是**纯函数**——`(spec, data) → ECharts option`，不依赖 LLM、不读外部状态。\n\n**为什么必须纯函数**：\n1. **同一份 spec 可重复渲染**：切主题、切图表类型只改 spec，不重新问 LLM → 省钱省时。\n2. **可测试**：纯函数好写单测、好调试。\n3. **持久化可序列化**：spec 是 JSON 对象，存 localStorage 就能恢复卡片。\n4. **LLM 输出稳定**：spec 字段被 JSON Schema 锁死 → buildOption 入参永远合法 → 永不崩。\n\n**关键代码细节**：\n- `aggregate(xField, yField, agg, data)`：字段不存在的行直接跳过，不再产生 `undefined` 单组空图。\n- **数值兜底**：`Number()` 转字符串数字，避免字符串相加。\n- **`chart.setOption(buildOption(spec), true)`**：第二参数 `true` 表示**不合并**——否则柱转饼时会残留旧的 `xAxis/yAxis`。\n\n**核心思想**：**LLM 只负责\"理解意图\"，不负责\"画图的代码\"**——确定性逻辑交给前端，复杂参数治理交给 Schema。",
+    "priority": 1
+  },
+  {
+    "id": "resume023",
+    "module": "resume",
+    "q": "SSE 事件协议设计了哪几种 type？前端怎么路由？",
+    "a": "**考察点**：流式协议设计、向后兼容。\n\n**标准解答**：Agent 接口定义了 **8 种事件类型**（`backend/app/agent.py` yield）：\n\n| type | 含义 | 前端处理 |\n|---|---|---|\n| `step` | 思考步骤更新（\"step 1: list_fields\"） | 步骤条 UI |\n| `tool_call` | 模型决定调某工具 | 步骤条图标 |\n| `observation` | 工具执行真实结果回灌 | 步骤条详情 |\n| `frontend_action` | 前端动作（如 switch_theme） | `applyTheme()` |\n| `chart` | 出图 spec 完成 | 入卡片、上屏 |\n| `answer` | 模型直接给的文字结论 | 卡片底部展示 |\n| `done` | 整个流程完成 | 关闭 loading |\n| `error` | 异常（死循环/校验失败） | 错误提示 |\n\n**向后兼容设计**：旧接口（`/api/chat/stream`）只用 `done/error`，新接口的 6 种新 type 对旧接口**零影响**——前端按 `type` 字段路由分发。\n\n**项目实践**：`frontend/src/views/StudioView.vue` 的 SSE 消费函数对每个 type 做不同处理，新 type 加 `case` 即可，不动老逻辑。",
+    "priority": 1
+  },
+  {
+    "id": "resume024",
+    "module": "resume",
+    "q": "大屏卡片 sid 怎么防撞车？为什么数据集和卡片要一起存 localStorage？",
+    "a": "**考察点**：持久化设计、真实踩坑。\n\n**标准解答**（`frontend/src/store.js`）：\n\n**sid 防撞车**：\n- 每张卡片有唯一 sid（store 内部自增计数器）。\n- **坑**：刷新后从 localStorage 恢复出 `sid=7, 9`，如果计数器还从 1 开始，新卡片会拿到 sid=1、2…… 直到撞上 7 → store 重影/状态错乱。\n- **修**：恢复后必须 `nextSid = screenCards.value.reduce((m, c) => Math.max(m, c.sid), 0) + 1`，计数器接着最大值走。\n\n**数据集与卡片同存**：\n- **坑（已踩）**：只存卡片不存数据 → 刷新后卡片引用的 `x_field` 在新数据集里不存在 → `aggregate` 返回空 → **图表全白**。\n- **修**：`rawData / fields / preview` 一起持久化到 `nl2chart.data.v1`，卡片存到 `nl2chart.screen.v1`。\n- 设 **1.5MB 上限保护**：超出只告警跳过，不阻塞（避免 localStorage quota exceeded 崩溃）。\n\n**写盘**：300ms 防抖——拖拽时 `layout-updated` 每帧触发，不防抖会疯狂序列化整个数组。",
+    "priority": 1
+  },
+  {
+    "id": "resume025",
+    "module": "resume",
+    "q": "为什么 ECharts 主题不能热切？你的项目怎么解决\"主题双轨\"？",
+    "a": "**考察点**：ECharts 硬约束、状态管理。\n\n**标准解答**：\n- **ECharts 硬约束**：主题在 `echarts.init(dom, themeName)` 时绑定，**运行时改不了**。这是 echarts 的设计，不是 bug。\n- **症状**：直接 `currentTheme.value = newKey` → 图表不换色，因为实例还拿着旧主题。\n\n**双轨设计**（`frontend/src/theme.js`）：\n1. **CSS 变量轨**：界面（背景、文字、按钮）走 CSS 变量（`document.documentElement.style.setProperty(k, v)`），切换是纯样式，**零成本**。\n2. **ECharts 主题轨**：`registerTheme` 注册 4 套 → `init(dom, themeName)` 绑定 → 切主题时**全部 `dispose()` + 重建实例**。\n\n**触发链**：`watch(currentTheme, () => rebuildAll())` → 遍历所有 `charts` map → `dispose()` → 用新主题 `init()` → `setOption()` 重建。\n\n**项目实践**：4 套主题（深色科技 / 浅色商务 / 暗金质感 / 蓝紫渐变），各页面 `watch(currentTheme)` 自动 rebuild。\n\n**绕过思路**：如果不想重建实例，可以调 `chart.setOption({ color: [...] })` 单独改色板——但坐标系/字体不变，是\"伪切换\"。",
+    "priority": 1
+  },
+  {
+    "id": "resume026",
+    "module": "resume",
+    "q": "grid-layout-plus 拖拽布局为什么用 computed 单向而不是 v-model:layout？",
+    "a": "**考察点**：第三方组件源码理解、避免回写环路。\n\n**标准解答**（`frontend/src/views/ScreenView.vue`）：\n\n**为什么不能用 `v-model:layout`**：\n- grid-layout-plus 内部源码：\n```js\nwatch(() => [props.layout, props.layout.length], () => {\n    currentLayout.value = props.layout\n    layoutUpdate()\n})\n```\n- getter 每次返回**新数组**（引用变化），就会触发 `layoutUpdate()`。\n- 用 `v-model:layout`：组件内部拖拽改动 → 直接写回我们的数组 → 我们的 watcher 写进 store → 触发 grid 内部又 watch → **回写死循环**。\n\n**用 `computed` 单向传**：\n```js\nconst layout = computed(() => \n    screenCards.value.map((c) => ({ i: String(c.sid), x: c.x, y: c.y, w: c.w, h: c.h }))\n)\nfunction onLayoutUpdated(nl) {\n    nl.forEach((it) => updateCard(Number(it.i), { x: it.x, y: it.y, w: it.w, h: it.h }))\n}\n```\n- store 改 → computed 重算 → 新数组 → 自动重排；\n- 用户拖拽 → `layout-updated` 事件 → `updateCard` 写 store → computed 重算。\n- **单向数据流，没有环路**。\n\n**额外踩坑**：`GridItem` 默认 `dragIgnoreFrom: 'a, button'`；额外传 `drag-ignore-from=\".no-drag, a, button, input\"`，避免标题输入框触发拖拽。",
+    "priority": 1
+  },
+  {
+    "id": "resume027",
+    "module": "resume",
+    "q": "AI 数据大屏的 pytest 怎么测 Agent？mock LLM 的关键技巧是什么？",
+    "a": "**考察点**：测试工程化、Mock 边界设计。\n\n**标准解答**：14 个测试用例（6 旧接口 + 8 Agent 接口），关键在 Agent 测试：\n\n**Mock LLM 的关键技巧**——**用一个按序吐响应的假 client 驱动循环**：\n```python\nclass FakeChoice:\n    def __init__(self, msg): self.message = msg\nclass FakeResp:\n    def __init__(self, msg): self.choices = [FakeChoice(msg)]\nclass FakeClient:\n    def __init__(self, scripted): self.scripted = scripted\n    def chat(self):  # 返回按 scripted 顺序的响应\n        ...\n```\n\n**覆盖场景**：\n- **正常路径**：list_fields → filter_data → render_chart → final_answer\n- **字段校验失败 → 重试**：断言 observation 含 \"不存在\"，下一轮模型换字段\n- **死循环**（连续 3 次同一调用）→ 触发 `error` 事件\n- **模型不调工具直接给文字** → 当 `answer` 处理（直接 break）\n\n**为什么用 mock 而不是真调 LLM**：\n- 测试稳定可重复（不依赖网络/API 配额）\n- 跑得快（毫秒级 vs 真实调用秒级）\n- 可以构造**确定性边缘情况**（如死循环），真 LLM 难复现\n\n**项目实践**：`backend/tests/test_agent.py` 8 个用例覆盖 Agent 主路径+边缘路径。",
+    "priority": 1
+  },
+  {
+    "id": "resume028",
+    "module": "resume",
+    "q": "AI 数据大屏最难的点是什么？你怎么解决的？",
+    "a": "**考察点**：项目复盘 STAR、深度故事。\n\n**标准解答**（按 STAR）：\n- **S**：用户输入自然语言「华北各省 6 月用电量对比」→ 期望自动出柱状图。\n- **T**：让 LLM 稳定出图，不能\"模型心情不好画错图\"。\n- **A**：用 **JSON Schema + Function Calling 把 LLM 锁在参数空间里**——chart_type 4 选 1、aggregation 5 选 1、字段必须从真实字段里选。LLM 写不出合法 JSON 也无所谓，因为根本没机会写完整 JSON，只在枚举里选。\n- **R**：出图成功率近 100%，前端永不崩溃；后续切主题/切类型 0 成本（同一份 spec 复用）。\n\n**次难点**：Agent 死循环。LLM 可能陷入\"我再想想\"反复调同一工具——用 **MAX_STEPS=8 硬上限 + 连续 3 次重复检测** 双重保险。\n\n**再次难点**：localStorage sid 撞车。只存卡片不存数据，刷新后字段在新数据集里不存在 → 全白——把 rawData/fields/preview 一起持久化，恢复后 `nextSid = max(sid)+1`。\n\n**面试话术**：能讲清「定位→根因→方案→结果」+ 量化（如 \"14 个单测全绿、空图率从 30% 降到 0\"）即满分。",
+    "priority": 1
+  },
+  {
+    "id": "resume029",
+    "module": "resume",
+    "q": "CSV 字段类型怎么自动推断？为什么用阈值投票而不是逐格判断？",
+    "a": "**考察点**：数据预处理鲁棒性。\n\n**标准解答**（`backend/app/main.py`）：\n```python\nnum = sum(1 for v in vals if _is_num(v))\ndte = sum(1 for v in vals if _is_date(v))\nif num / len(vals) >= 0.8: return \"数值\"\nif dte / len(vals) >= 0.5: return \"日期\"\nreturn \"文本\"\n```\n\n**为什么用阈值投票**：\n- 真实 CSV 总有几行脏数据（空值、\"-\"、表头残留）。\"全部满足才算\"会被单行脏数据带偏。\n- 80% 数值能转 → 判数值列；50% 日期能转 → 判日期列；否则文本。**比\"全部满足\"鲁棒**。\n\n**日期正则细节**：`\\d{4}[-/]\\d{1,2}[-/]?\\d{0,2}` 特意让日部分可选——`2025-06` 这种\"年月\"格式也能识别为日期。\n\n**额外**：数值列自动 `float()` 转 number，避免前端聚合时字符串相加（\"10\"+\"20\" = \"1020\"）。",
+    "priority": 2
+  },
+  {
+    "id": "resume030",
+    "module": "resume",
+    "q": "路由懒加载怎么把主 chunk 从 778KB 拆到 636KB+144KB？",
+    "a": "**考察点**：前端构建优化、性能。\n\n**标准解答**（`frontend/src/router/index.js`）：\n\n**做法**：\n```js\nconst routes = [\n    { path: '/', component: () => import('./views/StudioView.vue') },\n    { path: '/screen', component: () => import('./views/ScreenView.vue') }  // 懒加载\n]\n```\n\n**效果**：\n- 进入 `/` 只加载生成页 + 共享层（含 ECharts 主体）≈ 636KB。\n- 进入 `/screen` 才加载大屏页（含 interactjs + grid-layout-plus）≈ 144KB。\n\n**为什么有效**：grid-layout-plus 内部依赖 interactjs（拖拽库），体积不小。把它和主入口解耦后，**多数用户只访问生成页不访问大屏**，首屏明显提速。\n\n**配套**：ECharts 用**按需引入**（只 `import { LineChart } from 'echarts/charts'`），从 chunk 1.1MB → 636KB。\n\n**核心思想**：路由级 + 组件级双层懒加载，按访问路径拆包。",
+    "priority": 2
+  },
+  {
+    "id": "resume031",
+    "module": "resume",
+    "q": "Pydantic v2 在项目里怎么用？为什么用 Pydantic 而不是 dataclass？",
+    "a": "**考察点**：FastAPI 数据校验工程实践。\n\n**标准解答**：`backend/app/schemas.py` 定义请求模型：\n```python\nfrom pydantic import BaseModel, Field\nclass ChartRequest(BaseModel):\n    message: str = Field(..., min_length=1)\n    history: list = []  # 多轮\n    session_id: str | None = None\n```\n\n**Pydantic v2 的好处**：\n1. **强类型校验**：自动校验 `message` 非空、`history` 是数组，错就返回 422 + 错误详情。\n2. **JSON 序列化/反序列化免费**：`.model_dump()` 转字典、`.model_validate(dict)` 反序列化。\n3. **OpenAPI 自动生成**：FastAPI 集成，自动出 Swagger 文档。\n4. **类型提示**：`message: str` 让 IDE 给补全，运行时也校验。\n\n**vs dataclass**：\n- dataclass 只在类型层有效，不做运行时校验——脏数据能进来。\n- Pydantic 校验在前，handler 拿到的永远是合法数据。\n\n**项目实践**：所有 API 入参都过 Pydantic；工具参数也用 Pydantic 校验（`agent_tools.py` 的 `validate_spec`）。",
+    "priority": 2
+  },
+  {
+    "id": "resume032",
+    "module": "resume",
+    "q": "FastAPI 怎么用 SSE 做流式响应？async generator 的关键点是什么？",
+    "a": "**考察点**：FastAPI 流式协议工程实现。\n\n**标准解答**：\n```python\nfrom fastapi.responses import StreamingResponse\n\n@app.post(\"/api/chat/stream\")\nasync def chat_stream(req: ChartRequest):\n    async def gen():\n        async for event in llm.chart_spec_from_nl(req.message, req.history):\n            yield f\"data: {json.dumps(event, ensure_ascii=False)}\\n\\n\"\n    return StreamingResponse(gen(), media_type=\"text/event-stream\")\n```\n\n**关键点**：\n1. **`async generator` 用 `yield`**：不是 `return`，每次 `yield` 一个事件，前端就收到一条 `data: ...\\n\\n`。\n2. **`media_type=\"text/event-stream\"`**：SSE 标准 MIME，前端按 SSE 协议解析（`fetch` + `ReadableStream` + 按行切 `data: `）。\n3. **`\\n\\n` 分隔**：SSE 协议规定事件间用空行分隔，写错前端解析不出。\n4. **CORS 友好**：默认 `text/event-stream` 不被缓存。\n\n**流式 vs 非流式**：\n- 非流式：`return JSONResponse(event)`，等全部 LLM 响应完一次性返回，延迟 ~2-3s 无反馈。\n- 流式：每 token/事件立即推到前端，**首 token ~200ms**，用户体验好。\n\n**项目实践**：`backend/app/llm.py` 用 `stream=True` 累积 tool_calls 参数，前端逐 token 拼 JSON。",
+    "priority": 2
+  },
+  {
+    "id": "resume033",
+    "module": "resume",
+    "q": "多轮对话 history 怎么回放？为什么必须 user→assistant(tool_calls)→tool 三段式？",
+    "a": "**考察点**：Function Calling 协议理解。\n\n**标准解答**（`backend/app/llm.py`）：\n```python\nfor i, h in enumerate(history[-3:]):  # 最多回放 3 轮\n    msgs.append({\"role\": \"user\", \"content\": h[\"q\"]})\n    msgs.append({\"role\": \"assistant\", \"content\": None, \"tool_calls\": [{\n        \"id\": f\"call_{i}\", \"type\": \"function\",\n        \"function\": {\"name\": \"render_chart\", \"arguments\": json.dumps(h[\"spec\"], ensure_ascii=False)}\n    }]})\n    msgs.append({\"role\": \"tool\", \"tool_call_id\": f\"call_{i}\", \"content\": \"图表已渲染成功\"})\nmsgs.append({\"role\": \"user\", \"content\": message})\n```\n\n**为什么必须三段式**：\n- **缺 `tool` 回执**：很多模型会报错或忽略历史（认为上一轮 assistant 调用未完成）。\n- **缺 `tool_calls` 字段**：模型不知道上一轮是工具调用，会当成普通文本对话。\n- **缺 `tool_call_id` 对应**：tool 消息无法关联回 assistant 的哪个调用。\n\n**System Prompt 关键要求**：必须明确\"输出**修改后**的完整配置（不是增量补丁）\"，否则模型可能只输出 diff，前端拼不出完整 spec。\n\n**实测五轮**：折线/date/sales → 改成饼图 → 按地区看订单量 → 改成柱状图 → 加上销售额对比，每轮只改该改的部分。",
+    "priority": 2
+  },
+  {
+    "id": "resume034",
+    "module": "resume",
+    "q": "AI 数据大屏的部署方式有哪几种？分别适合什么场景？",
+    "a": "**考察点**：部署架构理解、上线经验。\n\n**标准解答**：三种方案见 `docs/部署指南.md`：\n\n1. **Docker 同机部署**：`docker compose up`，一前一后两个容器，nginx 已配 SPA fallback。\n   - 适合：自建服务器、内网 demo、面试演示。\n   - 优点：一键起、隔离干净。\n   - 缺点：要懂 docker。\n\n2. **前后端分离部署**：\n   - 前端 `npm run build` → `dist/` 静态托管（CDN/对象存储）。\n   - 后端 FastAPI 独立部署（uvicorn/gunicorn）。\n   - 需加 `VITE_API_BASE` 指向后端域名（生产环境 API 不在同源）。\n   - 适合：正式上线、流量大。\n   - 优点：前后端独立扩容。\n   - 缺点：要配 CORS / 反代。\n\n3. **CloudStudio 部署**：\n   - 前端静态托管到 CloudStudio，直接访问。\n   - 后端 FastAPI 用 CloudStudio 的 Python 运行时跑。\n   - 适合：面试现场演示、个人作品集。\n   - 优点：零运维。\n   - 缺点：流量有限。\n\n**项目实践**：本项目三种都支持，面试可演示 CloudStudio 版（外网可访问）。",
+    "priority": 2
+  },
+  {
+    "id": "resume035",
+    "module": "resume",
+    "q": "旧接口 vs Agent 接口为什么并存？开关怎么设计？",
+    "a": "**考察点**：架构对比叙事、简历亮点。\n\n**标准解答**：\n\n**为什么并存**：\n- **对比叙事**：面试可直接演示 Workflow vs Agent 差异——同一个问题，「各地区订单量对比」旧接口 ~1s 出图；Agent 接口 ~2-3s 但给出\"华北最高、华东次之\"的洞察。\n- **场景分层**：\n  - 简单出图（直接问\"画折线图\"）→ 旧接口更快。\n  - 复杂分析（问\"找出最值得关注的异常\"）→ Agent 接口更聪明。\n- **风险隔离**：旧接口任何时候都稳（兜底）；Agent 接口可能偶尔超时（用旧接口降级）。\n\n**开关设计**：前端生成页一个开关 `useAgent`，默认 Agent 模式。切换后下次请求走 `/api/chat/stream` 或 `/api/agent/stream`。\n\n**事件协议向后兼容**：旧接口只用 `done/error`，新接口 8 种 type，前端按 `type` 路由分发，**新 type 加 case 不动老逻辑**。\n\n**求职话术**：能讲清\"为什么用两套\"——对比是叙事抓手，开关是工程取舍，向后兼容是协议设计，三者合一就是完整的设计故事。",
+    "priority": 2
+  },
+  {
+    "id": "resume036",
+    "module": "resume",
+    "q": "API Key 在项目里怎么管理？为什么必须 gitignore .？",
+    "a": "**考察点**：基础安全规范。\n\n**标准解答**：`backend/app/config.py` 读环境变量：\n```python\nimport os\nDEEPSEEK_API_KEY = os.getenv(\"DEEPSEEK_API_KEY\", \"\")\nDEEPSEEK_BASE_URL = os.getenv(\"DEEPSEEK_BASE_URL\", \"https://api.deepseek.com/v1\")\nMODEL = os.getenv(\"DEEPSEEK_MODEL\", \"deepseek-chat\")\n```\n\n**为什么必须 .gitignore**：\n- DeepSeek Key 一旦 push 到 GitHub，密钥扫描器秒捡。\n- `.env` 进 git 历史就永久泄露——`git filter-repo` 也难彻底擦干净。\n- 一旦泄露，必须去 DeepSeek 后台\"API Keys\"页面**轮换作废**（1 分钟清零）。\n\n**正确做法**：\n- 本地开发：`.env` 存 Key + `.gitignore` 加 `.env`。\n- Docker：`env_file: ./backend/.env` 注入容器环境变量，**绝不写进 Dockerfile / 镜像**。\n- 生产：平台环境变量托管（K8s Secret / 云厂商 KMS）。\n\n**项目实践**：`.gitignore` 已覆盖 `.env`；DeepSeek Key 仍需去后台轮换（**P0 待办**）。",
+    "priority": 3
+  },
+  {
+    "id": "resume037",
+    "module": "resume",
+    "q": "AI 数据大屏目前有哪些已知问题？",
+    "a": "**考察点**：自省意识、迭代方向。\n\n**标准解答**（`docs/项目架构与技术设计.md` 八、已知问题）：\n\n| # | 问题 | 根因 | 状态 |\n|---|---|---|---|\n| 1 | 大屏旧图换数据集后变空白 | 卡片只存 spec 不存数据，渲染用全局 rawData，字段失效 | 待修（建议：卡片带数据快照） |\n| 2 | Agent 无法出图时留 300px 空白无提示 | 出图失败前端仍占位 | 待修（改失败态文案） |\n| 3 | 分类维度默认给折线，语义不当 | system prompt 未约束图型选择 | 待修（分类默认 bar/pie） |\n| 4 | favicon 404 | 未放图标 | 低优先 |\n| 5 | 上传后写死自动演示卡（\"各地区订单量对比\"） | onFile 遗留演示逻辑，对电厂数据集语义错乱 | 待定 |\n\n**正面说**：诚实承认 + 给修复方案 = 满分。\n\n**面试话术**：能讲清\"踩过什么坑+怎么修\"比\"我做的完美无缺\"更可信。\n\n**额外限制**：\n- 数据集与卡片存 localStorage，**换浏览器/清缓存会丢**。\n- 后端 `current_data` 是内存存储，多用户会互相覆盖（单用户演示足够）。\n- 大屏页不支持卡片跨页拖拽排序到指定位置。",
+    "priority": 3
+  },
+  {
+    "id": "resume038",
+    "module": "resume",
+    "q": "什么是 \"LLM 只负责理解，不负责渲染\" 的核心思想？它在工程上带来什么好处？",
+    "a": "**考察点**：核心设计哲学、高频追问。\n\n**标准解答**：\n\n**核心思想**：把 LLM 的输出空间从\"巨大的 ECharts option JSON\"收敛到\"5 个受控字段\"，让 LLM 只做\"理解意图\"这一件事；所有确定性逻辑（渲染、聚合、统计）交给前端纯函数。\n\n**工程好处**：\n1. **稳定性**：LLM 写不出合法 JSON 也不会崩，因为它根本没机会写完整 JSON，只在 enum 里选。\n2. **可序列化**：5 个字段的 JSON 可直接存 localStorage（卡片恢复、跨设备）。\n3. **可复用**：同一份 spec 切主题、切图表类型不重新问 LLM，**省钱省时**。\n4. **可测试**：纯函数好写单测、好调试、好覆盖。\n5. **可解释**：字段名/枚举值都是人类可读的，复盘日志、调试、用户修改都方便。\n\n**对比反例**：让 LLM 直接写 ECharts option（巨大 JSON）：\n- 极易漏字段 → 渲染崩。\n- 同一份图切主题必须重新生成 → 又花钱又慢。\n- JSON 难序列化 → 无法持久化卡片。\n\n**思想延伸**：**\"让 AI 做它擅长的事\"**——LLM 擅长语义理解，不擅长精确生成。把这两件事分开，是 AI 应用工程化的核心方法论。",
+    "priority": 1
   }
 ]
