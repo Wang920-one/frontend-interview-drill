@@ -74,7 +74,21 @@
     cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
   .drawer-item .cnt{ color:#9a8f80; font-size:18px; }
   .drawer-item.on{ background:var(--yellow); }
+  .drawer-item.picked{ background:var(--yellow); }
   .drawer-item:active{ transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,.15); }
+  .drawer-item .mleft{ display:flex; align-items:center; gap:9px; flex:1; min-width:0; }
+  .drawer-item .mname{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .drawer-item .mright{ display:flex; align-items:center; gap:10px; flex:none; }
+  .modchk{ width:24px; height:24px; flex:none; accent-color:var(--blue); cursor:pointer; }
+  .drawer-item .mgo{ font-size:15px; color:var(--blue); background:#fff; border:2px solid var(--ink);
+    border-radius:10px; padding:2px 8px; }
+  .modbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    font-size:17px; color:#5c524a; padding:10px 12px; margin:10px 0 0; background:#fffdf7;
+    border:2.5px dashed var(--line); border-radius:12px; }
+  .modbar a{ color:var(--blue); text-decoration:underline; cursor:pointer; }
+  .modbar .ok{ font-family:inherit; font-size:18px; background:var(--yellow); color:var(--ink);
+    border:2.5px solid var(--ink); border-radius:12px 4px 12px 4px; padding:4px 14px;
+    cursor:pointer; box-shadow:var(--shadow); margin-left:8px; }
 
   /* 模式 */
   .modes{ display:flex; gap:8px; margin:6px 0 14px; }
@@ -405,7 +419,11 @@ let revGoal = parseInt(localStorage.getItem(LS_REV_GOAL))||10;
 let today = JSON.parse(localStorage.getItem(LS_TODAY)||'{}');
 let daily = JSON.parse(localStorage.getItem(LS_DAILY)||'{}'); // 每日背题记录 { 'YYYY-MM-DD': {count, review, goal, revGoal} }
 let reviews = JSON.parse(localStorage.getItem(LS_REVIEW)||'{}');
-let curModule='all', curMode='seq', list=[], pos=0, pool=[];
+let selMods=[], curMode='seq', list=[], pos=0, pool=[];
+const LS_MODS='drill-mods-v1';
+try{ const _m=JSON.parse(localStorage.getItem(LS_MODS)||'[]'); if(Array.isArray(_m)) selMods=_m.filter(id=>MODULES.some(m=>m.id===id)); }catch(e){ selMods=[]; }
+function saveSelMods(){ try{ localStorage.setItem(LS_MODS, JSON.stringify(selMods)); }catch(e){} }
+function baseQs(){ return selMods.length? QUESTIONS.filter(q=>selMods.includes(q.module)) : QUESTIONS; }
 let drawerView='modules', drawerMod='all';
 
 /* 复习通知 / 每日配额 / 每日复习计数 */
@@ -473,7 +491,8 @@ function renderDrawer(){
     dl.querySelector('[data-back]').onclick=()=>{ drawerView='modules'; renderDrawer(); };
     dl.querySelectorAll('.qitem').forEach(it=>it.onclick=()=>{
       const i=+it.dataset.idx;
-      curModule=drawerMod; curMode='seq';
+      selMods=[drawerMod]; saveSelMods(); curMode='seq';
+      document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on', x.dataset.mode==='seq'));
       buildList();
       pos = list.findIndex(q=>q.id===arr[i].id);
       if(pos<0) pos=0;
@@ -481,17 +500,30 @@ function renderDrawer(){
     });
     return;
   }
-  let h=`<div class="drawer-item ${curModule==='all'?'on':''}" data-m="all">全部模块 <span class="cnt">${QUESTIONS.length}</span></div>`;
+  const allSel = selMods.length===0;
+  let h=`<div class="drawer-item ${allSel?'on':''}" data-all="1"><span class="mleft">全部模块</span><span class="mright"><span class="cnt">${QUESTIONS.length}</span></span></div>`;
   for(const m of MODULES){
     const n=QUESTIONS.filter(q=>q.module===m.id).length;
     const weak=isWeak(m.id) ? '<span class="weaktag">弱项</span>' : '';
-    h+=`<div class="drawer-item ${curModule===m.id?'on':''}" data-m="${m.id}">${m.name}${weak} <span class="cnt">${n}</span></div>`;
+    const on = selMods.indexOf(m.id)>=0;
+    h+=`<div class="drawer-item ${on?'picked':''}" data-m="${m.id}"><span class="mleft"><input type="checkbox" class="modchk" data-chk="${m.id}"${on?' checked':''}><span class="mname">${m.name}${weak}</span></span><span class="mright"><span class="cnt">${n}</span><span class="mgo" data-go="${m.id}">题目 ›</span></span></div>`;
   }
+  h+=`<div class="modbar"><span>已选 <b>${selMods.length?selMods.length+' 个':'全部'}</b> 模块 · 共 <b>${baseQs().length}</b> 题</span><span><a id="modClear">清空</a> · <a id="modInvert">反选</a><button class="ok" id="modDone">完成</button></span></div>`;
   dl.innerHTML=h;
-  dl.querySelectorAll('.drawer-item').forEach(it=>it.onclick=()=>{
-    if(it.dataset.m){ drawerMod=it.dataset.m; drawerView='questions'; renderDrawer(); }
+  const toggleMod=id=>{ const i=selMods.indexOf(id); if(i>=0) selMods.splice(i,1); else selMods.push(id); saveSelMods(); afterModChange(); };
+  dl.querySelectorAll('.modchk').forEach(cb=>cb.onclick=e=>{ e.stopPropagation(); toggleMod(cb.dataset.chk); });
+  dl.querySelectorAll('.drawer-item').forEach(it=>it.onclick=e=>{
+    if(e.target.closest('.modchk') || e.target.closest('.mgo')) return;
+    if(it.dataset.all){ if(selMods.length){ selMods=[]; saveSelMods(); afterModChange(); } return; }
+    if(it.dataset.m) toggleMod(it.dataset.m);
   });
-  $('#modCur').textContent = curModule==='all'?'全部模块':MOD_NAME[curModule];
+  dl.querySelectorAll('.mgo').forEach(g=>g.onclick=e=>{ e.stopPropagation(); drawerMod=g.dataset.go; drawerView='questions'; renderDrawer(); });
+  const _mc=$('#modClear'), _mi=$('#modInvert'), _md=$('#modDone');
+  if(_mc) _mc.onclick=e=>{ e.stopPropagation(); selMods=[]; saveSelMods(); afterModChange(); };
+  if(_mi) _mi.onclick=e=>{ e.stopPropagation(); selMods=MODULES.map(m=>m.id).filter(id=>selMods.indexOf(id)<0); saveSelMods(); afterModChange(); };
+  if(_md) _md.onclick=e=>{ e.stopPropagation(); closeDrawer(); };
+  $('#modCur').textContent = selMods.length===0 ? '全部模块'
+    : (selMods.length===1 ? (MOD_NAME[selMods[0]]||selMods[0]) : selMods.length+' 个模块');
 }
 function openDrawer(){ drawerView='modules'; $('#drawer').classList.add('show'); $('#drawerMask').classList.add('show'); }
 function closeDrawer(){ $('#drawer').classList.remove('show'); $('#drawerMask').classList.remove('show'); }
@@ -499,48 +531,36 @@ $('#modBtn').onclick=openDrawer;
 $('#drawerClose').onclick=closeDrawer;
 $('#drawerMask').onclick=closeDrawer;
 
+function afterModChange(){ renderDrawer(); buildList(); renderRevPlan(); }
 function buildList(){
-  const base = curModule==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===curModule);
+  const base = baseQs();
   if(curMode==='review'){
     const now=Date.now();
     const due = base.filter(q=> reviews[q.id] && reviews[q.id].due<=now)
                   .sort((a,b)=> reviews[a.id].due - reviews[b.id].due);
-    if(curModule==='all'){
-      ensureRevToday();
-      list=[];
-      const seen=new Set(revToday.seen||[]);
-      const byMod={};
-      due.forEach(q=>{ (byMod[q.module]=byMod[q.module]||[]).push(q); seen.add(q.id); });
-      MODULES.forEach(m=>{
-        const tgt=revTarget(m.id);
-        const done=revToday.per[m.id]||0;
-        const room=Math.max(0, tgt-done);
-        if(room<=0) return;
-        let take=(byMod[m.id]||[]).slice(0,room);
-        // 强制必刷下限：到期题不足时用非到期弱题补满
-        const min=revMinMod[m.id]||0;
-        const need=Math.min(room, Math.max(0, min-done)) - take.length;
-        if(need>0){
-          const fill=reviewCandidatesFor(m.id, seen).slice(0,need);
-          fill.forEach(q=>seen.add(q.id));
-          take=take.concat(fill);
-        }
-        list=list.concat(take);
-      });
-    } else {
-      ensureRevToday();
-      const m=curModule;
-      const seen=new Set(revToday.seen||[]);
-      due.forEach(q=>seen.add(q.id));
-      const tgt=revTarget(m);
-      const done=revToday.per[m]||0;
+    // 复习按「已选模块」逐个分配每日配额（未选 = 全部模块）
+    const mods = selMods.length? MODULES.filter(m=>selMods.indexOf(m.id)>=0) : MODULES;
+    ensureRevToday();
+    list=[];
+    const seen=new Set(revToday.seen||[]);
+    const byMod={};
+    due.forEach(q=>{ (byMod[q.module]=byMod[q.module]||[]).push(q); seen.add(q.id); });
+    mods.forEach(m=>{
+      const tgt=revTarget(m.id);
+      const done=revToday.per[m.id]||0;
       const room=Math.max(0, tgt-done);
-      let take=due.slice(0,room);
-      const min=revMinMod[m]||0;
+      if(room<=0) return;
+      let take=(byMod[m.id]||[]).slice(0,room);
+      // 强制必刷下限：到期题不足时用非到期弱题补满
+      const min=revMinMod[m.id]||0;
       const need=Math.min(room, Math.max(0, min-done)) - take.length;
-      if(need>0) take=take.concat(reviewCandidatesFor(m, seen).slice(0,need));
-      list=take; // 指定模块时也应用必刷下限
-    }
+      if(need>0){
+        const fill=reviewCandidatesFor(m.id, seen).slice(0,need);
+        fill.forEach(q=>seen.add(q.id));
+        take=take.concat(fill);
+      }
+      list=list.concat(take);
+    });
     renderRevPlan();
   } else if(curMode==='priority'){
     // 重点题：只展示 priority===1 的题
@@ -559,13 +579,12 @@ function buildList(){
 function showEmpty(){
   let msg='本题库暂无题目\n换个模块或去「抽背」试试 ✦';
   if(curMode==='review'){
-    const base = curModule==='all'?QUESTIONS:QUESTIONS.filter(q=>q.module===curModule);
-    const stillDue = base.filter(q=> reviews[q.id] && reviews[q.id].due<=Date.now()).length;
+    const stillDue = baseQs().filter(q=> reviews[q.id] && reviews[q.id].due<=Date.now()).length;
     msg = stillDue>0 ? '📅 今日复习配额已用完！\n还差 '+stillDue+' 题没背完，明天按曲线继续 ✦' : '🎉 待复习队列已清空！\n已掌握的题目会在记忆曲线到期时自动回来';
   } else if(curMode==='priority'){
-    msg='⭐ 当前模块没有 P0 必背题\n切回「全部模块」试试 ✦';
+    msg='⭐ 当前所选模块没有 P0 必背题\n在模块里多点几个，或清空回「全部模块」 ✦';
   } else if(curMode==='keyplus'){
-    msg='🌟 当前模块没有 P0/P1 题\n切回「全部模块」试试 ✦';
+    msg='🌟 当前所选模块没有 P0/P1 题\n在模块里多点几个，或清空回「全部模块」 ✦';
   }
   elCard.querySelector('.front').innerHTML=`<div class="face-tag">EMPTY</div><div class="empty">${msg}</div>`; elCard.classList.remove('flip');
 }
@@ -579,7 +598,7 @@ function hl(a){
 function saveLast(){
   if(!appReady) return;
   const q=list[pos]; if(!q) return;
-  try{ localStorage.setItem(LS_LAST, JSON.stringify({module:curModule, mode:curMode, id:q.id})); }catch(e){}
+  try{ localStorage.setItem(LS_LAST, JSON.stringify({mods:selMods, module:selMods.length===1?selMods[0]:'all', mode:curMode, id:q.id})); }catch(e){}
 }
 function showCard(){
   const q=list[pos]; if(!q){ showEmpty(); return; }
@@ -659,11 +678,12 @@ function updateRevUI(){
   const rm=$('#reviewMode'); if(rm) rm.innerHTML=`复习 <span class="rev-badge">${n}</span>`;
   const banner=$('#revBanner');
   if(banner){ if(n>0){ banner.style.display=''; banner.querySelector('.n').textContent=n; } else banner.style.display='none'; }
-  // 重点题总数（priority===1 的题）
-  const pn=QUESTIONS.filter(q=>(q.priority||2)===1).length;
+  // 重点题数（按当前所选模块计，避免「徽章580但列表只有54」的错位）
+  const bq=baseQs();
+  const pn=bq.filter(q=>(q.priority||2)===1).length;
   const pm=$('#priorityMode'); if(pm) pm.innerHTML=`⭐ 重点 <span class="pri-badge">${pn}</span>`;
   // 重点+总数（priority<=2，P0+P1）
-  const kp=QUESTIONS.filter(q=>(q.priority||2)<=2).length;
+  const kp=bq.filter(q=>(q.priority||2)<=2).length;
   const kpm=$('#keyplusMode'); if(kpm) kpm.innerHTML=`🌟 重点+ <span class="kplus-badge">${kp}</span>`;
 }
 function forgetCurveSVG(level){
@@ -704,10 +724,11 @@ function unbumpRevToday(mod, id){ ensureRevToday(); revToday.per[mod]=Math.max(0
 /* 复习模式：按模块拆分的每日配额面板（含弱项标红 + 必刷下限） */
 function renderRevPlan(){
   const wrap=$('#revPlan');
-  if(curMode!=='review' || curModule!=='all'){ wrap.classList.remove('on'); wrap.innerHTML=''; return; }
+  if(curMode!=='review'){ wrap.classList.remove('on'); wrap.innerHTML=''; return; }
   ensureRevToday();
   let rows='';
-  MODULES.forEach(m=>{
+  const mods = selMods.length? MODULES.filter(m=>selMods.indexOf(m.id)>=0) : MODULES;
+  mods.forEach(m=>{
     const done=revToday.per[m.id]||0;
     const dueN = QUESTIONS.filter(q=>q.module===m.id && reviews[q.id] && reviews[q.id].due<=Date.now()).length;
     if(dueN===0 && done===0 && !isWeak(m.id)) return;
@@ -723,7 +744,7 @@ function renderRevPlan(){
   });
   if(!rows){ wrap.classList.remove('on'); wrap.innerHTML=''; return; }
   wrap.classList.add('on');
-  const weakNames = MODULES.filter(m=>isWeak(m.id)).map(m=>m.name);
+  const weakNames = mods.filter(m=>isWeak(m.id)).map(m=>m.name);
   const weakNote = weakNames.length ? ` · 弱项[${weakNames.join('、')}]已自动加 ${WEAK_BOOST} 题/天` : '';
   wrap.innerHTML=`<div class="brow" style="margin-bottom:6px">📋 今日复习配额 <span class="rp-def">（默认每模块 ${revQuota} 题${weakNote}）</span></div>`+rows;
   wrap.querySelectorAll('.rp-q').forEach(inp=>inp.onchange=()=>{
@@ -913,7 +934,7 @@ document.querySelectorAll('.mode').forEach(m=>m.onclick=()=>{
 });
 
 $('#prevBtn').onclick=()=>{ if(pos>0){ pos--; showCard(); } };
-$('#nextBtn').onclick=()=>{ if(pos<list.length-1){ pos++; showCard(); } };
+$('#nextBtn').onclick=()=>{ if(pos<list.length-1){ pos++; showCard(); } else flashHint('✦ 已经是本组最后一题啦，换个模式或模块继续'); };
 $('#randBtn').onclick=()=>{ if(list.length===0) return; if(pool.length===0) pool=list.slice();
   const i=Math.floor(Math.random()*pool.length); const pick=pool.splice(i,1)[0]; pos=list.indexOf(pick); showCard();
   const b=$('#randBtn'); b.style.animation='none'; void b.offsetWidth; b.style.animation='shake .4s ease'; };
@@ -975,14 +996,17 @@ function restoreLast(){
   const s = lastSaved;
   if(!s || !s.id) return;
   if(!QUESTIONS.some(q=>q.id===s.id)) return;
-  let mod = s.module||'all', mode = s.mode||'seq';
-  curModule = mod; curMode = mode;
+  const mode = s.mode||'seq';
+  // 优先用多选（新格式），旧备份只有 module 则转成单选
+  selMods = Array.isArray(s.mods) ? s.mods.filter(id=>MODULES.some(m=>m.id===id))
+          : ((s.module && s.module!=='all') ? [s.module] : []);
+  curMode = mode;
   document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on', x.dataset.mode===curMode));
   $('#revQuotaWrap').classList.toggle('on', curMode==='review');
   buildList();
   // 该模式/模块已无题（如清空错题本、无到期复习）→ 回退到「全部 · 顺序」
-  if(list.length===0 && (mod!=='all' || mode!=='seq')){
-    curModule='all'; curMode='seq';
+  if(list.length===0 && (selMods.length>0 || mode!=='seq')){
+    selMods=[]; curMode='seq';
     document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on', x.dataset.mode==='seq'));
     $('#revQuotaWrap').classList.remove('on');
     buildList();
@@ -1001,6 +1025,13 @@ function showResumeHint(){
   el.innerHTML = '📍 已回到上次：<b>'+(MOD_NAME[q.module]||q.module)+'</b> · 第 '+(pos+1)+'/'+list.length+' 题「'+qTxt+'」 ✦';
   el.style.display='';
   setTimeout(()=>{ if(el) el.style.display='none'; }, 4500);
+}
+function flashHint(msg){
+  const el=$('#resumeHint'); if(!el) return;
+  el.innerHTML=msg;
+  el.style.display='';
+  clearTimeout(flashHint._t);
+  flashHint._t=setTimeout(()=>{ if(el) el.style.display='none'; }, 2600);
 }
 boot();
 // 启动时从各模块 JSON 加载题目（GitHub Pages / 本地服务器均可；file:// 双击会被 CORS 拦截）
