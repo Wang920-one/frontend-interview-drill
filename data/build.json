@@ -3,336 +3,336 @@
     "id": "build001",
     "module": "build",
     "q": "Tree-shaking 是什么？依赖什么？",
-    "a": "打包时**剔除未被引用的导出代码**，减小产物体积。\n前提：① 用 **ESM（import/export）** 静态结构，打包器能静态分析；② 模块**无副作用**（package.json 的 sideEffects:false）；③ 避免全量引入（如 `import _ from lodash` → 改用 lodash-es 按需）。\nCommonJS 动态 require 难 Tree-shake。",
+    "a": "**Tree-shaking 是打包时剔除未被引用代码的技术，靠静态分析减小产物体积。**\n- 必须用 ESM 的 import/export，静态结构才可被分析\n- 包要声明无副作用：package.json 加 sideEffects:false\n- 避免全量引入，lodash 换成 lodash-es 按需导入\n- CommonJS 动态 require 静态分析不了，摇不掉\n- 生产模式才生效，靠 Terser 真正删除标记代码\n💡 记忆：静态结构 + 无副作用 + 按需引入",
     "priority": 3
   },
   {
     "id": "build002",
     "module": "build",
     "q": "Vite 为什么比 Webpack 快？",
-    "a": "**Vite** 开发期基于**原生 ESM**：浏览器直接请求源文件，用 esbuild（Go 写）极快预构建依赖，**不打包整体** → 冷启动秒开、HMR 毫秒级。生产用 Rollup（Tree-shaking/分包）。\n对比 Webpack：先全量打包再起服务，大项目慢。\n代价：生态/loader 不如 Webpack 老牌，特殊场景需插件。",
+    "a": "**Vite 开发期不打包，用原生 ESM 按需编译，冷启动和 HMR 都远快于 Webpack。**\n- 浏览器直接请求源文件，改哪个才编译哪个\n- 依赖用 esbuild（Go 编写）预构建，速度极快\n- HMR 只让改动模块及其直接引用方失效\n- 生产仍用 Rollup 打包，享受 Tree-shaking 与分包\n- Webpack 要先全量打包再起服务，大项目明显变慢\n💡 追问：生产为何不用 ESM？要压缩拆包",
     "priority": 3
   },
   {
     "id": "build003",
     "module": "build",
     "q": "Webpack 中 loader 与 plugin 区别？",
-    "a": "**loader** 处理**单个文件**的**转换**（src→dest），如 babel-loader（ES6→ES5）、css-loader、file-loader。链式，自下而上。\n**plugin** 参与**打包全流程**钩子（emit/compile/done），做更宏观事：分包/注入 HTML/定义变量（HtmlWebpackPlugin、DefinePlugin、MiniCssExtract）。记忆：loader 管“文件怎么转”，plugin 管“打包怎么控”。",
+    "a": "**loader 管「单个文件怎么转」，plugin 管「打包流程怎么控」。**\n- loader 做文件级转换：babel-loader、css-loader\n- loader 链式执行，顺序自下而上（从右到左）\n- plugin 挂 compiler 钩子，参与编译全流程\n- plugin 做更宏观的事：分包、注入 HTML、定义变量\n- 例：HtmlWebpackPlugin、DefinePlugin、MiniCssExtractPlugin",
     "priority": 1
   },
   {
     "id": "build004",
     "module": "build",
     "q": "代码分割（Code Splitting）？",
-    "a": "把大包拆小，**按需加载**降首屏体积。方式：① **动态 import()**（自动分包，路由/组件懒加载）；② SplitChunksPlugin（抽公共/第三方到 vendor）；③ entry 多入口。\n效果：首屏只载必需，其余用到再拉。配合 preload/prefetch 预取。注意：分包过多增请求数（HTTP2 下可接受）。",
+    "a": "**代码分割是把大包拆成多个小包按需加载，降低首屏体积。**\n- 动态 import()：路由与组件懒加载，最常用\n- SplitChunksPlugin：抽公共代码与第三方依赖\n- 多 entry：多入口应用天然分割\n- 配合 prefetch / preload 提前拉取后续资源\n- 别拆太碎，HTTP2 下多请求成本才可接受",
     "priority": 1
   },
   {
     "id": "build005",
     "module": "build",
     "q": "hash / chunkhash / contenthash 区别？",
-    "a": "用于文件名指纹，控缓存。**hash** 整个构建同 hash，任一文件变全变（**不推荐**，牵一发动全身）。**chunkhash** 按 **chunk** 变（同 chunk 共享），不同 chunk 独立——JS 分包友好。\n**contenthash** 按**文件内容**变，最精准（CSS 抽离后用，改 CSS 不影响 JS 缓存）。实践：JS 用 chunkhash，CSS 用 contenthash，配长缓存。",
+    "a": "**三种文件名指纹，粒度由粗到细，决定缓存失效范围。**\n- hash：整次构建共用一个，任一文件变则全失效\n- chunkhash：按 chunk 变化，同 chunk 内共享\n- contenthash：按文件内容变化，最精准\n- 实践：JS 用 chunkhash，抽离的 CSS 用 contenthash\n- 配强缓存，内容不变就一直命中缓存",
     "priority": 1
   },
   {
     "id": "build006",
     "module": "build",
     "q": "Source Map 是什么？",
-    "a": "把压缩后代码**映射回源码**的文件（.map），便于线上 **debug / 报错定位**。级别：cheap（仅行）、module（含 loader）、eval（快但简）、source-map（全，慢）、hidden（不暴露）。\n权衡：开发用 cheap-module-eval（快）；生产用 hidden-source-map（报错可定位但不给用户）。安全：生产别暴露 sourcemap 到公网（泄露源码）。",
+    "a": "**Source Map 是产物到源码的位置映射文件，用来调试和定位线上报错。**\n- 只影响调试体验，不影响代码实际执行\n- cheap 只到行、module 含 loader 映射、eval 快但粗略\n- 开发用 eval-cheap-module-source-map，重建快\n- 生产用 hidden-source-map：能定位但不暴露给用户\n- 生产别把 .map 放到公网，否则源码泄露",
     "priority": 1
   },
   {
     "id": "build007",
     "module": "build",
     "q": "前端多环境变量怎么管？",
-    "a": "不同环境（dev/test/prod）用不同配置（API 地址/开关）。**构建期** Vite 用 .env.[mode] + import.meta.env.VITE_X（VITE_ 前缀才暴露）；Webpack 用 DefinePlugin 注入 process.env。\n**运行期** 配置文件/接口下发（利于不改包切换）。注意：密钥**不能**前端硬编码（可被看到），敏感用后端/env 注入。",
+    "a": "**按环境区分配置：构建期注入常量，运行期用配置下发。**\n- Vite：.env.[mode] 文件，仅 VITE_ 前缀会暴露\n- Webpack：用 DefinePlugin 注入 process.env.XXX\n- 运行期：接口下发配置，不改包即可切换环境\n- 前端变量都会被看到，密钥绝不能写进代码\n- 敏感信息走后端或由 CI 在构建时注入",
     "priority": 1
   },
   {
     "id": "build008",
     "module": "build",
     "q": "什么是 Monorepo？",
-    "a": "把**多个相关包/项目**放**同一仓库**管理（vs 多仓 multi-repo）。工具：**pnpm workspace**（快、省磁盘、严格依赖）/ **Turborepo**（任务编排/缓存增量构建）/ Nx / Lerna。\n好处：① 代码/类型**共享复用**；② 统一**规范/构建**；③ 跨包改一处全生效；④ 原子提交。代价：仓库大、需工具治理权限/构建。适合中台/组件库/多端同源。",
+    "a": "**Monorepo 是把多个相关包放同一仓库统一管理，相对多仓而言。**\n- 好处：代码与类型共享，统一规范和工具链\n- 跨包改动一次提交，重构与发版更省心\n- 代价：仓库变大，需权限与构建治理\n- 工具：pnpm workspace + Turborepo / Nx / Lerna\n- 适合组件库、中台、多端同源项目",
     "priority": 3
   },
   {
     "id": "build009",
     "module": "build",
     "q": "ESLint + Prettier + Husky 怎么配合？",
-    "a": "三层保障代码质量：① **ESLint** 查**代码问题/坏味道**（未用变量、规则）；② **Prettier** 统一**格式**（换行/引号），与 ESLint 分工（eslint-config-prettier 关冲突规则）；③ **Husky + lint-staged** **提交前（git hook）** 只对暂存文件跑 lint+format，拦住坏代码。\n配合 **commitlint** 规范 commit 信息。CI 再跑一遍兜底。",
+    "a": "**ESLint 查质量问题，Prettier 统一格式，Husky 在提交前拦住坏代码。**\n- ESLint 负责未用变量、潜在 bug 等规则\n- Prettier 只管换行引号缩进，配置少且固执\n- eslint-config-prettier 关掉两者冲突的规则\n- Husky + lint-staged 只对暂存文件跑检查\n- commitlint 规范提交信息，CI 再兜底一次\n💡 记忆：质量 / 格式 / 提交前拦截",
     "priority": 2
   },
   {
     "id": "build010",
     "module": "build",
     "q": "前端 CI/CD 流程？",
-    "a": "**CI**（持续集成）push/PR 触发 → 安装依赖 → lint → 单测 → 构建 → 产物检查。**CD**（持续交付/部署）构建产物自动**部署**到环境（测试/预发/生产）。工具：GitHub Actions / GitLab CI / Jenkins。\n收益：① 早暴露错误；② 自动化省人工；③ 一键发布可回滚。注意：加**缓存**提速、secrets 存密钥、部署前预览（Preview）。",
+    "a": "**CI 是提交即自动构建校验，CD 是构建产物自动部署到环境。**\n- 流程：装依赖 → lint → 测试 → 构建 → 部署\n- PR 阶段跑 CI，合并后触发 CD 发布\n- 工具：GitHub Actions、GitLab CI、Jenkins\n- 加速：缓存 node_modules 与构建产物\n- 必备：secrets 管密钥，保留可回滚版本",
     "priority": 1
   },
   {
     "id": "build011",
     "module": "build",
     "q": "Babel 与 polyfill？",
-    "a": "**Babel** 把新语法（ES6+/JSX/TS）**转译**成目标环境老语法（AST 转换），让旧浏览器跑得动。**polyfill** 补**缺失的 API**（Promise/Array.includes），不是语法（core-js / regenerator-runtime）。\n模式：**@babel/preset-env** + useBuiltIns:'usage'（**按需引入** polyfill，按 targets 浏览器）；或 entry（全引，体积大）。注：语法用 Babel，API 用 polyfill，二者配合。",
+    "a": "**Babel 转译新语法，polyfill 补齐缺失 API，两者配合才能兼容旧浏览器。**\n- Babel 做 AST 转换：ES6+、JSX、TS 转成目标语法\n- polyfill 是 core-js 这类运行时补丁，不属于语法\n- preset-env 配 useBuiltIns:usage 实现按需引入\n- entry 模式全量引入，体积大，不推荐\n- targets / browserslist 决定要转换多少",
     "priority": 1
   },
   {
     "id": "build012",
     "module": "build",
     "q": "构建中图片/字体如何处理优化？",
-    "a": "① 小图转 **base64/DataURI**（url-loader，限 size 内内联，省请求）；② 大图用 **file-loader/asset** 输出 + CDN；③ **WebP/AVIF** 降体积（需兼容）；④ 雪碧图/字体子集化（font-subset）；⑤ **压缩**（imagemin）；⑥ 用 SVG（矢量、小）；⑦ 图片懒加载（loading=lazy）。\n目的：减请求数 + 减体积 = 提加载。",
+    "a": "**思路是减少请求数 + 减小单文件体积。**\n- 小图转 base64 内联，省一次请求\n- 大图走文件输出 + CDN，转 WebP / AVIF\n- 用 imagemin 压缩，图标优先用 SVG\n- 字体子集化，只打包真正用到的字符\n- 图片懒加载：loading=\"lazy\"",
     "priority": 1
   },
   {
     "id": "build013",
     "module": "build",
     "q": "如何分析 / 减小打包体积？",
-    "a": "分析：**webpack-bundle-analyzer** / **rollup-plugin-visualizer** 看各模块占比。减小：① **按需引入**（lodash-es 替 lodash、组件库 babel 按需）；② Tree-shaking（ESM + sideEffects）；③ 分包 + 长缓存；④ **替换大库**（day.js 替 moment）；⑤ 压缩（gzip/brotli）；⑥ 删 console/注释（生产）。",
+    "a": "**先用可视化工具找到体积大头，再针对性瘦身。**\n- 分析：webpack-bundle-analyzer / rollup-plugin-visualizer\n- 按需引入：lodash-es 替 lodash，组件库按需加载\n- 开 Tree-shaking：ESM + sideEffects:false\n- 替换大库：day.js 替 moment\n- 开 gzip / brotli，生产删除 console 与注释",
     "priority": 3
   },
   {
     "id": "build014",
     "module": "build",
     "q": "微前端是什么？",
-    "a": "把**一个大应用拆成多个独立子应用**（技术栈可不同）组合运行，teams 独立开发部署。方案：① **qiankun**（基于 single-spa，HTML Entry 接入）；② **Module Federation**（Webpack5，运行时共享模块/依赖）；③ iframe（隔离强但通信难）。\n核心难点：① JS/CSS **沙箱隔离**；② 应用**通信**（props/全局状态）；③ 样式隔离；④ 公共依赖去重。适用：巨型后台/多团队。",
+    "a": "**微前端把巨石应用拆成多个可独立开发部署的子应用，再组合运行。**\n- 方案：qiankun / single-spa、Module Federation、iframe\n- 技术栈可不同，各团队独立发版互不影响\n- 难点一：JS 与 CSS 的沙箱隔离\n- 难点二：应用间通信、样式冲突、公共依赖去重\n- 适用：大型后台、多团队协作、老系统渐进迁移",
     "priority": 3
   },
   {
     "id": "build015",
     "module": "build",
     "q": "什么是前端工程化？它解决了哪些问题？",
-    "a": "**答案：**\n\n前端工程化是指使用工程化的方法和工具来规范前端开发流程，提高开发效率和代码质量。它主要解决以下问题：\n\n- **代码规范化**：统一代码风格和编写规范\n- **模块化管理**：解决代码复用和依赖管理问题\n- **自动化构建**：自动化打包、压缩、编译等重复性工作\n- **质量保障**：通过测试、代码检查等手段保证代码质量\n- **部署优化**：自动化部署和版本管理\n- **性能优化**：代码分割、懒加载、资源优化等",
+    "a": "**前端工程化是用工具与流程把开发、构建、测试、部署标准化。**\n- 规范：统一代码风格与目录约定\n- 模块化：依赖管理与代码复用\n- 自动化：打包、压缩、编译不再手工完成\n- 质量：ESLint、测试、CI 卡点保障\n- 性能：代码分割、懒加载、资源优化",
     "priority": 1
   },
   {
     "id": "build016",
     "module": "build",
     "q": "请解释什么是模块化，并比较CommonJS、AMD、ES6 Module的区别？",
-    "a": "**答案：**\n\n模块化是将复杂程序按照功能拆分成独立模块的设计思想。\n\n**CommonJS（Node.js）：**\n\n- 同步加载，适用于服务端\n- 使用 `require()` 导入，`module.exports` 导出\n- 运行时加载，加载的是对象\n\n**AMD（RequireJS）：**\n\n- 异步加载，适用于浏览器\n- 使用 `define()` 定义模块，`require()` 加载\n- 依赖前置，预先加载依赖\n\n**ES6 Module：**\n\n- 编译时确定依赖关系\n- 使用 `import/export` 语法\n- 静态分析，支持 Tree Shaking\n- 异步加载，但语法是同步的",
+    "a": "**模块化是按功能拆分独立模块；三者区别在加载时机与语法。**\n- CommonJS：require / module.exports，同步加载，运行时解析\n- AMD：define + require，异步加载，依赖前置，浏览器用\n- ESM：import / export，编译期确定依赖，可静态分析\n- ESM 导出的是值的引用，CommonJS 是值的拷贝\n- 只有 ESM 的静态结构支持 Tree Shaking",
     "priority": 3
   },
   {
     "id": "build017",
     "module": "build",
     "q": "Webpack的核心概念有哪些？",
-    "a": "**答案：**\n\nWebpack的五个核心概念：\n\n**Entry（入口）：**\n\n- 指示Webpack应该使用哪个模块作为构建依赖图的开始\n\n**Output（输出）：**\n\n- 告诉Webpack在哪里输出它所创建的bundles\n\n**Loader（加载器）：**\n\n- 让Webpack能够处理非JavaScript文件\n- 如：css-loader、babel-loader、file-loader等\n\n**Plugin（插件）：**\n\n- 执行范围更广的任务，如打包优化、资源管理等\n- 如：HtmlWebpackPlugin、CleanWebpackPlugin等\n\n**Mode（模式）：**\n\n- development、production、none\n- 不同模式会启用相应的内置优化",
+    "a": "**Webpack 五个核心概念：entry、output、loader、plugin、mode。**\n- entry：依赖图的起点文件\n- output：产物输出路径与文件名\n- loader：让 Webpack 能处理非 JS 文件\n- plugin：通过钩子做打包优化与资源注入\n- mode：development / production / none，切换内置优化",
     "priority": 3
   },
   {
     "id": "build018",
     "module": "build",
     "q": "什么是Tree Shaking？它的原理是什么？",
-    "a": "**答案：**\n\nTree Shaking是一种通过静态分析来移除JavaScript上下文中未引用代码的技术。\n\n**原理：**\n\n- 基于ES6模块的静态结构特性\n- 在编译时确定模块的导入导出关系\n- 标记未使用的导出，在压缩阶段删除\n\n**实现条件：**\n\n- 使用ES6模块语法\n- 确保代码没有副作用（side effects）\n- 使用支持Tree Shaking的打包工具\n- 在生产模式下启用\n\n**配置示例：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  mode: 'production',\n  optimization: {\n    usedExports: true,\n    sideEffects: false\n  }\n}\n```",
+    "a": "**Tree Shaking 靠 ESM 静态分析，标记并删除未被使用的导出代码。**\n- 编译期即可确定 import / export 的依赖关系\n- 先标记未使用的导出，压缩阶段才真正删除\n- 前提：ESM 语法、模块无副作用、生产模式\n- package.json 用 sideEffects:false 声明无副作用\n```js\n// webpack.config.js\nmodule.exports = {\n  mode: 'production',\n  optimization: { usedExports: true, minimize: true }\n};\n```",
     "priority": 3
   },
   {
     "id": "build019",
     "module": "build",
     "q": "解释代码分割（Code Splitting）的概念和实现方式？",
-    "a": "**答案：**\n\n代码分割是将代码分离到不同的bundle中，然后可以按需加载或并行加载这些文件。\n\n**实现方式：**\n\n**1. 入口起点分割：**\n\n```JavaScript\nmodule.exports = {\n  entry: {\n    index: './src/index.js',\n    another: './src/another-module.js'\n  }\n}\n```\n\n**2. 防止重复（SplitChunksPlugin）：**\n\n```JavaScript\noptimization: {\n  splitChunks: {\n    chunks: 'all'\n  }\n}\n```\n\n**3. 动态导入：**\n\n```JavaScript\n// 异步加载模块\nimport('./math.js').then(math => {\n  console.log(math.add(16, 26));\n});\n\n// React.lazy\nconst LazyComponent = React.lazy(() => import('./LazyComponent'));\n```",
+    "a": "**代码分割是把代码拆到多个 bundle，实现按需或并行加载。**\n- 入口分割：配置多个 entry 产出多个包\n- 防重复：SplitChunksPlugin 抽取公共模块\n- 动态导入：import() 返回 Promise，最常用\n```js\n// 路由级懒加载\nconst Page = React.lazy(() => import('./Page'));\n// 手动动态导入\nimport('./math.js').then(m => m.add(1, 2));\n```\n- 分包后配合内容哈希做长缓存",
     "priority": 3
   },
   {
     "id": "build020",
     "module": "build",
     "q": "什么是Babel？它的工作原理是什么？",
-    "a": "**答案：**\n\nBabel是一个JavaScript编译器，主要用于将ES6+代码转换为向后兼容的JavaScript语法。\n\n**工作原理（三个阶段）：**\n\n**1. 解析（Parse）：**\n\n- 将代码字符串解析成抽象语法树（AST）\n\n**2. 转换（Transform）：**\n\n- 对AST进行遍历，在此过程中对节点进行添加、更新及移除等操作\n\n**3. 生成（Generate）：**\n\n- 将经过转换的AST再转换成代码字符串\n\n**核心组件：**\n\n- **@babel/core**：核心编译器\n- **@babel/preset-env**：智能预设\n- **@babel/polyfill**：补丁库\n- **各种插件**：具体的转换规则",
+    "a": "**Babel 是 JS 编译器，把 ES6+ 转成向后兼容语法，分解析、转换、生成三步。**\n- parse：源码解析成 AST\n- transform：遍历 AST，插件增删改节点\n- generate：AST 再生成目标代码与 source map\n- 核心：@babel/core、@babel/preset-env、各类插件\n- 语法转译归 Babel，API 补齐归 polyfill",
     "priority": 1
   },
   {
     "id": "build021",
     "module": "build",
     "q": "请解释什么是热模块替换（HMR），它是如何工作的？",
-    "a": "**答案：**\n\n热模块替换允许在运行时更新各种模块，而无需进行完整刷新。\n\n**工作原理：**\n\n**1. 文件监听：**\n\n- Webpack监听文件变化\n\n**2. 编译更新：**\n\n- 重新编译发生变化的模块\n\n**3. 推送更新：**\n\n- 通过WebSocket将更新推送到浏览器\n\n**4. 模块替换：**\n\n- 浏览器接收更新，替换旧模块\n\n**配置示例：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  devServer: {\n    hot: true\n  },\n  plugins: [\n    new webpack.HotModuleReplacementPlugin()\n  ]\n}\n\n// 代码中接受HMR\nif (module.hot) {\n  module.hot.accept('./library.js', function() {\n    // 处理更新逻辑\n  })\n}\n```",
+    "a": "**HMR 是运行时替换变更模块而不刷新页面，从而保留应用状态。**\n- Webpack 监听文件变化后做增量编译\n- 通过 WebSocket 把热更新补丁推给浏览器\n- 浏览器按 manifest 拉取并替换对应模块\n- 代码需 module.hot.accept 声明接受更新\n```js\nif (module.hot) {\n  module.hot.accept('./lib.js', () => {\n    render(); // 重新执行受影响逻辑\n  });\n}\n```",
     "priority": 1
   },
   {
     "id": "build022",
     "module": "build",
     "q": "什么是Polyfill和Shim？它们有什么区别？",
-    "a": "**答案：**\n\n**Polyfill：**\n\n- 用于实现浏览器并不支持的原生API的代码\n- 模拟标准API的行为\n- 例：Promise polyfill、Array.prototype.includes polyfill\n\n**Shim：**\n\n- 更广泛的概念，用于修复或增强现有API\n- 可能改变现有API的行为\n- 不一定遵循标准规范\n\n**主要区别：**\n\n- Polyfill严格按照标准实现，Shim可能有自己的实现方式\n- Polyfill只添加缺失功能，Shim可能修改现有功能\n- Polyfill更注重兼容性，Shim更注重功能增强\n\n**使用示例：**\n\n```JavaScript\n// Polyfill示例\nif (!Array.prototype.includes) {\n  Array.prototype.includes = function(searchElement) {\n    return this.indexOf(searchElement) !== -1;\n  };\n}\n```",
+    "a": "**Polyfill 按标准补齐缺失 API，Shim 是更宽泛的兼容或增强层。**\n- Polyfill：严格模拟标准行为，如 Promise、includes\n- Shim：可改写或增强现有 API，不必然遵循标准\n- 判断：只加缺失功能即 polyfill，改现有行为即 shim\n```js\nif (!Array.prototype.includes) {\n  Array.prototype.includes = function (v) {\n    return this.indexOf(v) !== -1;\n  };\n}\n```",
     "priority": 1
   },
   {
     "id": "build023",
     "module": "build",
     "q": "解释什么是Source Map，它有什么作用？",
-    "a": "**答案：**\n\nSource Map是一个信息文件，里面储存着位置信息，用于调试压缩/编译后的代码。\n\n**作用：**\n\n- 将压缩/编译后的代码映射回原始源代码\n- 便于在浏览器中调试\n- 保持生产环境代码的优化，同时保证开发体验\n\n**类型：**\n\n- **eval**：每个模块使用eval()执行，并生成DataUrl形式的SourceMap\n- **source-map**：生成独立的.map文件\n- **inline-source-map**：将SourceMap以DataURL形式嵌入\n- **cheap-source-map**：不包含列信息，只有行信息\n- **hidden-source-map**：生成SourceMap但不在bundle中引用\n\n**配置：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  devtool: 'source-map' // 生产环境\n  // devtool: 'eval-source-map' // 开发环境\n}\n```",
+    "a": "**Source Map 记录编译后代码与源码的位置映射，用于调试与定位线上报错。**\n- 作用：压缩混淆后仍能还原原始行列\n- eval 最快但粗略，source-map 完整独立成 .map\n- cheap 只保留行信息，构建更快\n- hidden 生成但不引用，只给监控平台使用\n```js\n// webpack.config.js\nmodule.exports = {\n  devtool: 'eval-cheap-module-source-map' // 生产用 hidden-source-map\n};\n```",
     "priority": 3
   },
   {
     "id": "build024",
     "module": "build",
     "q": "什么是微前端？它解决了什么问题？",
-    "a": "**答案：**\n\n微前端是一种将前端应用分解为更小、更简单的能够独立开发、测试、部署的微应用的架构风格。\n\n**解决的问题：**\n\n- **技术栈无关**：不同团队可以使用不同技术栈\n- **独立部署**：各个微应用可以独立发布\n- **团队自治**：不同团队负责不同业务模块\n- **增量升级**：可以逐步迁移遗留系统\n- **容错隔离**：单个应用出错不影响整体\n\n**实现方案：**\n\n- **Single-SPA**：微前端框架\n- **Module Federation**：Webpack 5的模块联邦\n- **iframe**：简单但有限制\n- **Web Components**：标准化组件\n\n**挑战：**\n\n- 应用间通信\n- 样式隔离\n- 公共依赖管理\n- 性能优化",
+    "a": "**微前端把前端应用拆成可独立开发、测试、部署的微应用，再组合成整体。**\n- 解决：技术栈无关、独立部署、团队自治\n- 也让老系统能增量迁移，故障相互隔离\n- 方案：single-spa / qiankun、Module Federation、Web Components、iframe\n- 挑战：应用间通信、样式隔离、公共依赖、性能",
     "priority": 3
   },
   {
     "id": "build025",
     "module": "build",
     "q": "请解释Webpack的打包原理？",
-    "a": "**答案：**\n\nWebpack打包原理可以分为以下几个步骤：\n\n**1. 初始化参数：**\n\n- 合并配置文件和命令行参数\n\n**2. 开始编译：**\n\n- 初始化Compiler对象，加载所有配置的插件\n\n**3. 确定入口：**\n\n- 根据entry配置找到所有入口文件\n\n**4. 编译模块：**\n\n- 从入口文件出发，调用所有配置的Loader对模块进行翻译\n- 找出该模块依赖的模块，递归本步骤\n\n**5. 完成模块编译：**\n\n- 得到每个模块被翻译后的最终内容以及依赖关系\n\n**6. 输出资源：**\n\n- 根据入口和模块间的依赖关系，组装成一个个包含多个模块的Chunk\n- 再把每个Chunk转换成一个单独的文件加入到输出列表\n\n**7. 输出完成：**\n\n- 根据配置确定输出的路径和文件名，把文件内容写入到文件系统",
+    "a": "**Webpack 从 entry 出发递归构建依赖图，再把模块组装成 chunk 输出文件。**\n- 初始化：合并配置与命令行参数，创建 Compiler\n- 加载全部插件，根据 entry 确定入口\n- 用 loader 翻译模块，递归处理它依赖的模块\n- 得到翻译后内容与依赖关系，组装成 chunk\n- 按 output 配置把 chunk 写入文件系统",
     "priority": 1
   },
   {
     "id": "build026",
     "module": "build",
     "q": "什么是ESLint？如何配置和使用？",
-    "a": "**答案：**\n\nESLint是一个用于识别和报告JavaScript代码中模式匹配的工具，目标是保证代码的一致性和避免错误。\n\n**主要功能：**\n\n- 语法错误检查\n- 代码风格检查\n- 潜在问题检查\n- 自动修复部分问题\n\n**配置方式：**\n\n**1. 配置文件（.eslintrc.js）：**\n\n```JavaScript\nmodule.exports = {\n  env: {\n    browser: true,\n    es2021: true,\n    node: true\n  },\n  extends: [\n    'eslint:recommended',\n    '@vue/typescript/recommended'\n  ],\n  parserOptions: {\n    ecmaVersion: 12,\n    sourceType: 'module'\n  },\n  rules: {\n    'no-console': 'warn',\n    'no-unused-vars': 'error'\n  }\n}\n```\n\n**2. 集成到构建工具：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  module: {\n    rules: [\n      {\n        test: /\\.js$/,\n        loader: 'eslint-loader',\n        enforce: 'pre'\n      }\n    ]\n  }\n}\n```",
+    "a": "**ESLint 是 JS/TS 代码检查工具，用规则查出错误、坏味道并自动修复。**\n- 能力：语法错误、风格问题、潜在 bug，--fix 可自动修\n- 配置 .eslintrc：env、extends、parserOptions、rules\n- extends 复用 eslint:recommended 等共享配置\n- 可接入编辑器、构建流程与 CI 卡点\n```js\n// .eslintrc.js\nmodule.exports = {\n  env: { browser: true, es2021: true },\n  extends: ['eslint:recommended'],\n  rules: { 'no-unused-vars': 'error' }\n};\n```",
     "priority": 2
   },
   {
     "id": "build027",
     "module": "build",
     "q": "什么是Prettier？它与ESLint有什么区别？",
-    "a": "**答案：**\n\n**Prettier：**\n\n- 代码格式化工具\n- 专注于代码风格统一\n- 支持多种语言\n- 配置项较少，固执己见\n\n**ESLint：**\n\n- 代码质量检查工具\n- 专注于代码质量和潜在错误\n- 主要针对JavaScript\n- 配置灵活，规则丰富\n\n**主要区别：**\n\n- **职责不同**：Prettier负责格式化，ESLint负责代码质量\n- **冲突处理**：某些规则可能冲突，需要配置解决\n- **使用场景**：通常配合使用，各司其职\n\n**配合使用：**\n\n```JavaScript\n// .eslintrc.js\nmodule.exports = {\n  extends: [\n    'eslint:recommended',\n    'prettier' // 关闭与Prettier冲突的规则\n  ],\n  plugins: ['prettier'],\n  rules: {\n    'prettier/prettier': 'error'\n  }\n}\n```",
+    "a": "**Prettier 只管代码格式，ESLint 管代码质量，两者配合各司其职。**\n- Prettier：换行、引号、缩进，配置少且固执己见\n- ESLint：未用变量、潜在错误，规则丰富可扩展\n- eslint-config-prettier 关掉与格式冲突的规则\n- eslint-plugin-prettier 可把格式问题当 error 报出\n- 提交时由 Husky + lint-staged 统一跑一遍",
     "priority": 2
   },
   {
     "id": "build028",
     "module": "build",
     "q": "什么是Monorepo？它有什么优缺点？",
-    "a": "**答案：**\n\nMonorepo是一种项目代码管理策略，即在一个仓库中管理多个项目。\n\n**优点：**\n\n- **代码共享**：容易共享代码和依赖\n- **统一工具链**：统一的构建、测试、部署流程\n- **原子提交**：跨项目的更改可以在一次提交中完成\n- **依赖管理**：更容易管理项目间依赖\n- **重构友好**：大规模重构更容易进行\n\n**缺点：**\n\n- **仓库体积大**：随着项目增多，仓库会变得很大\n- **构建时间长**：可能需要构建整个仓库\n- **权限控制**：难以对不同项目设置不同权限\n- **学习成本**：需要学习相应的工具链\n\n**常用工具：**\n\n- **Lerna**：JavaScript项目的Monorepo工具\n- **Nx**：可扩展的开发工具\n- **Rush**：Microsoft开发的Monorepo工具\n- **Yarn Workspaces**：Yarn的工作空间功能",
+    "a": "**Monorepo 是一个仓库管理多个项目，用共享换统一，代价是治理成本。**\n- 优点：代码共享、统一工具链、跨项目原子提交\n- 优点：依赖易管理，大规模重构友好\n- 缺点：仓库体积大、构建耗时长、权限难细分\n- 工具：pnpm / yarn workspace、Turborepo、Nx、Lerna\n- 靠增量构建与任务缓存缓解构建慢",
     "priority": 3
   },
   {
     "id": "build029",
     "module": "build",
     "q": "解释什么是持续集成（CI）和持续部署（CD）？",
-    "a": "**答案：**\n\n**持续集成（CI - Continuous Integration）：**\n\n- 开发人员频繁地将代码集成到主干\n- 每次集成都通过自动化构建来验证\n- 快速发现集成错误\n\n**持续部署（CD - Continuous Deployment/Delivery）：**\n\n- **Continuous Delivery**：确保代码随时可以部署到生产环境\n- **Continuous Deployment**：每次通过CI的代码自动部署到生产环境\n\n**前端CI/CD流程：**\n\n1. **代码提交**：开发者推送代码到仓库\n2. **自动构建**：触发构建流程\n3. **代码检查**：ESLint、TypeScript检查\n4. **自动测试**：单元测试、集成测试\n5. **构建打包**：Webpack打包\n6. **部署**：部署到测试/生产环境\n\n**常用工具：**\n\n- **Jenkins**、\\*\\*GitHub Actions\\*\\*、**GitLab CI**\n- **Docker**、**Kubernetes**\n- **AWS**、\\*\\*阿里云\\*\\*等云服务",
+    "a": "**CI 是频繁集成并自动验证，CD 让通过验证的代码随时或自动发布。**\n- CI：push / PR 触发，装依赖 → lint → 测试 → 构建\n- Continuous Delivery：随时可发布，由人工点确认\n- Continuous Deployment：通过即自动发布到生产\n- 价值：早发现错误、减少人工、可快速回滚\n- 工具：GitHub Actions、GitLab CI、Jenkins",
     "priority": 1
   },
   {
     "id": "build030",
     "module": "build",
     "q": "什么是Package.json？请解释其主要字段的作用？",
-    "a": "**答案：**\n\nPackage.json是Node.js项目的配置文件，包含项目的元数据和依赖信息。\n\n**主要字段：**\n\n**基本信息：**\n\n- **name**：项目名称\n- **version**：版本号（遵循语义化版本）\n- **description**：项目描述\n- **keywords**：关键词数组\n- **author**：作者信息\n\n**依赖管理：**\n\n- **dependencies**：生产环境依赖\n- **devDependencies**：开发环境依赖\n- **peerDependencies**：同伴依赖\n- **optionalDependencies**：可选依赖\n\n**脚本和配置：**\n\n- **scripts**：可执行脚本\n- **main**：入口文件\n- **engines**：Node.js版本要求\n- **browserslist**：浏览器兼容性配置\n\n**示例：**\n\n```JSON\n{\n  \"name\": \"my-project\",\n  \"version\": \"1.0.0\",\n  \"scripts\": {\n    \"dev\": \"webpack serve\",\n    \"build\": \"webpack --mode=production\"\n  },\n  \"dependencies\": {\n    \"vue\": \"^3.0.0\"\n  },\n  \"devDependencies\": {\n    \"webpack\": \"^5.0.0\"\n  }\n}\n```",
+    "a": "**package.json 是 Node 项目清单，记录元信息、依赖与脚本。**\n- 信息：name、version、description、keywords\n- 依赖：dependencies、devDependencies、peerDependencies\n- scripts：dev、build 等可执行命令入口\n- main / module / exports：包的入口文件\n- engines、browserslist：约束运行环境与兼容范围\n```json\n{\n  \"scripts\": { \"dev\": \"vite\", \"build\": \"vite build\" }\n}\n```",
     "priority": 1
   },
   {
     "id": "build031",
     "module": "build",
     "q": "解释npm、yarn、pnpm的区别？",
-    "a": "**答案：**\n\n**npm（Node Package Manager）：**\n\n- Node.js官方包管理器\n- 使用node_modules扁平化结构\n- 有lock文件（package-lock.json）\n- 安装速度相对较慢\n\n**yarn：**\n\n- Facebook开发的包管理器\n- 并行下载，速度更快\n- 更好的缓存机制\n- yarn.lock文件锁定版本\n- 支持工作空间（Workspaces）\n\n**pnpm：**\n\n- 使用硬链接和符号链接\n- 节省磁盘空间\n- 更严格的依赖管理\n- 安装速度快\n- 天然支持Monorepo\n\n**主要区别：**\n\n- **存储方式**：pnpm使用全局存储，避免重复\n- **安装速度**：pnpm > yarn > npm\n- **磁盘占用**：pnpm最少，npm最多\n- **依赖管理**：pnpm最严格，避免幽灵依赖",
+    "a": "**三者都是包管理器，区别在存储方式、安装速度与依赖严格程度。**\n- npm：官方默认，扁平 node_modules，package-lock.json\n- yarn：并行下载 + 缓存更快，支持 workspaces\n- pnpm：硬链接 + 全局 store，最省磁盘、安装最快\n- pnpm 依赖最严格，杜绝幽灵依赖\n- 速度与占用：pnpm 优于 yarn 优于 npm",
     "priority": 3
   },
   {
     "id": "build032",
     "module": "build",
     "q": "什么是语义化版本（Semantic Versioning）？",
-    "a": "**答案：**\n\n语义化版本是一套版本号命名规则，格式为：主版本号.次版本号.修订号（MAJOR.MINOR.PATCH）。\n\n**版本号递增规则：**\n\n- **MAJOR**：不兼容的API修改\n- **MINOR**：向下兼容的功能性新增\n- **PATCH**：向下兼容的问题修正\n\n**预发布版本：**\n\n- **alpha**：内部测试版本\n- **beta**：公开测试版本\n- **rc**：候选发布版本\n\n**npm中的版本范围：**\n\n- **^1.2.3**：兼容1.x.x，但不包括2.0.0\n- **\\~1.2.3**：兼容1.2.x，但不包括1.3.0\n- **1.2.3**：精确版本\n- **>=1.2.3**：大于等于指定版本\n- **latest**：最新版本\n\n**示例：**\n\n```JSON\n{\n  \"dependencies\": {\n    \"vue\": \"^3.2.0\",      // 3.2.0 <= version < 4.0.0\n    \"lodash\": \"~4.17.21\", // 4.17.21 <= version < 4.18.0\n    \"axios\": \"0.27.2\"     // 精确版本\n  }\n}\n```",
+    "a": "**语义化版本是 MAJOR.MINOR.PATCH 的版本号约定，用数字表达兼容性。**\n- MAJOR：不兼容的 API 变更\n- MINOR：向下兼容的功能新增\n- PATCH：向下兼容的问题修复\n- ^1.2.3 允许次版本与修订升级，不含 2.0.0\n- ~1.2.3 只允许修订号升级\n```json\n{\n  \"dependencies\": { \"vue\": \"^3.2.0\", \"lodash\": \"~4.17.21\" }\n}\n```",
     "priority": 2
   },
   {
     "id": "build033",
     "module": "build",
     "q": "什么是Vite？它相比Webpack有什么优势？",
-    "a": "**答案：**\n\nVite是一个现代化的前端构建工具，由Vue.js作者尤雨溪开发。\n\n**核心特性：**\n\n- **极速的服务启动**：使用原生ES模块\n- **轻量快速的热重载**：基于ESM的HMR\n- **丰富的功能**：TypeScript、JSX、CSS等开箱即用\n- **优化的构建**：使用Rollup进行生产构建\n\n**相比Webpack的优势：**\n\n**开发环境：**\n\n- **启动速度快**：不需要打包，直接使用ES模块\n- **热更新快**：只需要重新请求单个模块\n- **配置简单**：零配置即可使用\n\n**生产环境：**\n\n- **构建速度快**：使用esbuild进行预构建\n- **更好的Tree Shaking**：基于Rollup\n- **现代化输出**：原生支持ES模块\n\n**适用场景：**\n\n- 新项目推荐使用Vite\n- 现代浏览器环境\n- Vue、React等现代框架项目\n\n**局限性：**\n\n- 生态系统相对较新\n- 某些老旧插件可能不兼容",
+    "a": "**Vite 是新一代构建工具：开发用原生 ESM 免打包，生产用 Rollup 构建。**\n- 启动快：不打包，只编译浏览器请求到的模块\n- HMR 快：只重编译改动模块及其直接引用方\n- 依赖预构建用 esbuild，TS / JSX / CSS 开箱即用\n- 生产基于 Rollup，Tree-shaking 与分包更成熟\n- 局限：生态较新，个别老插件不兼容",
     "priority": 3
   },
   {
     "id": "build034",
     "module": "build",
     "q": "解释什么是预处理器？常见的CSS预处理器有哪些？",
-    "a": "**答案：**\n\n预处理器是一种工具，它可以让你使用特殊的语法来生成CSS。\n\n**CSS预处理器的优势：**\n\n- **变量**：定义可重用的值\n- **嵌套**：层级化的样式编写\n- **混合（Mixin）**：可重用的样式块\n- **函数**：动态生成样式\n- **模块化**：@import功能增强\n\n**常见的CSS预处理器：**\n\n**Sass/SCSS：**\n\n```SCSS\n$primary-color: #333;\n$margin: 16px;\n\n.header {\n  color: $primary-color;\n  margin: $margin;\n\n  &:hover {\n    color: lighten($primary-color, 20%);\n  }\n}\n```\n\n**Less：**\n\n```Plain Text\n@primary-color: #333;\n@margin: 16px;\n\n.header {\n  color: @primary-color;\n  margin: @margin;\n\n  &:hover {\n    color: lighten(@primary-color, 20%);\n  }\n}\n```\n\n**Stylus：**\n\n```Plain Text\nprimary-color = #333\nmargin = 16px\n\n.header\n  color primary-color\n  margin margin\n\n  &:hover\n    color lighten(primary-color, 20%)\n```",
+    "a": "**预处理器用扩展语法编写样式，再编译成普通 CSS。**\n- 能力：变量、嵌套、mixin、函数、模块化引入\n- Sass / SCSS：生态最广，功能最全\n- Less：语法接近 CSS，上手快\n- Stylus：语法最灵活，可省略括号与分号\n```scss\n$primary: #333;\n.header {\n  color: $primary;\n  &:hover { color: lighten($primary, 20%); }\n}\n```",
     "priority": 2
   },
   {
     "id": "build035",
     "module": "build",
     "q": "什么是PostCSS？它与预处理器有什么区别？",
-    "a": "**答案：**\n\nPostCSS是一个用JavaScript工具和插件转换CSS代码的工具。\n\n**PostCSS特点：**\n\n- **插件化架构**：功能通过插件实现\n- **后处理**：处理已有的CSS\n- **可定制**：可以选择需要的功能\n- **性能好**：只处理需要的部分\n\n**与预处理器的区别：**\n\n- **处理时机**：PostCSS是后处理，预处理器是预处理\n- **语法**：PostCSS使用标准CSS语法\n- **功能**：PostCSS通过插件扩展，预处理器有固定语法\n- **兼容性**：PostCSS可以处理现有CSS\n\n**常用插件：**\n\n- **autoprefixer**：自动添加浏览器前缀\n- **cssnano**：CSS压缩优化\n- **postcss-preset-env**：使用未来CSS语法\n- **postcss-import**：处理@import\n\n**配置示例：**\n\n```JavaScript\n// postcss.config.js\nmodule.exports = {\n  plugins: [\n    require('autoprefixer'),\n    require('cssnano')({\n      preset: 'default'\n    })\n  ]\n}\n```",
+    "a": "**PostCSS 是用插件转换 CSS 的工具，属后处理，语法仍是标准 CSS。**\n- 时机：预处理器编译前扩展语法，PostCSS 处理已有 CSS\n- 语法：PostCSS 写标准 CSS，能力靠插件叠加\n- 插件：autoprefixer 加前缀、cssnano 压缩\n- postcss-preset-env 让你提前用上未来 CSS 语法\n- Vite / Webpack 内置，配 postcss.config.js\n```js\nmodule.exports = { plugins: [require('autoprefixer')] };\n```",
     "priority": 1
   },
   {
     "id": "build036",
     "module": "build",
     "q": "什么是Webpack的Loader和Plugin？",
-    "a": "**答案：**\n\n**Loader：**\n\n- 用于转换模块的源代码\n- 在import或加载模块时预处理文件\n- 从右到左（或从下到上）执行\n\n**常见Loader：**\n\n```JavaScript\nmodule.exports = {\n  module: {\n    rules: [\n      // 处理CSS文件\n      {\n        test: /\\.css$/,\n        use: ['style-loader', 'css-loader']\n      },\n      // 处理JavaScript文件\n      {\n        test: /\\.js$/,\n        exclude: /node_modules/,\n        use: {\n          loader: 'babel-loader',\n          options: {\n            presets: ['@babel/preset-env']\n          }\n        }\n      },\n      // 处理图片文件\n      {\n        test: /\\.(png|jpg|gif)$/,\n        use: ['file-loader']\n      }\n    ]\n  }\n}\n```\n\n**Plugin：**\n\n- 执行范围更广的任务\n- 可以访问整个编译生命周期\n- 通过钩子系统工作\n\n**常见Plugin：**\n\n```JavaScript\nconst HtmlWebpackPlugin = require('html-webpack-plugin');\nconst CleanWebpackPlugin = require('clean-webpack-plugin');\n\nmodule.exports = {\n  plugins: [\n    // 清理输出目录\n    new CleanWebpackPlugin(),\n    // 生成HTML文件\n    new HtmlWebpackPlugin({\n      template: './src/index.html'\n    }),\n    // 定义环境变量\n    new webpack.DefinePlugin({\n      'process.env.NODE_ENV': JSON.stringify('production')\n    })\n  ]\n}\n```",
+    "a": "**loader 转换单个模块源码，plugin 通过钩子介入整个编译生命周期。**\n- loader 在模块加载时执行，链式从右到左调用\n- plugin 可做打包优化、资源管理、环境变量注入\n- 常用 loader：babel-loader、css-loader、file-loader\n- 常用 plugin：HtmlWebpackPlugin、DefinePlugin、CleanWebpackPlugin\n```js\nmodule.exports = {\n  module: { rules: [\n    { test: /\\.css$/, use: ['style-loader', 'css-loader'] }\n  ] },\n  plugins: [new HtmlWebpackPlugin()]\n};\n```",
     "priority": 1
   },
   {
     "id": "build037",
     "module": "build",
     "q": "解释什么是Bundle Splitting和Chunk？",
-    "a": "**答案：**\n\n**Bundle：**\n\n- Webpack打包后的文件\n- 包含多个模块的代码集合\n- 最终输出到dist目录的文件\n\n**Chunk：**\n\n- Webpack内部用来管理打包过程的代码块\n- 一个Chunk可能包含多个模块\n- 最终会生成一个或多个Bundle\n\n**Bundle Splitting策略：**\n\n**1. 入口分割：**\n\n```JavaScript\nmodule.exports = {\n  entry: {\n    app: './src/app.js',\n    vendor: './src/vendor.js'\n  }\n}\n```\n\n**2. SplitChunksPlugin：**\n\n```JavaScript\noptimization: {\n  splitChunks: {\n    chunks: 'all',\n    cacheGroups: {\n      vendor: {\n        test: /[\\\\/]node_modules[\\\\/]/,\n        name: 'vendors',\n        chunks: 'all'\n      },\n      common: {\n        minChunks: 2,\n        chunks: 'all',\n        name: 'common'\n      }\n    }\n  }\n}\n```\n\n**3. 动态导入：**\n\n```JavaScript\n// 创建新的Chunk\nimport('./lazy-module.js').then(module => {\n  // 使用模块\n});\n```\n\n**优势：**\n\n- 减少初始加载时间\n- 更好的缓存策略\n- 按需加载",
+    "a": "**Chunk 是 Webpack 内部的模块集合，Bundle 是最终输出到磁盘的文件。**\n- 一个 chunk 通常产出一个 bundle\n- 入口分割：多 entry 产出多个 chunk\n- SplitChunksPlugin：抽公共模块与 node_modules 依赖\n- 动态 import() 会新建一个异步 chunk\n- 收益：首屏更小、缓存更持久、按需加载\n```js\noptimization: {\n  splitChunks: { chunks: 'all', cacheGroups: {\n    vendor: { test: /[\\\\/]node_modules[\\\\/]/, name: 'vendors' }\n  } }\n}\n```",
     "priority": 3
   },
   {
     "id": "build038",
     "module": "build",
     "q": "什么是PWA？它包含哪些技术？",
-    "a": "**答案：**\n\nPWA（Progressive Web App）是一种使用现代Web技术构建的应用程序，提供类似原生应用的用户体验。\n\n**核心技术：**\n\n**1. Service Worker：**\n\n- 在后台运行的脚本\n- 提供离线功能\n- 拦截网络请求\n- 推送通知\n\n**2. Web App Manifest：**\n\n- JSON文件，定义应用元数据\n- 支持添加到主屏幕\n- 定义启动画面、图标等\n\n**3. HTTPS：**\n\n- 安全连接要求\n- Service Worker的前提条件\n\n**实现示例：**\n\n**manifest.json：**\n\n```JSON\n{\n  \"name\": \"My PWA App\",\n  \"short_name\": \"PWA App\",\n  \"start_url\": \"/\",\n  \"display\": \"standalone\",\n  \"background_color\": \"#ffffff\",\n  \"theme_color\": \"#000000\",\n  \"icons\": [\n    {\n      \"src\": \"/icon-192.png\",\n      \"sizes\": \"192x192\",\n      \"type\": \"image/png\"\n    }\n  ]\n}\n```\n\n**Service Worker：**\n\n```JavaScript\n// 缓存策略\nself.addEventListener('fetch', event => {\n  event.respondWith(\n    caches.match(event.request)\n      .then(response => response || fetch(event.request))\n  );\n});\n```",
+    "a": "**PWA 是用 Web 技术做出接近原生体验的应用：可离线、可安装、可推送。**\n- Service Worker：拦截请求、离线缓存、消息推送\n- Manifest：定义名称与图标，支持添加到桌面\n- 必须 HTTPS（localhost 除外）才能注册 SW\n- 常见缓存策略：cache-first、network-first\n```json\n{\n  \"name\": \"App\", \"start_url\": \"/\", \"display\": \"standalone\"\n}\n```",
     "priority": 3
   },
   {
     "id": "build039",
     "module": "build",
     "q": "什么是Serverless？它对前端开发有什么影响？",
-    "a": "**答案：**\n\nServerless是一种云计算执行模型，开发者无需管理服务器基础设施。\n\n**特点：**\n\n- **无服务器管理**：云服务商管理服务器\n- **按需付费**：只为实际使用付费\n- **自动扩缩容**：根据负载自动调整\n- **事件驱动**：通过事件触发执行\n\n**对前端的影响：**\n\n**1. JAMstack架构：**\n\n- JavaScript + APIs + Markup\n- 静态站点生成\n- 通过API调用后端服务\n\n**2. 边缘计算：**\n\n- CDN边缘节点执行代码\n- 降低延迟\n- 提升用户体验\n\n**3. 全栈开发：**\n\n- 前端开发者可以编写后端逻辑\n- 简化部署流程\n- 降低运维成本\n\n**常见平台：**\n\n- **Vercel**：专注于前端部署\n- **Netlify**：静态站点托管\n- **AWS Lambda**：函数即服务\n- **Cloudflare Workers**：边缘计算",
+    "a": "**Serverless 是无需管理服务器的执行模型，按调用付费、自动扩缩容。**\n- 特点：事件驱动、按需付费、免运维\n- 推动 JAMstack：静态站点 + API 调用后端能力\n- 边缘计算把函数跑在 CDN 节点，降低延迟\n- 前端可直接写 BFF / SSR 函数，转为全栈\n- 平台：Vercel、Netlify、AWS Lambda、Cloudflare Workers",
     "priority": 1
   },
   {
     "id": "build040",
     "module": "build",
     "q": "解释什么是Micro Frontends的实现方案？",
-    "a": "**答案：**\n\n微前端的实现方案有多种，每种都有其适用场景：\n\n**1. 构建时集成：**\n\n```JavaScript\n// 将微应用作为npm包发布\nimport MicroApp from '@company/micro-app';\n\nfunction App() {\n  return (\n    <div>\n      <MicroApp />\n    </div>\n  );\n}\n```\n\n**2. 运行时集成 - Single-SPA：**\n\n```JavaScript\n// 注册微应用\nregisterApplication({\n  name: 'vue-app',\n  app: () => System.import('@company/vue-app'),\n  activeWhen: '/vue'\n});\n\n// 启动Single-SPA\nstart();\n```\n\n**3. Module Federation：**\n\n```JavaScript\n// webpack.config.js - 主应用\nnew ModuleFederationPlugin({\n  name: 'shell',\n  remotes: {\n    mfApp: 'mfApp@http://localhost:3001/remoteEntry.js'\n  }\n});\n\n// 使用远程模块\nconst RemoteComponent = React.lazy(() => import('mfApp/Component'));\n```\n\n**4. Web Components：**\n\n```JavaScript\n// 定义微前端组件\nclass MicroFrontend extends HTMLElement {\n  connectedCallback() {\n    this.innerHTML = '<div>Micro Frontend Content</div>';\n  }\n}\n\ncustomElements.define('micro-frontend', MicroFrontend);\n```\n\n**5. iframe方案：**\n\n```HTML\n<iframe\n  src=\"http://micro-app.com\"\n  sandbox=\"allow-scripts allow-same-origin\">\n</iframe>\n```",
+    "a": "**微前端主要分构建时集成与运行时集成两条路线，各有取舍。**\n- npm 包集成：简单，但子应用升级需主应用重新构建\n- single-spa / qiankun：运行时按路由加载，最主流\n- Module Federation：运行时共享模块与依赖，体验最好\n- Web Components：标准隔离，生态与改造成本偏高\n- iframe：隔离最强，但通信与体验最差\n```js\nnew ModuleFederationPlugin({\n  name: 'shell',\n  remotes: { shop: 'shop@http://shop.app/remoteEntry.js' }\n});\n```",
     "priority": 3
   },
   {
     "id": "build041",
     "module": "build",
     "q": "什么是性能预算（Performance Budget）？如何实施？",
-    "a": "**答案：**\n\n性能预算是为网站或应用设定的性能指标限制，用于确保用户体验不会因为功能增加而降低。\n\n**常见指标：**\n\n- **包大小**：JavaScript、CSS文件大小\n- **加载时间**：首屏加载时间、完全加载时间\n- **网络请求**：HTTP请求数量\n- **Core Web Vitals**：LCP、FID、CLS等\n\n**实施方法：**\n\n**1. Webpack Bundle Analyzer：**\n\n```JavaScript\n// webpack.config.js\nconst BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;\n\nmodule.exports = {\n  plugins: [\n    new BundleAnalyzerPlugin({\n      analyzerMode: 'static',\n      openAnalyzer: false\n    })\n  ]\n}\n```\n\n**2. 大小限制：**\n\n```JavaScript\n// webpack.config.js\nmodule.exports = {\n  performance: {\n    maxAssetSize: 250000,      // 250kb\n    maxEntrypointSize: 250000, // 250kb\n    hints: 'error'\n  }\n}\n```\n\n**3. CI/CD集成：**\n\n```YAML\n**GitHub Actions**\n- name: Check bundle size\n  run: |\n    npm run build\n    npx bundlesize\n```\n\n**4. 监控工具：**\n\n- **Lighthouse CI**：自动化性能测试\n- **WebPageTest**：性能分析\n- **Bundle Size Bot**：PR中显示包大小变化",
+    "a": "**性能预算是给包体积、请求数与加载指标设上限，超标即卡住发布。**\n- 指标：JS / CSS 体积、请求数、LCP、INP、CLS\n- Webpack performance 字段可直接限制产物大小\n- bundlesize / size-limit 在 CI 中做体积门禁\n- Lighthouse CI 每次 PR 自动跑分并与基线对比\n- 超标先还技术债再上功能，避免持续劣化\n```js\nperformance: { maxAssetSize: 250000, hints: 'error' }\n```",
     "priority": 3
   },
   {
     "id": "build042",
     "module": "build",
     "q": "什么是Design System？它在前端工程化中的作用是什么？",
-    "a": "**答案：**\n\nDesign System是一套完整的设计标准、组件库和工具，用于创建一致的用户体验。\n\n**组成部分：**\n\n- **设计原则**：颜色、字体、间距等基础规范\n- **组件库**：可复用的UI组件\n- **模式库**：常见的交互模式\n- **工具链**：开发、测试、文档工具\n\n**在前端工程化中的作用：**\n\n**1. 一致性保证：**\n\n```JavaScript\n// 统一的主题配置\nconst theme = {\n  colors: {\n    primary: '#007bff',\n    secondary: '#6c757d'\n  },\n  spacing: {\n    small: '8px',\n    medium: '16px',\n    large: '24px'\n  }\n}\n```\n\n**2. 开发效率提升：**\n\n```JavaScript\n// 使用设计系统组件\nimport { Button, Card, Input } from '@company/design-system';\n\nfunction LoginForm() {\n  return (\n    <Card>\n      <Input placeholder=\"Username\" />\n      <Button variant=\"primary\">Login</Button>\n    </Card>\n  );\n}\n```\n\n**3. 维护性改善：**\n\n- 集中管理样式和组件\n- 统一的更新和修复\n- 版本控制和文档\n\n**4. 团队协作：**\n\n- 设计师和开发者的共同语言\n- 减少沟通成本\n- 提高交付质量\n\n**实现工具：**\n\n- **Storybook**：组件开发和文档\n- **Figma**：设计协作\n- **Styled System**：主题化样式系统",
+    "a": "**Design System 是设计标准 + 组件库 + 工具链的集合，用于保证体验一致。**\n- 组成：设计原则（色板、间距、字体）、组件库、文档\n- 作用：多产品体验统一，减少重复造轮子\n- 提效：直接复用组件，改样式只需改一处\n- 协作：设计与研发共用一套 design token 语言\n- 工具：Storybook 做文档与调试，Figma 作设计源",
     "priority": 3
   },
   {
     "id": "build043",
     "module": "build",
     "q": "解释什么是Headless CMS？它对前端开发的意义是什么？",
-    "a": "**答案：**\n\nHeadless CMS是一种后端内容管理系统，只提供内容管理功能，不包含前端展示层。\n\n**特点：**\n\n- **API优先**：通过API提供内容\n- **前后端分离**：前端可以自由选择技术栈\n- **多渠道发布**：同一内容可以发布到多个平台\n- **开发者友好**：更灵活的开发方式\n\n**对前端开发的意义：**\n\n**1. 技术栈自由：**\n\n```JavaScript\n// 可以使用任何前端框架\n// React + Headless CMS\nuseEffect(() => {\n  fetch('/api/content')\n    .then(res => res.json())\n    .then(data => setContent(data));\n}, []);\n```\n\n**2. 性能优化：**\n\n- 静态站点生成（SSG）\n- 服务端渲染（SSR）\n- 边缘缓存\n\n**3. JAMstack架构：**\n\n```JavaScript\n// Next.js + Headless CMS\nexport async function getStaticProps() {\n  const posts = await cms.getPosts();\n\n  return {\n    props: { posts },\n    revalidate: 60 // ISR\n  };\n}\n```\n\n**常见Headless CMS：**\n\n- **Strapi**：开源Node.js CMS\n- **Contentful**：云端CMS服务\n- **Sanity**：实时协作CMS\n- **Ghost**：专注于博客的CMS",
+    "a": "**Headless CMS 只管理内容并通过 API 输出，不绑定任何前端展示层。**\n- 特点：API 优先、前后端分离、内容可多渠道复用\n- 前端技术栈自由，可配 SSG / SSR / ISR 提升性能\n- 是 JAMstack 常见组合：静态生成 + 接口取内容\n- 意义：前端专注体验，运营改内容无需发版\n- 常见：Strapi、Contentful、Sanity、Ghost",
     "priority": 3
   },
   {
     "id": "build044",
     "module": "build",
     "q": "什么是Web Assembly（WASM）？它对前端性能优化有什么帮助？",
-    "a": "**答案：**\n\nWebAssembly是一种可以在现代Web浏览器中运行的新型代码格式，提供接近原生的性能。\n\n**特点：**\n\n- **高性能**：接近原生代码的执行速度\n- **安全**：在沙盒环境中运行\n- **跨平台**：支持多种编程语言编译\n- **与JavaScript互操作**：可以与JS代码协同工作\n\n**性能优化帮助：**\n\n**1. 计算密集型任务：**\n\n```JavaScript\n// 加载WASM模块\nWebAssembly.instantiateStreaming(fetch('math.wasm'))\n  .then(result => {\n    const { calculate } = result.instance.exports;\n\n    // 使用WASM函数进行复杂计算\n    const result = calculate(largeDataSet);\n  });\n```\n\n**2. 图像/视频处理：**\n\n```JavaScript\n// 使用WASM进行图像处理\nconst processImage = async (imageData) => {\n  const wasmModule = await loadWasmModule();\n  return wasmModule.processImage(imageData);\n};\n```\n\n**3. 游戏引擎：**\n\n- 将C++游戏引擎编译为WASM\n- 在浏览器中运行高性能游戏\n\n**4. 科学计算：**\n\n- 数据分析和可视化\n- 机器学习模型推理\n\n**编译工具：**\n\n- **Emscripten**：C/C++到WASM\n- **AssemblyScript**：TypeScript-like语法\n- **Rust**：原生支持WASM编译\n- **Go**：支持WASM目标\n\n**使用场景：**\n\n- 需要高性能计算的应用\n- 现有C/C++代码的Web移植\n- 实时音视频处理\n- 加密算法实现",
+    "a": "**WASM 是浏览器可运行的二进制字节码格式，执行性能接近原生。**\n- 沙箱执行，可与 JS 互操作，由 C/C++、Rust、Go 编译而来\n- 适合计算密集场景：图像音视频处理、游戏引擎、加密\n- 不适合 DOM 密集操作，这类场景 JS 更合适\n- 工具：Emscripten、Rust wasm-pack、AssemblyScript\n```js\nWebAssembly.instantiateStreaming(fetch('m.wasm'))\n  .then(({ instance }) => instance.exports.calc(data));\n```",
     "priority": 3
   },
   {
     "id": "build045",
     "module": "build",
     "q": "Vite 插件开发的基本流程？怎么写自定义文件转换插件？",
-    "a": "**简要回答：**\nVite 插件就是**带约定的钩子对象**，本质和 Rollup 插件兼容。核心钩子：`resolveId`（解析路径）、`load`（读内容）、`transform`（转译代码）。\n\n**拆解：**\n- **config**：改 Vite 配置。\n- **transform(code, id)**：返回处理后的 code（或 `[code, map]`），按文件后缀过滤。\n- **enforce**：`'pre'|'post'` 控制顺序，绕过部分内置插件用 `enforce:'pre'`。\n- Vite 用 esbuild 做 TS/JSX 转译，插件里拿到的是**已转译的 JS**（想处理源码用 `transform` 的 `id` 匹配 `.ts` 源需配置）。\n\n**示例（把 .md 当字符串/组件导入）：**\n```\nexport default function md(){\n  return { name:'vite-plugin-md',\n    transform(code,id){\n      if(!id.endsWith('.md')) return;\n      return `export default ${JSON.stringify(code)};`;\n    } };\n}\n```\n**追问：** Vite 和 Webpack 插件差异？（Vite 基于 Rollup，钩子更轻；开发时用原生 ESM 不走插件打包。）",
+    "a": "**Vite 插件是带约定钩子的对象，兼容 Rollup，核心是 resolveId / load / transform。**\n- transform(code, id)：按文件后缀过滤并返回新 code\n- enforce: pre / post 控制插件执行顺序\n- config / configResolved 可读写 Vite 配置\n- 开发期走原生 ESM，生产构建复用同一套插件\n```js\nexport default function md() {\n  return { name: 'vite-plugin-md',\n    transform(code, id) {\n      if (!id.endsWith('.md')) return;\n      return `export default ${JSON.stringify(code)};`;\n    } };\n}\n```\n💡 追问：transform 拿到的是已转译的 JS",
     "priority": 3
   },
   {
     "id": "build046",
     "module": "build",
     "q": "Turbopack / Vite 的 HMR 为什么比 Webpack 5 快？",
-    "a": "**简要回答：**\n快在「**按需编译 + 原生 ESM + 细粒度失效**」。Webpack 5 的 HMR 在开发期也要把依赖图整体打包成 bundle，改动一个文件要重建 chunk 并下发；Vite/Turbopack 走「请求时才编译单个模块」，改哪个只重发那个模块。\n\n**拆解：**\n- **Vite（dev）**：浏览器直接请求原生 ESM，Vite 用 esbuild 按需转译单个文件；改 A 只让 A 及其直接引用方失效，浏览器重新拉 A。\n- **Turbopack（Next.js）**：用 Rust 增量计算图，只重算受影响的模块，且有持久缓存。\n- **Webpack**：bundle 思维，改动后要重新走依赖图生成新 chunk，文件大时慢。\n\n**追问：** 那 Vite 生产构建为啥不用 ESM？（生产要打包/压缩/拆包，用 Rollup；dev 才用 ESM 提速。）",
+    "a": "**快在按需编译与细粒度失效，Webpack 则是整体重新打包 chunk。**\n- Vite 开发期用原生 ESM，改哪个文件只重编译哪个模块\n- 失效粒度精确到单个模块及其直接引用方\n- Turbopack 用 Rust 增量计算 + 持久缓存，只重算受影响部分\n- Webpack 是 bundle 思维，改动后要重建依赖图与 chunk\n💡 追问：生产为何仍打包？要压缩与拆包",
     "priority": 3
   },
   {
     "id": "build047",
     "module": "build",
     "q": "什么是 Module Federation（模块联邦）？微前端怎么用它落地？",
-    "a": "**简要回答：**\nModule Federation（Webpack 5 / Rspack 原生支持）让**多个独立构建的应用在运行时互相引用对方导出的模块**，像调 npm 包一样跨应用复用组件，不用把代码打进同一个包——是微前端最顺手的方案之一。\n\n**拆解：**\n- **exposes**：主应用/子应用「暴露」哪些模块（远程入口）。\n- **remotes**：别的应用「消费」这些模块，运行时按需加载远程 chunk。\n- 配合微前端：各团队独立开发部署，主应用通过 remote 动态加载子应用入口，技术栈可不同版本（各自构建）。\n- 比 iframe：共享依赖、状态互通、体验一体；比 npm 分包：不用统一发版。\n\n**示例（vite-plugin-federation）：**\n```\nshared:['vue'], exposes:{'./Header':'./src/Header.vue'},\nremotes:{ shop:'http://shop.app/assets/remoteEntry.js' }\n```\n**追问：** 公共依赖（vue）怎么不重复加载？（shared 配置让运行时只加载一份。）",
+    "a": "**Module Federation 让多个独立构建的应用在运行时互相引用对方模块。**\n- exposes：声明本应用对外暴露的模块\n- remotes：声明要消费的远端应用入口地址\n- shared：公共依赖只加载一份，避免重复打包\n- 落地微前端：各团队独立部署，主应用运行时拉取子应用\n```js\nnew ModuleFederationPlugin({\n  name: 'shell',\n  remotes: { shop: 'shop@http://shop.app/remoteEntry.js' },\n  shared: ['vue']\n});\n```",
     "priority": 3
   },
   {
     "id": "build048",
     "module": "build",
     "q": "前端怎么减少打包体积？高级 Tree Shaking 与产物分析怎么做？",
-    "a": "**简要回答：**\n分三层：**不打包多余的 → 打得更紧 → 按需加载**。配合产物分析工具找到大头。\n\n**拆解：**\n- **分析**：`rollup-plugin-visualizer` / `webpack-bundle-analyzer` 看谁占体积。\n- **Tree Shaking**：用 ES Module（import/export），`sideEffects:false`，避免全量引入（如 `import { cloneDeep } from 'lodash-es'` 而非 `lodash`）。\n- **按需加载**：路由级 `React.lazy` / `import()` 动态导入；组件库 babel 插件按需。\n- **压缩与拆分**：Terser/esbuild 压缩、gzip/brotli、vendor 分包、保持长缓存（contenthash）。\n- **瘦身**：图片转 WebP、SVG 替代、删除未用 polyfill（按需 core-js）。\n\n**追问：** 为什么 CommonJS 包 tree-shaking 差？（静态分析不了运行时 `require`，只能整体保留。）",
+    "a": "**减小体积三步：先分析找大头，再摇掉无用代码，最后按需加载与压缩。**\n- 分析：webpack-bundle-analyzer / rollup-plugin-visualizer\n- Tree Shaking：ESM + sideEffects:false + 按需引入\n- 动态 import() 做路由级懒加载\n- Terser / esbuild 压缩，gzip / brotli，vendor 分包\n- 图片转 WebP，剔除多余的 polyfill\n💡 追问：CJS 为何摇不掉？静态分析不了",
     "priority": 3
   }
 ]

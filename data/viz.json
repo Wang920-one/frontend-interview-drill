@@ -3,70 +3,70 @@
     "id": "vi1",
     "module": "viz",
     "q": "数据大屏自适应常用方案？",
-    "a": "三方案：\n① **scale 整体缩放**：设计稿固定尺寸（如 1920×1080），transform:scale(屏宽/设计宽) 等比缩放，最简保真、最常用。\n② **vw/vh 百分比**：按视口单位布局，自适应但需算比例。\n③ **rem + postcss-pxtorem**：根字号随屏宽变，px 自动转 rem。\n配合 flex/grid 与媒体查询，注意最小字号与留白。",
+    "a": "**大屏自适应三方案：scale 整体缩放（最常用）、vw/vh、rem + postcss-pxtorem。**\n- scale：设计稿固定 1920×1080，按屏宽比缩放，最保真\n- vw/vh：按视口单位布局，真自适应但比例要算\n- rem：根字号随屏宽变，px 自动转 rem\n- 配合 flex/grid 与媒体查询兜底\n```js\nconst s = Math.min(innerWidth / 1920, innerHeight / 1080);\nwrap.style.transform = 'scale(' + s + ')';\nwrap.style.transformOrigin = 'left top';\n```\n💡 记忆：缩放后字号变小，最小字号要兜底",
     "priority": 3
   },
   {
     "id": "vi2",
     "module": "viz",
     "q": "ECharts 大量数据卡顿怎么优化？",
-    "a": "① 用 **dataset** 统一管理数据；② 关动画（animation:false）；③ **dataZoom** 分片显示；④ 默认 Canvas 渲染（量大优于 SVG）；⑤ 采样 sampling（lttb）降点；⑥ lazyUpdate、增量 setOption；⑦ 及时 dispose 释放实例防内存泄漏；⑧ 地图用精简 GeoJSON。",
+    "a": "**核心是少画、少算、分片看：关动画 + 降采样 + 增量更新。**\n- animation:false 关动画，首屏最快\n- sampling:'lttb' 采样 + dataZoom 分片显示\n- Canvas 渲染，量大时优于 SVG\n- lazyUpdate / 增量 setOption，不全量重绘\n- 切页 dispose 释放实例，防内存泄漏\n💡 追问：地图类要换精简 GeoJSON",
     "priority": 3
   },
   {
     "id": "vi3",
     "module": "viz",
     "q": "ECharts / AntV / D3 区别？",
-    "a": "**ECharts** 开箱即用**图表库**，配置项驱动（option），图表多、上手快、大屏常用，Canvas 渲染（量大快）。**AntV**（G2/G6）蚂蚁系，G2 语义化语法、G6 图可视化（关系网），偏分析。\n**D3** 底层**数据驱动 DOM/SVG** 框架，灵活度最高（自定义一切），学习陡、代码多。选型：常规图表 ECharts；高度定制/特殊可视化 D3；关系图 G6。",
+    "a": "**ECharts 是开箱即用图表库，AntV 偏分析/关系图，D3 是底层可视化引擎。**\n- ECharts：option 配置驱动，图表全、上手快，大屏首选\n- AntV：G2 语义化语法做分析，G6 专做关系网络图\n- D3：数据驱动 DOM/SVG，可自定义一切，学习曲线陡\n- 选型：常规图表 ECharts，关系图 G6，特殊可视化 D3\n💡 记忆：要快用 ECharts，要自由用 D3",
     "priority": 3
   },
   {
     "id": "vi4",
     "module": "viz",
     "q": "Canvas 与 SVG 怎么选？",
-    "a": "**SVG** **DOM 节点**（矢量、可事件/选中、小量清晰），节点多（>数千）卡。**Canvas** **位图画布**（JS 指令绘制、不可单独选元素、量大快），适大数据/动画/游戏。\n经验：① 交互少/量大 → Canvas；② 需 hover/选中/可访问 → SVG；③ ECharts 默认 Canvas，>5k 节点切 Canvas；④ 地图大用 WebGL（如 deck.gl）。",
+    "a": "**看节点数和交互：节点多、要动画用 Canvas，要 hover/选中用 SVG。**\n- SVG 是 DOM 矢量节点，可挂事件可选中，数千级就卡\n- Canvas 是位图画布，指令绘制，元素不能单独选中\n- 经验：>5k 节点必上 Canvas，>5w 上 WebGL\n- ECharts 可用 renderer 切换，默认 Canvas\n💡 追问：海量地理点用 deck.gl 等 WebGL 方案",
     "priority": 3
   },
   {
     "id": "vi5",
     "module": "viz",
     "q": "可视化大数据量怎么渲染？",
-    "a": "① **降采样**（LTTB 算法保趋势）；② **分片/虚拟**（只渲染视口内）；③ 图层/合批减少 draw call；④ Canvas/WebGL 替代 SVG（几万点 WebGL）；⑤ 增量更新（setOption 增量/appendData）；⑥ 关动画；⑦ Web Worker 算坐标；⑧ 用 **DataZoom/下钻** 减同屏点。经验：>500 节点 Canvas，>5w WebGL。",
+    "a": "**先降数据量，再换渲染层：采样 → 分片 → Canvas/WebGL 逐级升级。**\n- LTTB 降采样，保住趋势和极值\n- 虚拟/分片，只渲染视口内的数据\n- 图层合批，减少 draw call\n- 几千点用 Canvas，几万点用 WebGL\n- Worker 算坐标，主线程只管画\n💡 记忆：>500 节点上 Canvas，>5w 上 WebGL",
     "priority": 3
   },
   {
     "id": "vi6",
     "module": "viz",
     "q": "地图可视化怎么做？",
-    "a": "① ECharts **geo/map**（注册 GeoJSON 画行政区热力/散点/线）；② **高德/Mapbox/Leaflet** 真实底图 + 图层（海量点用聚合 MarkerCluster）；③ Three.js/**deck.gl** WebGL 三维地图（飞线/热力）；④ 热力图（heatmap）。优化：精简 GeoJSON、点聚合、按需缩放加载。\n避坑：**地图合规**（中国边界/审图号，用合规底图）。",
+    "a": "**三类做法：ECharts geo 画行政区，高德/Mapbox 做真实底图，WebGL 做三维。**\n- ECharts：registerMap 注册 GeoJSON 画热力/飞线\n- 底图：高德/Leaflet/Mapbox 加图层，海量点做聚合\n- 三维：Three.js / deck.gl 做飞线、热力、孪生\n- 优化：精简 GeoJSON、点聚合、按需缩放加载\n- 合规：中国边界必须用带审图号的合规底图\n💡 记忆：边界别自己画，用合规底图",
     "priority": 3
   },
   {
     "id": "vi7",
     "module": "viz",
     "q": "数据可视化设计原则？",
-    "a": "① **明确目的**（用户要回答什么问题）；② 选对图表（趋势→折线、占比→饼/环、对比→柱、关系→散点/网络）；③ **少即是多**（删网格/装饰、突出数据）；④ 配色（区分系列、**红涨绿跌**按场景、色盲友好）；⑤ 交互（tooltip/下钻/联动）；⑥ 大屏注意对比度/可读性/实时刷新；⑦ 避免误导（截断轴/双轴误读）。",
+    "a": "**先明确用户要回答什么问题，再选对图表、做减法。**\n- 对位：趋势折线、占比饼环、对比柱、关系散点\n- 少即是多：删网格装饰，突出数据本身\n- 配色克制，红涨绿跌看场景，注意色盲友好\n- 交互补信息：tooltip、下钻、图表联动\n- 别误导：不截断 Y 轴，慎用双轴\n💡 追问：截断轴和双轴是最常见误导",
     "priority": 3
   },
   {
     "id": "vi8",
     "module": "viz",
     "q": "大屏实时数据怎么更新？",
-    "a": "① **轮询** setInterval 拉（简单，间隔定，有延迟/浪费）；② **WebSocket/SSE** 服务端推送（实时、省请求，大屏首选）；③ 增量更新（只改变化点，不全量 setOption）；④ 节流/批量（高频用 rAF 合帧）；⑤ 断线**重连**+心跳；⑥ 骨架/loading 防空；⑦ 数据量大用 Worker 算。注意：及时清定时器/连接防泄漏。",
+    "a": "**首选 WebSocket/SSE 推送，配增量更新和重连，轮询只做兜底。**\n- WebSocket/SSE 服务端推，实时省请求，大屏首选\n- 轮询 setInterval 简单，但有延迟、浪费请求\n- 只改变化的数据，不全量 setOption\n- 高频用 rAF 或节流合帧，避免一帧多刷\n- 心跳 + 断线重连，卸载清定时器和连接\n💡 记忆：卸载时一定清定时器、关连接",
     "priority": 2
   },
   {
     "id": "vi9",
     "module": "viz",
     "q": "ECharts tooltip / 自定义系列？",
-    "a": "**tooltip** 悬浮提示，formatter 返回 HTML 自定义内容（多系列/单位）。**series 类型** bar/line/pie/scatter/heatmap/graph（关系）/lines（飞线）/custom（**自定义渲染**，最灵活）。\n**dataset** 统一管理数据（source+encode 映射维度），便于多图共用。**事件** on('click') 做下钻/联动（myChart.on('click',p=>...)）。**legend/visualMap** 图例/视觉映射（连续色）。",
+    "a": "**tooltip 用 formatter 定制内容，custom 系列可完全自定义渲染。**\n- tooltip.formatter 返回 HTML，可加单位、多系列\n- custom 系列配合 renderItem 自己画，最灵活\n- dataset + encode 统一数据，多图共用一份\n- on('click') 做下钻和图表联动\n- visualMap 做连续色映射，legend 控系列显隐\n```js\ntooltip: {\n  formatter: p => p.name + '<br/>' + p.value + ' 万',\n}\n```\n💡 追问：custom 靠 renderItem 逐项绘制",
     "priority": 2
   },
   {
     "id": "vi10",
     "module": "viz",
     "q": "WebGL 可视化库？",
-    "a": "WebGL 直接操控 GPU 画 3D/海量点。库：① **Three.js**（通用 3D，deck.gl/echarts-gl 底层）；② **deck.gl**（Uber，海量地理/图层，GPU 渲染百万点）；③ **ECharts GL**（echarts 3D 扩展，地球/3D 柱）；④ **PixiJS**（2D 高性能）；⑤ **regl/raw WebGL**（底层）。\n适用：三维孪生、百万级点、实时。注意：显存/着色器复杂度。",
+    "a": "**WebGL 用 GPU 画 3D 和百万级点位，按场景选库即可。**\n- Three.js：通用 3D，多数孪生项目的底座\n- deck.gl：海量地理图层，GPU 渲染百万点\n- ECharts GL：ECharts 的 3D 扩展，地球/3D 柱\n- PixiJS：2D 高性能渲染\n- 代价：显存和着色器复杂度要控住\n💡 记忆：百万级点位优先 deck.gl",
     "priority": 3
   }
 ]

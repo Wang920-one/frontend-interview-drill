@@ -3,161 +3,161 @@
     "id": "cross001",
     "module": "cross",
     "q": "UniApp 跨端原理？",
-    "a": "UniApp：**一套 Vue 代码**编译到多端——H5、微信/支付宝等小程序、App。\n原理：编译期把 Vue 模板转各平台代码；小程序侧受平台 API 限制（DOM/BOM 不可用），App 侧用原生渲染或 WebView。\n跨端差异用**条件编译** #ifdef MP-WEIXIN 区分；注意小程序包体积与权限，复杂动画优先 H5/App。",
+    "a": "**UniApp 是一套 Vue 代码编译到 H5、小程序、App 多端的跨端框架。**\n- 编译期把 Vue 模板转成各端代码，运行时由各端渲染\n- 小程序端无 DOM/BOM，App 端走原生渲染或 WebView\n- 端差异用条件编译 `#ifdef MP-WEIXIN` 区分\n- 注意小程序包体积与权限，复杂动画优先 H5/App\n💡 追问：条件编译指令？#ifdef / #ifndef / #endif",
     "priority": 3
   },
   {
     "id": "cross002",
     "module": "cross",
     "q": "PWA / 离线缓存怎么做？",
-    "a": "PWA = 渐进式 Web 应用，让网页像原生 App。\n核心：① **Service Worker** 拦截请求、缓存静态资源（cache-first）→ 离线可用；② **manifest.json** 配名称/图标/主题 → 可加主屏、全屏；③ 后台同步/推送（可选）。\n实践：用 Workbox 简化 SW；缓存更新用文件 hash 触发；HTTPS 是前提。",
+    "a": "**PWA 让网页像原生 App：Service Worker 缓存 + manifest 加主屏 + 推送。**\n- SW 拦截请求，cache-first 缓存静态资源，离线也可用\n- manifest.json 配名称图标主题，可加到主屏全屏启动\n- 用 Workbox 简化 SW 编写，文件 hash 变化触发更新\n- HTTPS 是前提，SW 只能在安全环境注册",
     "priority": 3
   },
   {
     "id": "cross003",
     "module": "cross",
     "q": "小程序（微信）运行原理？",
-    "a": "双线程：① **逻辑层**（JS，跑业务逻辑/数据）；② **渲染层**（WebView，跑 WXML/WXSS 渲染）。两层**隔离**，通过 **Native 中转通信**（setData 下发、事件上传）。原因：WebView 直接操作 DOM 危险，故**无 DOM/BOM**，API 走微信桥。\n特点：setData 频繁会卡（序列化开销）。包：主包+分包（限 2M/总 20M）。",
+    "a": "**小程序逻辑层跑 JS、渲染层跑 WebView，两层隔离靠 Native 中转通信。**\n- 逻辑层处理数据与业务，渲染层负责 WXML/WXSS 渲染\n- setData 下发数据、事件上传，都经 Native 序列化中转\n- 隔离因 WebView 直操作 DOM 危险，故无 DOM/BOM\n- 包体限制：主包 2M，总分包 20M\n💡 追问：setData 为何卡？序列化 + 跨线程开销",
     "priority": 2
   },
   {
     "id": "cross004",
     "module": "cross",
     "q": "小程序与 H5 差异？",
-    "a": "① **环境** 小程序无 DOM/BOM/window，H5 全有；② **能力** 小程序调原生（相机/定位/支付）更顺，H5 受限；③ **入口** 小程序扫码/搜索/会话，H5 链接；④ **性能** 小程序首屏快（预载），H5 受网络；⑤ **审核** 小程序上架审核，H5 自由；⑥ **跨端** 小程序各平台 API 不同（需 UniApp/Taro 适配）。\n选型：强原生能力用小程序，灵活传播用 H5。",
+    "a": "**小程序强在原生能力与启动速度，H5 强在传播自由与灵活。**\n- 环境：小程序无 DOM/BOM/window，H5 全有\n- 能力：小程序调相机定位支付更顺，H5 受浏览器限制\n- 入口：小程序扫码搜索会话，H5 靠链接，且上架需审核\n- 性能：小程序预载首屏快，H5 依赖网络易白屏\n- 跨端：各平台小程序 API 不同，需 UniApp/Taro 适配",
     "priority": 3
   },
   {
     "id": "cross005",
     "module": "cross",
     "q": "React Native / Flutter 原理？",
-    "a": "**React Native**\n**旧架构（Legacy / Bridge）**：JS 写 React，通过 **Bridge（JSON 序列化中转）** 把 UI 描述转原生组件渲染，逻辑跑 JS 线程。Bridge 异步、需序列化、有通信开销——标记为 **legacy**，正在被新架构取代。\n**新架构（New Architecture）**：① **Fabric**——新的渲染器（Renderer），直接构建/更新原生视图树，去掉 Bridge 中转；② **TurboModules**——懒加载的原生模块（用到才初始化），首屏更快；③ **JSI（JavaScript Interface）**——JS 与原生间的 C++ 接口层，支持 **同步直接调用**（JS↔native 不再经过 JSON 序列化的 Bridge），大幅降开销；④ Bridge 正被逐步废弃。\n**Flutter**：自绘引擎（**Skia**），Dart 直接画 UI（不依赖原生控件），一致性高、性能好，但包大。\n**Flutter 三棵树**：① **Widget**——配置描述（不可变、轻量）；② **Element**——Widget 的实例，持父子关系、做 diff；③ **RenderObject**——真正布局/绘制（layout + paint）。三棵树配合实现高效重建与跨平台一致渲染。\n**对比**：RN 生态/JS 熟悉、新架构用 JSI 去桥；Flutter 性能/一致、需学 Dart；H5：WebView 渲染，最跨但性能最低。",
+    "a": "**RN 用 JS 写 React 渲染原生组件；Flutter 用 Dart + Skia 自绘 UI。**\n- RN 旧架构走 Bridge：JSON 序列化异步通信，开销大\n- 新架构：JSI 同步直调、Fabric 渲染器、TurboModules 懒加载\n- 三棵树：Widget 配置、Element diff、RenderObject 绘制\n- Flutter 一致高性能但包大；RN 生态好，需懂原生",
     "priority": 3
   },
   {
     "id": "cross006",
     "module": "cross",
     "q": "移动端 rem 适配方案？",
-    "a": "**flexible 思路** 根字号随屏宽动态设 html{font-size: clientWidth/10}，设计稿 px → px/(设计宽/10) rem，全屏等比缩放。现代：① **vw 直接**（1vw=屏宽1%，px→vw 用 postcss-px-to-viewport），无需 JS；② **postcss-pxtorem** 自动转；③ 配合 max-width（PC 居中）。\n注意：1px 边框、字号最小限制、第三方库 px 需处理。",
+    "a": "**rem 适配靠动态设置根字号，让 px 随屏宽等比缩放。**\n- flexible：根字号设为屏宽/10，px 再换算成 rem\n- 现代用 vw：1vw=屏宽 1%，postcss 自动转，无需 JS\n- 也可用 postcss-pxtorem 编译期转换\n- 注意 1px 边框、最小字号、第三方库 px 需单独处理\n💡 追问：vw 和 rem 区别？vw 纯 CSS，rem 需 JS 设根字号",
     "priority": 3
   },
   {
     "id": "cross007",
     "module": "cross",
     "q": "移动端 300ms 点击延迟 / 点击穿透？",
-    "a": "**300ms 延迟** 旧浏览器等“是否双击缩放”才触发 click，致点按慢。解决：viewport width=device-width + user-scalable=no（现代浏览器已默认去延迟）；用 **touchstart**（但易误触）。\n**点击穿透** 上层遮罩（touch 关）消失后，下层 click 被触发（因 click 晚 300ms）。解决：遮罩延迟隐藏/用 click 关/阻止默认。现代：pointer events + fastclick 已少用。",
+    "a": "**300ms 延迟是等双击缩放判定，穿透是遮罩消失后 click 落到下层。**\n- 延迟成因：浏览器等确认非双击才触发 click\n- 解决：viewport width=device-width，现代浏览器已去除\n- 也可用 touchstart 代替 click，但易误触\n- 穿透解决：遮罩延迟 300ms 隐藏，或统一用 click 关闭\n- 现在多用 pointer events，fastclick 已少用",
     "priority": 3
   },
   {
     "id": "cross008",
     "module": "cross",
     "q": "移动端滚动与惯性？",
-    "a": "**-webkit-overflow-scrolling:touch** 开启 iOS 惯性滚动（已部分默认）。坑：① 滚动中**position:fixed 抖动**（iOS）；② 滚动穿透（弹窗下背景滚）——解决：弹窗时 body{overflow:hidden} 或 position:fixed 锁；③ 回弹（bounce）致下拉刷新；④ 滚动到底加载用 scroll 阈值 + 节流。\n虚拟列表：移动端大列表必用（限 DOM）。",
+    "a": "**iOS 用 -webkit-overflow-scrolling:touch 开惯性滚动，注意抖动与穿透。**\n- 坑一：滚动中 position:fixed 元素抖动\n- 坑二：背景滚动穿透，body{overflow:hidden} 锁\n- 坑三：回弹 bounce 会触发下拉刷新\n- 长列表必须虚拟列表，触底加载配节流",
     "priority": 2
   },
   {
     "id": "cross009",
     "module": "cross",
     "q": "viewport meta 是什么？",
-    "a": "控制移动端**布局视口**与缩放：<meta name=viewport content=width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no>。**width=device-width** 布局宽=设备宽（否则按 980 默认缩）；**initial-scale=1** 初始不缩放。\n作用：让页面按设备宽度排，不缩小整页；配合 rem/vw 适配。",
+    "a": "**viewport meta 控制移动端布局视口宽度与缩放比例。**\n- width=device-width：布局宽等于设备宽，否则按 980 缩\n- initial-scale=1：初始不缩放\n- user-scalable=no 禁缩放，但影响无障碍\n- 它是 rem/vw 适配方案生效的前提",
     "priority": 3
   },
   {
     "id": "cross010",
     "module": "cross",
     "q": "小程序的生命周期有哪些？",
-    "a": "**参考答案：**\n\n小程序生命周期分为应用生命周期和页面生命周期：\n\n**应用生命周期（App）：**\n\n- `onLaunch`：小程序初始化完成时触发（全局只触发一次）\n- `onShow`：小程序启动或从后台进入前台时触发\n- `onHide`：小程序从前台进入后台时触发\n- `onError`：小程序发生脚本错误或API调用失败时触发\n\n**页面生命周期（Page）：**\n\n- `onLoad`：页面加载时触发，只会调用一次\n- `onShow`：页面显示/切入前台时触发\n- `onReady`：页面初次渲染完成时触发，只会调用一次\n- `onHide`：页面隐藏/切入后台时触发\n- `onUnload`：页面卸载时触发\n\n---",
+    "a": "**分应用级 onLaunch/onShow/onHide/onError 与页面级 onLoad/onShow/onReady/onHide/onUnload。**\n- App：onLaunch 全局一次，onShow/onHide 管前后台切换\n- onLoad 拿参数只一次，onReady 首次渲染完成只一次\n- onShow 每次切前台触发，onHide 切后台\n- navigateTo 只触发 onHide，redirectTo 触发 onUnload",
     "priority": 2
   },
   {
     "id": "cross011",
     "module": "cross",
     "q": "小程序的双线程架构是什么？",
-    "a": "**参考答案：**\n\n小程序采用双线程架构，分为渲染层和逻辑层：\n\n**渲染层（View Thread）：**\n\n- 由WebView线程负责\n- 处理WXML模板和WXSS样式的渲染\n- 处理用户交互事件\n- 多个页面对应多个WebView线程\n\n**逻辑层（App Service Thread）：**\n\n- 由JavaScript引擎线程负责\n- 运行JS脚本，处理数据逻辑\n- 调用小程序API\n- 整个小程序只有一个逻辑层线程\n\n**通信机制：**\n\n- 两个线程通过系统层的JSBridge进行通信\n- 数据传输需要序列化，不能直接传递函数等复杂对象\n- 这种架构保证了渲染层的安全性和稳定性\n\n---",
+    "a": "**渲染层 WebView 与逻辑层 JS 引擎分离，经 JSBridge/Native 中转通信。**\n- 渲染层：WXML/WXSS 渲染与交互，多页面对应多个 WebView\n- 逻辑层：跑 JS 业务、调 API，整个小程序只有一个\n- 通信需序列化，不能传函数等复杂对象\n- 好处：JS 碰不到 DOM 更安全，渲染更稳定",
     "priority": 2
   },
   {
     "id": "cross012",
     "module": "cross",
     "q": "小程序的数据绑定机制是怎样的？",
-    "a": "**参考答案：**\n\n小程序使用单向数据绑定机制：\n\n**数据绑定语法：**\n\n```JavaScript\n// 页面数据定义\ndata: {\n  message: 'Hello World',\n  userInfo: {\n    name: '张三',\n    age: 25\n  }\n}\n```\n\n```XML\n<!-- WXML中使用 -->\n<view>{{message}}</view>\n<view>{{userInfo.name}}</view>\n```\n\n**数据更新：**\n\n- 必须使用`setData()`方法更新数据\n- `setData()`会触发视图层重新渲染\n- 支持部分更新：`this.setData({'userInfo.name': '李四'})`\n\n**注意事项：**\n\n- 不能直接修改`this.data`\n- `setData()`是异步的\n- 频繁调用`setData()`会影响性能\n\n---",
+    "a": "**单向绑定：data 里的值用 {{}} 渲染，只能靠 setData 更新视图。**\n- WXML 用 {{message}}、{{userInfo.name}} 取值\n- 更新必须 setData()，支持 'userInfo.name' 路径写法\n- 不能直接改 this.data，视图不会更新\n- setData 异步，频繁调用影响性能\n```js\nPage({\n  data: { message: 'hi', userInfo: { name: '张三' } },\n  change() {\n    this.setData({ 'userInfo.name': '李四' })\n  }\n})\n```",
     "priority": 2
   },
   {
     "id": "cross013",
     "module": "cross",
     "q": "小程序的路由跳转方式有哪些？",
-    "a": "**参考答案：**\n\n小程序提供多种路由跳转方式：\n\n**1. wx.navigateTo()：**\n\n- 保留当前页面，跳转到应用内的某个页面\n- 可以使用`wx.navigateBack()`返回\n- 页面栈最多10层\n\n**2. wx.redirectTo()：**\n\n- 关闭当前页面，跳转到应用内的某个页面\n- 不能返回到被关闭的页面\n\n**3. wx.switchTab()：**\n\n- 跳转到tabBar页面，并关闭其他所有非tabBar页面\n\n**4. wx.reLaunch()：**\n\n- 关闭所有页面，打开到应用内的某个页面\n\n**5. wx.navigateBack()：**\n\n- 关闭当前页面，返回上一页面或多级页面\n\n**参数传递：**\n\n```JavaScript\nwx.navigateTo({\n  url: '/pages/detail/detail?id=123&name=test'\n})\n```\n\n---",
+    "a": "**五种跳转：navigateTo 压栈、redirectTo 替换、switchTab 跳 tab、reLaunch 重开、navigateBack 返回。**\n- navigateTo 保留当前页，页面栈最多 10 层\n- redirectTo 关闭当前页不可回退，switchTab 关掉非 tab 页\n- reLaunch 关闭所有页重开，navigateBack 可多级返回\n- 传参走 url query，在 onLoad(options) 里取",
     "priority": 2
   },
   {
     "id": "cross014",
     "module": "cross",
     "q": "小程序的组件化开发如何实现？",
-    "a": "**参考答案：**\n\n小程序支持自定义组件开发：\n\n**组件创建：**\n\n```JavaScript\n// component.js\nComponent({\n  properties: {\n    title: {\n      type: String,\n      value: '默认标题'\n    }\n  },\n  data: {\n    count: 0\n  },\n  methods: {\n    increment() {\n      this.setData({\n        count: this.data.count + 1\n      })\n      // 触发自定义事件\n      this.triggerEvent('countchange', {\n        count: this.data.count\n      })\n    }\n  }\n})\n```\n\n**组件使用：**\n\n```JSON\n// 页面json配置\n{\n  \"usingComponents\": {\n    \"my-component\": \"/components/my-component/my-component\"\n  }\n}\n```\n\n```XML\n<!-- 页面wxml -->\n<my-component title=\"自定义标题\" bind:countchange=\"onCountChange\"></my-component>\n```\n\n**组件通信：**\n\n- 父传子：通过properties\n- 子传父：通过triggerEvent触发自定义事件\n- 获取组件实例：使用selectComponent\n\n---",
+    "a": "**自定义组件用 Component() 定义，页面 json 用 usingComponents 引入。**\n- 父传子用 properties，子传父用 triggerEvent 自定义事件\n- 通信也可用 this.selectComponent 拿实例直接调方法\n- 组件样式默认隔离，externalClasses 支持外部样式传入\n```js\nComponent({\n  properties: { title: { type: String, value: '' } },\n  methods: {\n    tap() { this.triggerEvent('countchange', { n: 1 }) }\n  }\n})\n```",
     "priority": 2
   },
   {
     "id": "cross015",
     "module": "cross",
     "q": "小程序的性能优化策略有哪些？",
-    "a": "**参考答案：**\n\n小程序性能优化主要从以下几个方面：\n\n**1. 代码包优化：**\n\n- 清理无用代码和资源\n- 图片压缩，使用webp格式\n- 分包加载，按需加载\n- 使用CDN存储大文件\n\n**2. 渲染优化：**\n\n- 减少setData的调用频率和数据量\n- 避免频繁切换显示隐藏\n- 使用wx:if而不是hidden控制大块内容\n- 长列表使用虚拟化或分页\n\n**3. 网络优化：**\n\n- 合并网络请求\n- 使用缓存策略\n- 预加载关键数据\n- 图片懒加载\n\n**4. 内存优化：**\n\n- 及时清理定时器和监听器\n- 避免内存泄漏\n- 合理使用全局数据\n\n**5. 体验优化：**\n\n- 添加loading状态\n- 骨架屏占位\n- 错误边界处理\n\n---",
+    "a": "**小程序优化围绕包体积、setData、网络、内存四条线展开。**\n- 包：分包加载、图片 webp/CDN、清理无用代码\n- 渲染：减少 setData 频率与数据量，大块内容用 wx:if\n- 网络：合并请求、缓存、预拉取、图片懒加载\n- 内存：及时清理定时器与监听，避免泄漏\n- 体验：骨架屏 + loading + 长列表分页/虚拟",
     "priority": 2
   },
   {
     "id": "cross016",
     "module": "cross",
     "q": "小程序的存储方式有哪些？",
-    "a": "**参考答案：**\n\n小程序提供多种数据存储方式：\n\n**1. 本地存储：**\n\n```JavaScript\n// 同步存储\nwx.setStorageSync('key', 'value')\nconst value = wx.getStorageSync('key')\nwx.removeStorageSync('key')\nwx.clearStorageSync()\n\n// 异步存储\nwx.setStorage({\n  key: 'key',\n  data: 'value'\n})\n```\n\n**2. 全局数据：**\n\n```JavaScript\n// app.js\nApp({\n  globalData: {\n    userInfo: null\n  }\n})\n\n// 其他页面使用\nconst app = getApp()\napp.globalData.userInfo = userInfo\n```\n\n**3. 页面数据：**\n\n- 通过data定义\n- 使用setData更新\n\n**4. 云存储：**\n\n- 云开发数据库\n- 云文件存储\n\n**存储限制：**\n\n- 本地存储上限10MB\n- 单个key存储上限1MB\n- 数据类型支持Object、String、Number等\n\n---",
+    "a": "**四种：本地 Storage（约 10MB）、globalData、页面 data、云开发数据库。**\n- 同步用 setStorageSync，异步用 wx.setStorage\n- 单 key 上限 1MB，本地总容量约 10MB\n- globalData 存临时全局态，getApp() 读写，重启即失\n- 持久或大数据走云开发数据库 / 服务端\n```js\nwx.setStorageSync('token', token)\nconst t = wx.getStorageSync('token')\ngetApp().globalData.userInfo = u\n```",
     "priority": 2
   },
   {
     "id": "cross017",
     "module": "cross",
     "q": "小程序的网络请求如何处理？",
-    "a": "**参考答案：**\n\n小程序网络请求主要使用wx.request()：\n\n**基本用法：**\n\n```JavaScript\nwx.request({\n  url: 'https://api.example.com/data',\n  method: 'GET',\n  data: {\n    id: 123\n  },\n  header: {\n    'content-type': 'application/json'\n  },\n  success: (res) => {\n    console.log(res.data)\n  },\n  fail: (err) => {\n    console.error(err)\n  }\n})\n```\n\n**封装请求：**\n\n```JavaScript\nconst request = (url, options = {}) => {\n  return new Promise((resolve, reject) => {\n    wx.request({\n      url: baseURL + url,\n      method: options.method || 'GET',\n      data: options.data || {},\n      header: {\n        'Authorization': wx.getStorageSync('token'),\n        ...options.header\n      },\n      success: resolve,\n      fail: reject\n    })\n  })\n}\n```\n\n**注意事项：**\n\n- 域名必须在后台配置合法域名\n- 默认超时时间60秒\n- 并发请求限制10个\n- 支持HTTP/HTTPS，生产环境必须HTTPS\n\n---",
+    "a": "**用 wx.request 发请求，域名需配白名单，生产必须 HTTPS。**\n- 域名后台配置，默认超时 60s，并发限 10 个\n- 一般 Promise 封装，统一带 token 与错误处理\n- 上传下载用 wx.uploadFile / wx.downloadFile\n```js\nconst request = (url, data = {}) => new Promise((res, rej) => {\n  wx.request({\n    url: BASE + url, data,\n    header: { Authorization: wx.getStorageSync('token') },\n    success: res, fail: rej\n  })\n})\n```",
     "priority": 2
   },
   {
     "id": "cross018",
     "module": "cross",
     "q": "小程序的事件系统是怎样的？",
-    "a": "**参考答案：**\n\n小程序事件系统包括事件绑定、事件对象和事件传播：\n\n**事件绑定：**\n\n```XML\n<!-- 冒泡事件 -->\n<view bindtap=\"handleTap\">点击我</view>\n<!-- 非冒泡事件 -->\n<view catchtap=\"handleTap\">点击我</view>\n<!-- 互斥事件 -->\n<view mut-bind:tap=\"handleTap\">点击我</view>\n```\n\n**事件对象：**\n\n```JavaScript\nhandleTap(event) {\n  console.log(event.type) // 事件类型\n  console.log(event.target) // 触发事件的组件\n  console.log(event.currentTarget) // 绑定事件的组件\n  console.log(event.detail) // 额外信息\n  console.log(event.touches) // 触摸事件的触摸点信息\n}\n```\n\n**数据传递：**\n\n```XML\n<view bindtap=\"handleTap\" data-id=\"123\" data-name=\"test\">\n  点击我\n</view>\n```\n\n```JavaScript\nhandleTap(event) {\n  const { id, name } = event.currentTarget.dataset\n  console.log(id, name) // 123, test\n}\n```\n\n**事件类型：**\n\n- 触摸事件：touchstart、touchmove、touchend\n- 点击事件：tap、longpress\n- 表单事件：input、submit、reset\n- 自定义事件：通过triggerEvent触发\n\n---",
+    "a": "**bind 冒泡、catch 阻止冒泡，事件对象带 target/currentTarget/detail/dataset。**\n- bindtap 冒泡，catchtap 阻止继续冒泡，mut-bind 互斥\n- 传参用 data-xxx，从 currentTarget.dataset 取\n- target 是触发源，currentTarget 是绑定事件的组件\n- 类型：tap/longpress、touch 系列、input/submit\n```js\nonTap(e) {\n  const { id } = e.currentTarget.dataset // data-id=\"123\"\n}\n```",
     "priority": 3
   },
   {
     "id": "cross019",
     "module": "cross",
     "q": "小程序与H5的区别是什么？",
-    "a": "**参考答案：**\n\n小程序与H5在多个方面存在显著区别：\n\n**运行环境：**\n\n- 小程序：运行在微信客户端，双线程架构\n- H5：运行在浏览器中，单线程\n\n**开发技术：**\n\n- 小程序：WXML、WXSS、JavaScript\n- H5：HTML、CSS、JavaScript\n\n**功能权限：**\n\n- 小程序：可调用更多原生API（摄像头、位置、支付等）\n- H5：受浏览器安全策略限制\n\n**性能表现：**\n\n- 小程序：接近原生应用体验，启动更快\n- H5：依赖网络加载，可能存在白屏\n\n**分发方式：**\n\n- 小程序：通过微信分发，无需下载安装\n- H5：通过链接访问，需要浏览器\n\n**开发限制：**\n\n- 小程序：代码包大小限制、API限制\n- H5：跨域限制、浏览器兼容性\n\n**用户体验：**\n\n- 小程序：统一的交互规范，体验一致\n- H5：体验取决于具体实现和浏览器",
+    "a": "**小程序跑在微信客户端双线程，H5 跑浏览器单线程，能力、分发、限制都不同。**\n- 技术栈：WXML/WXSS vs HTML/CSS\n- 权限：小程序可调原生 API（相机定位支付），H5 受限\n- 性能：小程序启动接近原生，H5 依赖网络易白屏\n- 限制：小程序有包体积与审核，H5 有跨域与兼容问题\n- 分发：小程序微信内免安装，H5 靠链接浏览器打开",
     "priority": 2
   },
   {
     "id": "cross020",
     "module": "cross",
     "q": "跨域有哪些解决方案？各自适用场景？",
-    "a": "**简要回答：**\n同源策略限制「协议/域名/端口」不同间的读写。常见解法按场景选：\n\n**拆解：**\n- **CORS**：服务端加 `Access-Control-Allow-Origin` 等响应头，最标准，适合自己的后端。\n- **代理**：开发用 `vite proxy`/webpack-dev-server 转发；生产用 Nginx 反代，让浏览器「同源」请求。\n- **JSONP**：利用 `<script>` 无跨域，只支持 GET，老接口兼容用，已渐淘汰。\n- **postMessage**：跨窗口/iframe 通信，配 `targetOrigin` + `origin` 校验防伪造。\n- **WebSocket**：基于 WS 协议，握手后全双工，本身不受同源限制。\n- **Nginx 反向代理 / 网关**：生产首选，前端只请求同源，由网关转发并加头。\n\n**追问：** 为什么 CDN 的 <img>/<script> 不报跨域？（资源型标签默认允许加载，CORS 限制的是「读响应」，图片显示不读内容。）",
+    "a": "**同源策略限协议/域名/端口，解法按场景选 CORS、代理、postMessage、WebSocket。**\n- CORS：服务端加允许源响应头，最标准\n- 开发用 vite/webpack proxy，生产用 Nginx 反代变同源\n- JSONP 借 script 标签只支持 GET，已淘汰\n- postMessage 解决跨窗口/iframe，需校验 origin\n- WebSocket 全双工，本身不受同源限制\n💡 追问：img/script 为何不跨域？只加载不读响应内容",
     "priority": 2
   },
   {
     "id": "cross021",
     "module": "cross",
     "q": "微前端 qiankun 的核心原理（HTML Entry / JS 沙箱 / 样式隔离）？",
-    "a": "**简要回答：**\nqiankun 在 single-spa 之上封装，用「**HTML 入口加载 + JS 沙箱 + 样式隔离 + 应用间通信**」让多个子应用像拼积木一样共存。\n\n**拆解：**\n- **HTML Entry**：主应用按 URL 加载子应用的 `index.html`，解析出 JS/CSS 入口（不像 iframe 那样笨重，体验一体化）。\n- **JS 沙箱**：`Proxy` 沙箱给每个子应用一套「假的 window/global」，子应用改 `window.xxx` 只影响自己，不污染主应用（legacy 用 `with`+`eval` 快照沙箱）。\n- **样式隔离**：`strictStyleIsolation`（Shadow DOM，最彻底）/ `experimentalStyleIsolation`（加前缀 scoped，类似 Vue scoped）。\n- **通信**：`initGlobalState` + `onGlobalStateChange` 做主子、子子状态同步。\n\n**追问：** 沙箱能完全隔离吗？（Proxy 沙箱对绝大多数场景够用；第三方库若直接读 `window.top` 可能有洞。）",
+    "a": "**qiankun 基于 single-spa：HTML Entry 加载子应用 + JS 沙箱 + 样式隔离 + 状态通信。**\n- HTML Entry 解析子应用 index.html 拿 JS/CSS 入口\n- JS 沙箱用 Proxy 造假 window，子应用改全局互不污染\n- 样式隔离：Shadow DOM 彻底隔离或加选择器前缀\n- 通信：initGlobalState + onGlobalStateChange\n💡 追问：沙箱能完全隔离吗？绝大多数场景够用",
     "priority": 3
   },
   {
     "id": "cross022",
     "module": "cross",
     "q": "Hybrid 里 JSBridge 的通信原理？",
-    "a": "**简要回答：**\nJSBridge 是 **Web 和 Native（iOS/Android）互相调用**的桥梁，核心思路是「拦截特定协议」或「注入全局对象」。\n\n**拆解：**\n- **JS → Native**：URL 拦截（改 `location` / `iframe.src` 为 `jsbridge://xxx`，Native 拦截 scheme）；或注入 API（`window.webkit.messageHandlers` / `@JavascriptInterface`）。\n- **Native → JS**：Native 直接 `webView.evaluateJavascript('window.xxx(... )')` 调 JS 全局函数。\n- **回调**：用唯一 `callbackId` 把回调登记到 JS 侧 map，Native 处理完回传 id 触发对应回调（类似 JSONP）。\n- **通用方案**：成熟库如 JSBridge、WebViewJavascriptBridge。\n\n**追问：** 白屏/首屏怎么优化 Hybrid？（离线包预置、Native 直出、接口预拉取。）",
+    "a": "**JSBridge 是 Web 与 Native 互调的桥：拦截协议或注入对象，配 callbackId 回调。**\n- JS→Native：改 iframe.src 为 jsbridge:// 被拦截\n- 或注入对象：messageHandlers / @JavascriptInterface\n- Native→JS：evaluateJavascript 直接调 JS 全局函数\n- 回调按 callbackId 登记到 map，处理完回传触发\n💡 追问：Hybrid 首屏怎么优化？离线包 + 接口预拉",
     "priority": 2
   },
   {
     "id": "cross023",
     "module": "cross",
     "q": "如何用 Canvas + MutationObserver 实现『防移除』水印？",
-    "a": "**简要回答：**\n思路：把水印画到 **Canvas 生成 base64 背景图**铺满容器；再用 **MutationObserver** 监听 DOM，一旦水印节点被删/改就立刻恢复。\n\n**拆解：**\n1. **绘制**：离屏 Canvas 写文字/logo，`toDataURL()` 转背景图，铺在 `position:fixed` 全屏层（`pointer-events:none` 不挡操作）。\n2. **防护**：`MutationObserver` 监听 `body`/容器子节点变动（childList、attributes），发现水印元素被 `remove` 或属性被改，立即重新插入/还原。\n3. **兜底**：对 `style` 改动也监听，防止被 `display:none` 隐藏。\n4. **局限**：用户改源码/禁用 JS 仍可能绕过——防君子不防高手，主要挡「普通误删/偷图」。\n\n**追问：** 为什么用 Canvas 而非 DOM 文字？（Canvas 是一张图，难被选中复制，且一次渲染性能高。）",
+    "a": "**Canvas 画水印转 base64 铺背景，MutationObserver 监听删除/改属性后恢复。**\n- 离屏 Canvas 写文字，toDataURL 生成背景图铺 fixed 层\n- pointer-events:none 保证不挡用户操作\n- MutationObserver 监听节点与属性变动，被删就重插\n- 局限：禁用 JS 或改源码仍能绕过，防君子不防小人\n```js\nconst ob = new MutationObserver(() => {\n  if (!document.querySelector('#wm')) document.body.appendChild(el)\n})\nob.observe(document.body, { childList: true, attributes: true })\n```\n💡 追问：为何用 Canvas？是一张图，难被选中复制",
     "priority": 3
   }
 ]

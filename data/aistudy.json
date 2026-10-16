@@ -3,574 +3,574 @@
     "id": "aistudy-20260813-1",
     "module": "aistudy",
     "q": "Q1 多轮对话的会话与消息持久化设计",
-    "a": "**考察点**：状态管理、前后端职责划分、「唯一真相源」意识。\n\n**标准解答**：- 用关系型存储（SQLite + Sequelize）建 `Session` / `Message` 两张表，`sessionId` 作为上下文主键。\n  - 每次请求携带 `sessionId`，后端从库读取历史消息拼成上下文，再把 user + assistant 消息落库。\n  - `Message` 记录 `role / content / sessionId / 时间戳`；`Session` 记录标题与 `updatedAt`（每次交互 `touch`）。首条消息自动生成标题。\n  - **前端不再缓存消息，DB 是唯一真相源**，刷新/切会话都从库拉，避免状态不一致。\n\n**项目实践**：`week4/backend/models/index.js` 定义 `Session/Message`；`services/chatHistoryService.js` 提供 `getOrCreateSession / saveMessage / getHistory`；`chatRoutes.js` 以 `sessionId` 为主键，DB 为准，前端去掉 `localStorage` 消息缓存。",
+    "a": "**会话与消息用两张表持久化，DB 是唯一真相源，前端不再缓存消息。**\n- `Session`（标题、updatedAt）+ `Message`（role/content/sessionId/时间戳）两张表\n- 每请求带 `sessionId`，后端读历史拼上下文，再把 user/assistant 落库\n- 首条消息自动生成标题，每次交互 touch `updatedAt`\n- 前端刷新/切会话都从库拉，去掉 localStorage 消息缓存",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-10",
     "module": "aistudy",
     "q": "Q10 SSE + 落库时序陷阱（空串入库）",
-    "a": "**考察点**：流式 I/O 与持久化的竞态。\n\n**标准解答**：- `res.end()` 后任何 `res.write` 都会抛 `write after end`；\n  - 未 `await` 的 `saveMessage` 是异步「飞行中」任务，一旦被未捕获异常打断，**没有任何消息落库或落空串**；\n  - 长回复时落库动作正发生在「飞行中」，被异常打断概率更高。\n  - 解决：抽幂等 `finishStream()`（`[DONE]`/end/error 只触发一次）；`saveMessage` 必须 `await`；`stream.on('error')` 捕获；`res.write` 前 `!res.writableEnded` 判断。\n\n**项目实践**：`chatRoutes.js` 重构采用上述模式，mock SSE 端到端验证长回复 2702 字符正确落库。",
+    "a": "**落库必须 await、流结束必须幂等，否则流异常会让消息存成空串。**\n- `res.end()` 后任何 `res.write` 都抛 `write after end`\n- 未 await 的 `saveMessage` 在「飞行中」被异常打断→什么都没存或存空串\n- 抽幂等 `finishStream()`：`[DONE]`/end/error 只触发一次\n- `saveMessage` 改 await；`stream.on(\"error\")` 必须捕获\n- `res.write` 前判 `!res.writableEnded`",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-11",
     "module": "aistudy",
     "q": "Q11 前端 SSE 对接 + sessionId 持久化",
-    "a": "**考察点**：HTTP 方法选择、前端状态作用域。\n\n**标准解答**：- **GET 不带 body**：旧 `router.get('/stream')` 读 `req.body` 会 404，应改 `router.post('/stream')`，依赖 `express.json()` 解析 `{ messages, sessionId }` JSON body，前后端方法要一致。\n  - **sessionId 持久化**：存 `localStorage('chatSessionId')`，否则刷新页面新建会话、历史无法累积。\n  - **作用域**：`sessionId` 声明在 `<script setup>` 顶层，供 `streamChat/askRAG/sendMessage` 共享，避免 `sessionId is not defined` 的 ReferenceError；后端也要 `import` 对应的 service 函数，避免 `getOrCreateSession is not defined`。\n\n**项目实践**：`AiChat.vue` 的 `streamChat` 由 GET 改 POST；08-12 修复了 sessionId 作用域与 service 漏导入两个 ReferenceError。",
+    "a": "**SSE 用 POST 带 body，sessionId 存 localStorage 并在顶层共享。**\n- GET 不带 body，`router.get(\"/stream\")` 读 `req.body` 会 404，改 POST + express.json()\n- `sessionId` 存 `localStorage(\"chatSessionId\")`，否则刷新就新建会话\n- 变量声明在 `<script setup>` 顶层，供 streamChat/askRAG 共享\n- 后端别漏 import service，否则 `getOrCreateSession is not defined`",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-12",
     "module": "aistudy",
     "q": "Q12 Windows 开发环境典型坑",
-    "a": "**考察点**：跨平台差异、排障常识。\n\n**标准解答**：- 端口占用：`pkill -f` 在 Windows 不靠谱，改用 `netstat -ano | findstr :3000` + `taskkill /PID ... /F`；反复测到旧代码往往是因为旧进程没被杀掉。\n  - 临时路径：`/tmp/xxx` 在 Windows 解析为 `D:\\tmp\\xxx`，跨平台代码用 `os.tmpdir()`。\n  - 构建：`vite build` 前清 `dist` 可能被 safe-delete shim 拦截，先 PowerShell `Remove-Item -Force` 删旧 `dist`。\n  - 前端：`() => ({...}[x])` 中对象字面量后接下标会被 babel 当语句块误解析，先定义映射常量再取值；声明前引用会 TDZ 报错。\n\n**项目实践**：08-13 用 `netstat/taskkill` 锁定 3000 端口；08-11 用 PowerShell 强制清 `dist`。\n\n---",
+    "a": "**Windows 下要换 netstat/taskkill 与 os.tmpdir()，别照抄 Linux 命令。**\n- `pkill -f` 不靠谱：`netstat -ano | findstr :3000` + `taskkill /PID /F`\n- `/tmp/xxx` 会被解析成 `D:\\tmp\\xxx`，跨平台用 `os.tmpdir()`\n- `vite build` 前用 PowerShell `Remove-Item -Force` 清旧 dist\n- `() => ({...}[x])` 会被解析成语句块，先定义映射常量再取值",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-2",
     "module": "aistudy",
     "q": "Q2 切换会话的历史重复 / 空白回复",
-    "a": "**考察点**：异步时序、SSE 生命周期、消息去重。\n\n**标准解答**：- **重复**：`getHistory` 已包含刚保存的 user 消息，又 `push` 一次 → `fullMessages` 直接等于 `getHistory(sessionId)`，不要重复追加。\n  - **空白（更隐蔽）**：`res.end()` 之后不能再 `res.write`，否则抛 `write after end` 未捕获异常；而未被 `await` 的 `saveMessage` 是「飞行中」的异步，会被这个异常打断 → **空串入库**。长回复因落库动作正发生在「飞行中」更容易中招。\n\n**项目实践**：`chatRoutes.js` 第 33–34 行去掉重复 `push`；抽幂等 `finishStream()`（`[DONE]`/end/error 只触发一次）；`saveMessage` 改 `await`；`stream.on('error')` 捕获；`res.write` 前判 `!res.writableEnded`。用 mock SSE 实测长回复 **2702 字符**正确存库、重载切换会话完整保留。",
+    "a": "**历史重复是重复 push，空白回复是流结束后落库被打断、存成了空串。**\n- `getHistory` 已含刚存的 user 消息，`fullMessages` 直接等于它，别再 push\n- `res.end()` 后 write 抛 `write after end`，未 await 的 saveMessage 被打断→空串\n- 长回复落库恰在「飞行中」，中招概率更高\n- 修法：幂等 `finishStream()`、saveMessage 改 await、监听 stream error\n- `res.write` 前判 `!res.writableEnded`",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-3",
     "module": "aistudy",
     "q": "Q3 会话管理 REST 设计",
-    "a": "**考察点**：RESTful 资源建模。\n\n**标准解答**：会话是资源，消息是子资源。\n  - `GET /api/sessions`（返回列表，含 `messageCount`）\n  - `POST /api/sessions`（新建）\n  - `GET /api/sessions/:id/messages`（拉历史）\n  - `PATCH /api/sessions/:id`（重命名）\n  - `DELETE /api/sessions/:id`（删除会话）\n  - `DELETE /api/sessions/:id/messages`（清空消息）\n  - 所有对话/chat/rag/agent 路由统一接收 `{ message|question, sessionId }`，从库读历史做上下文。\n\n**项目实践**：`week4/backend/src/routes/sessionRoutes.js` 提供以上端点；`chatRoutes.js / ragRoutes.js / agentRoutes.js` 统一 `{..., sessionId}` 协议。",
+    "a": "**会话是资源、消息是子资源，按 REST 层级建模端点。**\n- `GET/POST /api/sessions`，`PATCH/DELETE /api/sessions/:id`\n- `GET /api/sessions/:id/messages` 拉历史，DELETE 同一路径清空消息\n- 列表返回时带 `messageCount`\n- chat/rag/agent 路由统一接收 `{ message, sessionId }`，从库读历史",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-4",
     "module": "aistudy",
     "q": "Q4 文档上传 → 入库管线",
-    "a": "**考察点**：RAG 工程链路、前后端协作、异步 spawn。\n\n**标准解答**：- 前端 base64 读文件 → `POST /api/rag/upload` 存盘到 `documents/`；\n  - `POST /api/rag/ingest` 后端 spawn `rag_query.py action=ingest`；\n  - 脚本读 `documents/` 文本按段分块（chunk），生成 embedding 后 upsert 进向量库（Chroma）。\n  - 入库需要 Embedding Key + 网络，缺失时前端应**如实显示错误而非崩溃**。\n\n**项目实践**：`week4/backend/src/routes/ragRoutes.js` + `week4/backend/scripts/rag_query.py`；入库依赖 `DASHSCOPE_API_KEY`，缺 Key 时 UI 气泡显示错误。",
+    "a": "**上传存盘 → 后端 spawn 脚本切块 → embedding 后 upsert 进向量库。**\n- 前端 base64 读文件，`POST /api/rag/upload` 存到 `documents/`\n- `POST /api/rag/ingest` 触发后端 spawn `rag_query.py action=ingest`\n- 脚本读文本按 chunk 切分，生成 embedding 后写入 Chroma\n- 缺 Embedding Key/网络时前端如实显示错误，不要崩溃",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-5",
     "module": "aistudy",
     "q": "Q5 RAG 与多轮对话结合",
-    "a": "**考察点**：上下文拼接、来源可信、历史隔离。\n\n**标准解答**：- 检索 top-k 片段注入 system / 独立 context 段，拼在 LLM 消息最前；\n  - agent/rag 路由统一接收 `sessionId`，先读库历史、再附加检索结果；\n  - **检索片段只进「本轮请求」的上下文，不写进持久化消息**，避免污染用户历史；\n  - 尽量给出引用来源，便于溯源。\n\n**项目实践**：`ragRoutes.js` 在拼装 `llmMessages` 时先取历史（`getHistory`），再 append 检索到的文档片段。",
+    "a": "**检索片段只进本轮上下文，绝不写进持久化消息表。**\n- 先 `getHistory` 读历史，再把 top-k 片段 append 到消息最前\n- 检索结果不落 Message 表，否则历史被文档片段污染、还会重复计费\n- agent/rag 路由统一收 `sessionId`，历史与检索在同一上下文里拼\n- 回答尽量给出引用来源，便于溯源",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-6",
     "module": "aistudy",
     "q": "Q6 手写 ReAct vs 原生 function calling",
-    "a": "**考察点**：Agent 范式的演进与工程可靠性。\n\n**标准解答**：- **手写 ReAct**：用 `Thought:/Action:/Observation:/Final Answer:` 文本约定，靠正则解析。脆弱——模型写成 `**Thought:**` 或中文冒号 `：` 就匹配不到，导致空转；自然语言兜底又容易把「直接说人话」当最终答案，**跳过工具调用**。\n  - **原生 function calling**：把工具以 `tools=` 结构化传入，模型通过 `assistant_msg.tool_calls` 返回调用意图，`tool_choice=\"auto\"` 自动决定是否调用。结构化、可靠、不易解析失败。\n\n**项目实践**：`week3-Agent/react-agent/agent_core.py` 从手写 ReAct 改为 DeepSeek 原生 `tools=` + `tool_choice=\"auto\"` + `temperature=0`，彻底解决「Agent 工具不调用」问题。",
+    "a": "**原生 function calling 用结构化字段返回调用意图，比正则解析文本可靠得多。**\n- 手写 ReAct：约定 `Thought/Action/Observation` 文本再用正则抠，格式一变就失配\n- 模型写成 `**Thought:**` 或中文冒号就匹配不到，导致空转、跳过工具\n- 原生：工具以 `tools=` 传入，从 `tool_calls` 拿意图，`tool_choice=\"auto\"`\n- 配 `temperature=0` 彻底解决「工具不调用」",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-7",
     "module": "aistudy",
     "q": "Q7 稳定触发工具调用",
-    "a": "**考察点**：Agent 工程细节。\n\n**标准解答**：- `temperature=0` 降低随机性；\n  - `tool_choice=\"auto\"`（或指定具体工具）；\n  - 校验返回的 `tool_calls` 数组，循环执行工具并把结果回填为 `role:\"tool\"` 消息，再让模型综合；\n  - 设最大工具轮次防死循环；\n  - 工具执行异常要捕获并返回 observation，让模型自我纠正。\n\n**项目实践**：`agent_core.py` 改为结构化处理 `tool_calls`，而非正则截取文本。",
+    "a": "**temperature 归零 + 结构化消费 tool_calls + 限轮次防死循环。**\n- `temperature=0` 降低随机性；`tool_choice=\"auto\"` 或指定具体工具\n- 循环执行 `tool_calls`，结果回填成 `role:\"tool\"` 消息再让模型综合\n- 设最大工具轮次，防死循环\n- 工具异常要捕获并返回 observation，让模型自我纠正",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-8",
     "module": "aistudy",
     "q": "Q8 子进程调用 Python 的环境与降级",
-    "a": "**考察点**：多语言协作、依赖隔离、容错。\n\n**标准解答**：- 在 Agent 目录建独立 `.venv` 装 `openai/serpapi/yfinance`，避免与系统 Python 冲突导致 `ModuleNotFoundError`；\n  - spawn 时把 `cwd` 设为脚本目录，使 `load_dotenv()` 正确加载该目录的 `.env`（API Key）；\n  - 监听 `py.on('error')` 防止子进程异常杀掉主进程；\n  - **可选依赖惰性导入**：`serpapi/yfinance` 等放函数内 `import`，缺失时返回友好错误而非整体崩溃。\n\n**项目实践**：`agentService.js` spawn 独立 `.venv` 的 python；`week3-Agent/react-agent/` 下 `.venv` + `.env` 隔离；惰性导入降级模式。",
+    "a": "**独立 venv 隔离依赖 + cwd 指向脚本目录 + 可选依赖惰性导入降级。**\n- Agent 目录建 `.venv` 装 openai/serpapi/yfinance，避免 ModuleNotFoundError\n- spawn 时 `cwd` 设为脚本目录，`load_dotenv()` 才能加载该目录的 `.env`\n- 监听 `py.on(\"error\")`，防止子进程异常杀掉主进程\n- 可选依赖放函数内 import，缺失时返回友好错误而非整体崩溃",
     "priority": 1
   },
   {
     "id": "aistudy-20260813-9",
     "module": "aistudy",
     "q": "Q9 SSE 安全传输含换行代码",
-    "a": "**考察点**：协议边界、序列化。\n\n**标准解答**：SSE 以 `\\n\\n` 分隔事件、`data:` 后单行内容。若直接拼 `\\n` 会与分隔符碰撞，吃掉换行/代码高亮。正确做法：用 `JSON.stringify(content)` 包裹使 `data` 字段单行安全；前端先判 `[DONE]` 再 `JSON.parse`，`catch` 回退纯文本以兼容旧格式。\n\n**项目实践**：提交 `dbfa11b` 修复 SSE 转码 bug；`week1-Base/day7/frontend/src/components/AiChat.vue` 改为先 `[DONE]` 再 `JSON.parse`，旧格式走纯文本兜底。",
+    "a": "**SSE 的 data 要用 JSON.stringify 包一层，保证单行、不撞事件分隔符。**\n- SSE 以空行分隔事件，裸拼换行会吃掉换行和代码高亮\n- 发送端把内容序列化后再写 `data:`\n- 前端先判 `[DONE]` 再 `JSON.parse`，catch 回退纯文本兼容旧格式\n```js\nres.write(`data: ${JSON.stringify(chunk)}\\n\\n`);\n// 前端\nif (raw === \"[DONE]\") return finish();\ntry { text = JSON.parse(raw); } catch { text = raw; }\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-1",
     "module": "aistudy",
     "q": "Q1 前端容器化后本地/生产 API 行为一致",
-    "a": "**考察点**：部署环境一致性、相对路径 vs 绝对路径、反向代理与 dev proxy 等价。\n\n**标准解答**：- 前端不再写死后端地址，改用相对路径 / 环境变量兜底：`API = import.meta.env.VITE_API_BASE || ''`，生产走同源相对路径，本地走 vite proxy。\n  - 本地开发：`vite.config.js` 的 `server.proxy` 把 `/api` 转到 `http://localhost:3000`。\n  - 容器生产：nginx 静态托管 `dist`，`nginx.conf` 把 `/api` 反代到 `http://backend:3000`（compose 网络内服务名）。\n  - 两者行为等价，前端代码零改动即可在两种环境运行。\n\n**项目实践**：`week1-Base/day7/frontend/src/components/AiChat.vue` 的 `API` 改为 `import.meta.env.VITE_API_BASE || ''`；`vite.config.js` 与 `nginx.conf` 的反代规则一一对应；`week1-Base/day7/frontend/Dockerfile` 多阶段构建（builder 跑 `npm ci`+`npm run build`，运行阶段 `nginx:latest` 托管 `dist`）。",
+    "a": "**前端用相对路径 + 环境变量兜底，本地走 vite proxy、生产走 nginx 反代。**\n- `const API = import.meta.env.VITE_API_BASE || \"\"`，不写死后端地址\n- 本地：`vite.config.js` 的 `server.proxy` 把 `/api` 转到 localhost:3000\n- 容器：nginx 静态托管 dist，`/api` 反代到 `http://backend:3000`（compose 服务名）\n- 两种环境行为等价，前端代码零改动",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-10",
     "module": "aistudy",
     "q": "Q10 Token 预算管理与历史截断",
-    "a": "**考察点**：上下文窗口、近似分词、截断策略、system 保护。\n\n**标准解答**：- 用分词器（tiktoken `cl100k_base`，最贴近 DeepSeek 的近似）估算历史 token 数。\n  - 设定上限（如 `MAX_TOKENS=8000`），`truncateHistory` 保留 `system` + 最新若干条 user/assistant 消息，从最旧往新丢。\n  - 每条消息约 +4 token 近似开销（OpenAI 消息格式）。\n  - **关键顺序**：若本轮要注入 system prompt，必须在截断**之前** prepend，否则会被当作普通历史误删。\n\n**项目实践**：`week4/backend/src/services/tokenService.js` 用 `get_encoding('cl100k_base')` + `truncateHistory(llmMessages, 8000)`；`chatRoutes.js` 第 45 行对 DB 历史（已含刚保存的 user 消息）调用截断后再送 LLM。当前历史无 system 消息，system 保护未触发，故加 system 前要先 prepend。",
+    "a": "**用 tiktoken 估算 token，超预算就保 system + 最新若干条，从旧往新丢。**\n- `cl100k_base` 是 DeepSeek 的近似分词，估算够用\n- 设 `MAX_TOKENS=8000`，`truncateHistory` 保留 system 与最新消息\n- 每条消息按 +4 token 计入消息格式开销\n- 关键：要注入 system 必须在截断**之前** prepend，否则被当普通历史误删",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-11",
     "module": "aistudy",
     "q": "Q11 tiktoken 在 ESM 下的导入坑",
-    "a": "**考察点**：ESM 静态分析、命名导出 vs 默认导出。\n\n**标准解答**：- 项目是 ESM（`\"type\":\"module\"`），`import { X } from 'tiktoken'` 是**静态命名导入**，编译期就解析符号。\n  - tiktoken@1.0.22 暴露的是 **snake_case** 导出（`get_encoding` / `encoding_for_model`），camelCase 的 `getEncoding` / `encodingForModel` **不存在**，静态导入抓不到 → 启动即 `SyntaxError: does not provide an export named 'encodingForModel'`。\n  - 解决：改用 `import { get_encoding } from 'tiktoken'; const encoding = get_encoding('cl100k_base');`。\n\n**项目实践**：`week4/backend/src/services/tokenService.js` 最初用 `encodingForModel` 启动必崩，改为 `get_encoding('cl100k_base')` 后中文分词验证正确（2000 字≈2500 tokens）。",
+    "a": "**tiktoken 暴露的是 snake_case 导出，ESM 静态命名导入 camelCase 会启动即崩。**\n- ESM 的 `import { X }` 编译期解析符号，不存在直接 SyntaxError\n- 真实导出是 `get_encoding` / `encoding_for_model`，`encodingForModel` 不存在\n- 报错：`does not provide an export named \"encodingForModel\"`\n```js\nimport { get_encoding } from \"tiktoken\";\nconst enc = get_encoding(\"cl100k_base\");\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-12",
     "module": "aistudy",
     "q": "Q12 后端安全防护中间件组合拳",
-    "a": "**考察点**：纵深防御、中间件挂载顺序、开发/生产差异。\n\n**标准解答**：（顺序很关键）：\n  1. `generalLimiter`（全局限流）→ 2. `cors` → 3. `logger` → 4. `json({limit:'5mb'})` → 5. `securityHeaders`（CSP/X-Frame-Options/X-Content-Type-Options/Referrer-Policy）→ 6. `/api` 挂 `apiKeyAuth`（网关密钥）→ 7. `/api/{chat,rag,agent}` 挂 `aiLimiter`（AI 专用更严格限流）。\n  - `apiKeyAuth`：读 `x-api-key` 或 `Authorization: Bearer`；`API_ACCESS_KEY` 留空 = 开发模式放行 + 告警，生产必须填。\n  - `express-validator` 只对 LLM 输入做类型/长度校验，统一以 422 返回错误。\n\n**项目实践**：`week4/backend/src/app.js` 按上述顺序挂链；`src/middlewares/{apiKeyAuth,rateLimit,securityHeaders,validate}.js`；curl 实测 公开200 / 无密钥401 / 错密钥401 / 合法200 / 非法UUID422 / 缺message422 / 超长422 全通过。",
+    "a": "**按「限流→cors→日志→body 限制→安全头→鉴权→AI 限流」的顺序挂中间件。**\n- `generalLimiter` → `cors` → `logger` → `json({limit:\"5mb\"})`\n- `securityHeaders`：CSP / X-Frame-Options / X-Content-Type-Options / Referrer-Policy\n- `/api` 挂 `apiKeyAuth`（读 `x-api-key` 或 Bearer），Key 留空=开发模式放行并告警\n- `/api/{chat,rag,agent}` 再挂更严格的 `aiLimiter`\n- `express-validator` 校验失败统一返回 422",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-13",
     "module": "aistudy",
     "q": "Q13 校验 LLM 输入不要 escape",
-    "a": "**考察点**：校验 vs 破坏性转义、prompt 完整性。\n\n**标准解答**：- `express-validator` 默认 `escape()` 会把 `& < > \" '` 等转成 HTML 实体。对普通表单字段没问题，但对**要原样送进 prompt 的用户输入**做 escape，会破坏用户原意、污染 prompt、导致模型理解偏差。\n  - 所以只对 LLM 输入做**类型/长度/必填**校验，不 escape；真正需要防 XSS 的是「返回给浏览器渲染」的场景，那应在前端渲染层处理，而非在送模型的文本上转义。\n\n**项目实践**：`week4/backend/src/middlewares/validate.js` 的 `handleValidationErrors` 只做长度/类型校验并以 422 返回，未对 message 做 escape，避免破坏 prompt。",
+    "a": "**送进 prompt 的用户输入只做类型/长度校验，绝不能 escape。**\n- `escape()` 会把 `& < > \" '` 转成 HTML 实体，破坏用户原意\n- 被转义的文本进 prompt 会让模型理解偏差\n- 防 XSS 应在前端渲染层做，不是在送模型前转义\n- 校验失败统一 422 返回",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-14",
     "module": "aistudy",
     "q": "Q14 alpine 原生模块编译与镜像瘦身",
-    "a": "**考察点**：原生模块跨平台编译、镜像体积。\n\n**标准解答**：- `sqlite3` 等原生模块在 alpine 上需要编译工具链：`apk add --no-cache python3 make g++ sqlite-dev`，装完 `apk del .build-deps` 清理，避免把编译工具留在最终镜像。\n  - 用多阶段构建或 `.build-deps` 临时包，保证最终镜像只包含运行时。\n  - 注意基础镜像 Node 版本要满足应用与工具链要求（见 Q3）。\n\n**项目实践**：`week4/backend/Dockerfile` 用 `node:20-alpine` + `apk add python3 make g++ sqlite-dev` 编译 `sqlite3`，装完 `apk del .build-deps`；同时建 `/app/data`、`/app/chroma_data` 持久化目录。",
+    "a": "**alpine 上原生模块要先装编译工具链，装完立刻删，别留在最终镜像。**\n- `apk add --no-cache python3 make g++ sqlite-dev`\n- 用 `.build-deps` 临时包，装完 `apk del .build-deps`\n- 多阶段构建保证最终镜像只有运行时\n- 基础镜像 Node 版本要同时满足应用与工具链要求",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-15",
     "module": "aistudy",
     "q": "Q15 Compose 多子目录编排 + 密钥注入",
-    "a": "**考察点**：多项目一键编排、密钥不进镜像、持久化。\n\n**标准解答**：- compose 文件放在公共父目录，每个 service 用 `build.context` 各自指向子项目目录（如 `week4/backend`、`week1-Base/day7/frontend`），**无需把项目挪到一起**。\n  - 密钥走 `env_file: ./xxx/.env` 注入容器环境变量，**绝不写进镜像 / 写死在 Dockerfile**。\n  - 用命名卷（如 `backend-data`/`backend-chroma`）持久化 SQLite 与向量库，避免容器重建丢数据。\n  - 各子项目加 `.dockerignore` 排除 `node_modules/.env/data`，加速构建、防止密钥泄露。\n  - **绝不能** `git add -A` 把 `.env` 提交；应在各自目录 `.gitignore` 忽略 `.env`。\n\n**项目实践**：`part1/docker-compose.yml` 用 `build.context` 解耦前后端、命名卷持久化、`env_file` 注入 `week4/backend/.env`；前端暴露 `8080:80`；`week4/backend/.dockerignore` 排除依赖与 `.env`。当前 `week4/backend/.env`、`week3-Agent/react-agent/.env` 仍未被 gitignore，属待修复风险点。\n\n---",
+    "a": "**compose 放公共父目录，用 build.context 指向子项目，密钥走 env_file 不进镜像。**\n- 每个 service 的 `build.context` 指向各自子目录，无需把项目挪到一起\n- `env_file: ./xxx/.env` 注入密钥，绝不写死在 Dockerfile\n- 命名卷持久化 SQLite 与向量库，容器重建不丢数据\n- 各子项目加 `.dockerignore` 排除 `node_modules/.env/data`\n- 别 `git add -A`，`.env` 必须进 `.gitignore`",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-2",
     "module": "aistudy",
     "q": "Q2 SSE 经 nginx 反代的配置要点",
-    "a": "**考察点**：长连接 / 流式协议在反向代理下的坑。\n\n**标准解答**：- SSE 是长连接、分块推送，nginx 默认会缓冲响应、或过早断开。需显式关缓冲：`proxy_http_version 1.1; proxy_set_header Connection ''; proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s;`。\n  - 否则现象：流式内容被攒批、前端收不到逐字效果，甚至超时断开。\n\n**项目实践**：`week1-Base/day7/frontend/nginx.conf` 的 `/api` 反代段已配 `proxy_buffering off` 与 SSE 友好的超时，与本地 vite proxy 的流式行为一致。",
+    "a": "**nginx 默认会缓冲响应，SSE 必须显式关缓冲并把读超时放长。**\n- 关键几行：`proxy_http_version 1.1` + `proxy_set_header Connection \"\"`\n- `proxy_buffering off`、`proxy_cache off`、`proxy_read_timeout 3600s`\n- 不配的后果：流式内容被攒批，前端收不到逐字效果甚至超时断开\n```nginx\nproxy_http_version 1.1;\nproxy_set_header Connection '';\nproxy_buffering off;\nproxy_cache off;\nproxy_read_timeout 3600s;\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-3",
     "module": "aistudy",
     "q": "Q3 前端基础镜像版本与构建工具链匹配",
-    "a": "**考察点**：镜像版本与构建工具兼容性、体积取舍。\n\n**标准解答**：- 选镜像要看清构建工具的 Node 版本下限。`vite@8` 需要 Node ≥ 20，`node:18-alpine` 跑不动会直接报语法/引擎错误。\n  - 解决：改用 `node:22-alpine`（满足下限且体积小）；若镜像里不需要无头浏览器，加 `PUPPETEER_SKIP_DOWNLOAD=true` 跳过 Chromium 下载，省时间省体积。\n\n**项目实践**：前端 `Dockerfile` 由 `node:18-alpine` 改为 `node:22-alpine` + `PUPPETEER_SKIP_DOWNLOAD=true`，解决 `vite@8` 构建失败。",
+    "a": "**基础镜像的 Node 版本必须满足构建工具的下限，否则构建直接失败。**\n- `vite@8` 需要 Node >= 20，`node:18-alpine` 跑不动会报引擎/语法错误\n- 改用 `node:22-alpine`：满足下限且体积小\n- 不需要无头浏览器时加 `PUPPETEER_SKIP_DOWNLOAD=true`，省时间省体积",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-4",
     "module": "aistudy",
     "q": "Q4 RAG 容器化时 Python 依赖处理",
-    "a": "**考察点**：RAG 工程链路、依赖隔离、可复现构建。\n\n**标准解答**：- embedding / 入库通常依赖 Python 脚本（如 `rag_query.py`）和第三方库（openai / chromadb 等），必须随镜像一起装好，不能假设宿主机有。\n  - 在镜像里建独立 Python 虚拟环境并 `pip install` 固定版本，或用官方 Python 基础镜像做多阶段；`requirements.txt` 锁版本保证可复现。\n  - 关键：embedding 需要 API Key + 网络，缺失时脚本应**返回友好错误让前端如实显示**，而不是让整个服务崩。\n\n**项目实践**：`week4/backend/src/routes/ragRoutes.js` 通过 `spawn` 调用 `week4/backend/scripts/rag_query.py`；容器内缺 Python/脚本会导致 `/api/rag` 不可用（08-14 已记录为 known limitation），需在镜像内补齐 Python 依赖或改为调用外部 embedding 服务。",
+    "a": "**Python 依赖必须随镜像一起装，缺依赖要返回友好错误而不是让服务崩。**\n- embedding/入库依赖 Python 脚本与第三方库，不能假设宿主机有\n- 镜像内建 venv 并 `pip install -r requirements.txt`，锁版本保证可复现\n- 或用官方 Python 基础镜像做多阶段构建\n- 缺 Key/网络时脚本应返回错误让前端如实显示",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-5",
     "module": "aistudy",
     "q": "Q5 检索片段不污染持久化历史",
-    "a": "**考察点**：上下文拼接、来源可信、历史隔离。\n\n**标准解答**：- 检索 top-k 片段注入**本轮请求**的 LLM 消息最前（system / 独立 context 段），拼在 DB 历史之后。\n  - **检索片段只进本轮上下文，不写进持久化 `Message` 表**，否则用户历史被文档片段污染、越攒越乱、还会重复计费。\n  - 尽量在回答里给出引用来源，便于溯源。\n\n**项目实践**：`week4/backend/src/routes/ragRoutes.js` 拼装 `llmMessages` 时先 `getHistory(sessionId)` 取历史，再 append 检索到的文档片段，检索结果不落 `Message` 表。",
+    "a": "**检索片段只进本轮请求的上下文，不写进持久化 Message 表。**\n- 先 `getHistory(sessionId)` 取历史，再 append 检索到的文档片段\n- 检索结果不落库：否则用户历史被文档污染、越攒越乱\n- 还能避免重复计费\n- 回答里给出引用来源便于溯源",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-6",
     "module": "aistudy",
     "q": "Q6 RAG/Agent 容器内部不可用的架构解法",
-    "a": "**考察点**：架构决策、服务边界、部署可行性。\n\n**标准解答**：（三种取舍）：\n  - **容器内补齐依赖**：在 backend 镜像里装 Python + 依赖，spawn 同容器进程。优点：单一部署单元；缺点：镜像变大、Python/Node 混编维护重。\n  - **拆成独立服务**：把 RAG/Agent 的 Python 部分独立成微服务（FastAPI 等），backend 走 HTTP 调用。优点：职责清晰、可独立扩容；缺点：多一个服务要管。\n  - **改调外部/Managed 服务**：embedding、LLM 直接调云厂商 API，Agent 逻辑也用 LLM 原生 function calling，尽量少自己托管 Python。优点：最省运维；缺点：依赖外网与配额。\n  - 选哪种看团队规模与合规要求，小项目优先「容器内补齐」或「外部服务」。\n\n**项目实践**：08-14 记录 week4 的 `/api/rag`、`/api/agent` 因容器内缺 Python 脚本而暂不可用；待办即「容器补齐依赖 或 改调外部服务」二选一。",
+    "a": "**三种取舍：容器内补齐依赖、拆成独立服务、改调外部 Managed 服务。**\n- 容器内补 Python：单一部署单元，但镜像变大、Python/Node 混编难维护\n- 拆独立服务（FastAPI）：职责清晰可独立扩容，多一个服务要管\n- 调外部 API：最省运维，但依赖外网与配额\n- 小项目优先「容器内补齐」或「外部服务」",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-7",
     "module": "aistudy",
     "q": "Q7 Agent 容器部署环境一致 + 降级",
-    "a": "**考察点**：多语言协作、依赖隔离、容错。\n\n**标准解答**：- 在 Agent 目录建独立 `.venv` 装 `openai/serpapi/yfinance` 等，避免与系统 Python 冲突导致 `ModuleNotFoundError`。\n  - spawn 时把 `cwd` 设为脚本目录，使 `load_dotenv()` 正确加载该目录 `.env`（API Key）。\n  - 监听 `py.on('error')` 防止子进程异常杀掉主进程。\n  - **可选依赖惰性导入**：`serpapi/yfinance` 放函数内 `import`，缺失时返回友好错误而非整体崩溃。\n\n**项目实践**：`week4/backend` 的 `agentService.js` spawn 独立 `.venv` 的 python；`week3-Agent/react-agent/` 下 `.venv` + `.env` 隔离；惰性导入降级模式。",
+    "a": "**Agent 用独立 venv + 正确 cwd + 惰性导入，保证环境一致且缺依赖能降级。**\n- Agent 目录建 `.venv` 装 openai/serpapi/yfinance，避免与系统 Python 冲突\n- spawn 时 `cwd` 指向脚本目录，`load_dotenv()` 才加载到正确的 `.env`\n- 监听 `py.on(\"error\")`，防子进程异常杀掉主进程\n- 可选依赖放函数内 import，缺失返回友好错误",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-8",
     "module": "aistudy",
     "q": "Q8 Node spawn Python 的正确环境加载",
-    "a": "**考察点**：跨语言调用细节、路径与密钥。\n\n**标准解答**：- 用 `child_process.spawn` 时显式传 `cwd` 到脚本所在目录，保证相对路径、`load_dotenv()` 加载到正确的 `.env`。\n  - 通过 `env` 透传必要变量（或让脚本自己 dotenv 加载），避免「本地能跑、CI/容器找不到 Key」。\n  - 用 `stdio: ['pipe','pipe','pipe']` 捕获 stdout/stderr，解析 JSON 输出；超时要有上限，防 Python 卡死拖垮主进程。\n\n**项目实践**：`week3-Agent/react-agent` 的 `.venv` + `.env` 隔离模式，spawn 时 cwd 指向该目录，.env 里的 Key 由 dotenv 加载，缺 Key 时前端如实报错。",
+    "a": "**spawn 要显式传 cwd 与 env，并接好 stdio 与超时，别让子进程成盲盒。**\n- `cwd` 指向脚本目录，保证相对路径与 `load_dotenv()` 正确\n- 通过 `env` 透传必要变量，避免「本地能跑、容器找不到 Key」\n- `stdio: [\"pipe\",\"pipe\",\"pipe\"]` 捕获 stdout/stderr 解析 JSON\n- 设超时上限，防 Python 卡死拖垮主进程",
     "priority": 1
   },
   {
     "id": "aistudy-20260817-9",
     "module": "aistudy",
     "q": "Q9 Agent 链路容器不可用的架构取舍",
-    "a": "**考察点**：同 Q6 的 Agent 视角，考察是否能权衡运维成本。\n\n**标准解答**：优先「容器内补 Python 依赖」（小项目最快）或「Agent 逻辑改用 LLM 原生 function calling + 外部工具服务」（少托管 Python）。核心是别让 Python 子进程成为单点故障源，缺依赖要优雅降级而非崩溃。\n\n**项目实践**：week4 的 `agentRoutes.js` 已挂路由与限流，但容器缺 Python 脚本 → 该链路在容器内暂不可用，待补依赖或外移。",
+    "a": "**优先容器内补依赖或改用 LLM 原生 function calling，别让 Python 子进程成单点。**\n- 小项目最快：容器内补齐 Python 依赖\n- 省运维：Agent 逻辑改用原生 function calling + 外部工具服务\n- 核心是缺依赖优雅降级，而不是整条链路崩掉",
     "priority": 1
   },
   {
     "id": "aistudy-20260820-1",
     "module": "aistudy",
     "q": "什么是 LCEL？`prompt | llm | StrOutputParser()` 底层是什么类型，为什么推荐用它而不是手写调用？",
-    "a": "**考察点**：是否理解 LangChain 的「Runnable 统一接口」设计，而不只是会调 API；能否说清它带来的可组合性与流式/批处理免费继承。\n\n**标准解答**：- LCEL（LangChain Expression Language）是用 `|` 把多个 **Runnable** 组合成一条链的领域特定写法。\n  - `prompt | llm | StrOutputParser()` 底层是一个 `RunnableSequence`（顺序执行的 Runnable 序列）。\n  - 关键收益：链作为一个整体，自动继承 `invoke` / `stream` / `batch` / `ainvoke` 等统一接口——你不用自己写 for 循环、不用手动拼接流式 token、不用为批量请求单独写并发；LangChain 在底层统一处理。\n  - 对比手写：`llm(prompt.format(...))` 要自己解析返回、自己处理流式、自己管批处理；LCEL 把这些收敛成声明式管道。\n\n**项目实践**：本工作区 `week6/test_langchain.py` 就是最小样例——`chain = prompt | llm | StrOutputParser()`，然后 `chain.invoke({\"topic\": \"LangChain\"})` 一句出字。`week4/backend` 已装 `langchain@^1.5.9`，等于把这条能力挂到现有 Express 后端上，而不是另起服务。",
+    "a": "**LCEL 是用 `|` 把 Runnable 串成链，`prompt | llm | StrOutputParser()` 底层是 `RunnableSequence`。**\n- 链作为整体自动继承 `invoke` / `stream` / `batch` / `ainvoke`\n- 不用自己写 for 循环、拼流式 token、管批量并发\n- 手写 `llm(prompt.format())` 要自己解析返回、自己处理流式\n- 声明式管道，组件可自由替换",
     "priority": 1
   },
   {
     "id": "aistudy-20260820-2",
     "module": "aistudy",
     "q": "如何用 LangChain 接入 DeepSeek（OpenAI 兼容）？需要注意什么？",
-    "a": "**考察点**：是否理解「OpenAI 兼容协议」这层抽象；能否讲清 base_url / model 两个旋钮；是否意识到国产模型接入的坑（接口前缀、密钥变量名）。\n\n**标准解答**：- DeepSeek 提供 OpenAI 兼容端点，所以**不需要 DeepSeek 专用 SDK**，用 `langchain_openai.ChatOpenAI` 即可，只需改两个参数：`model=\"deepseek-chat\"`、`base_url=\"https://api.deepseek.com/v1\"`。\n  - 鉴权走 OpenAI 的 `OPENAI_API_KEY` 变量（即使接的是 DeepSeek），所以常写 `os.environ[\"OPENAI_API_KEY\"] = \"...\"`。\n  - 注意点：① base_url 必须带 `/v1` 后缀；② 走的是 DeepSeek 的近似分词，token 计数与官方会有偏差；③ **密钥绝不能硬编码进源码**（见第 6 题后的易错提示）。\n\n**项目实践**：`week6/test_langchain.py`、`day3_chain.py`、`day4.py` 三处都是 `ChatOpenAI(model=\"deepseek-chat\", base_url=\"https://api.deepseek.com/v1\")`。这和 `week4/backend` 用 axios 直连 DeepSeek 是同一思路，只是被框架收敛了——面试时可以说「我们后端早期是裸 axios 直连，后来迁到 LangChain 统一 Runnable 接口」。",
+    "a": "**DeepSeek 提供 OpenAI 兼容端点，用 `ChatOpenAI` 改 model 与 base_url 即可。**\n- `model=\"deepseek-chat\"`、`base_url=\"https://api.deepseek.com/v1\"`\n- 鉴权仍走 `OPENAI_API_KEY` 变量，即使接的是 DeepSeek\n- base_url 必须带 `/v1` 后缀；token 计数是近似值，与官方有偏差\n- 密钥绝不硬编码进源码",
     "priority": 1
   },
   {
     "id": "aistudy-20260820-3",
     "module": "aistudy",
     "q": "`RunnablePassthrough.assign` 在 LCEL 多链串联中起什么作用？给一个真实例子。",
-    "a": "**考察点**：是否真正写过「链套链」的编排，而不只是单链；能否解释「如何把上一步的输出喂给下一步、且保留原始输入」。\n\n**标准解答**：- 单链里 `x | y` 是把上一步的**整个输出**传给下一步。但多链串联时，往往需要「保留原始输入 + 把中间结果挂到字典新键上」再往下走。\n  - `RunnablePassthrough.assign(key=lambda x: ...)` 的作用：原样透传输入 `x`，同时往 `x` 这个字典里 **assign（写入）一个新键值**，返回扩充后的字典给下游。\n  - 例子：先翻译、再把译文喂给「写故事」链——可以用 `assign` 把 `translate_chain` 的结果写到 `translated_text` 键，下游 `story_prompt` 就能用 `{translated_text}` 占位符。\n\n**项目实践**：`week6/day3_chain.py` 真实代码：\n  ```python\n  full_chain = (\n      {\"input\": lambda x: x}\n      | RunnablePassthrough.assign(\n            translated_text=lambda x: translate_chain.invoke({\"input\": x[\"input\"]})\n        )\n      | story_prompt | llm | StrOutputParser()\n  )\n  ```\n  这里 `translate_chain.invoke` 在 `assign` 里被调用，结果挂到 `translated_text`，`story_prompt` 才能消费。这是「声明式把链 A 的输出注入链 B」的标准写法。",
+    "a": "**`assign` 原样透传输入，同时往字典里挂一个新键，供下游链用占位符消费。**\n- 普通 `x | y` 把整个输出传给下一步，原始输入会丢\n- `RunnablePassthrough.assign(k=lambda x: ...)` 返回扩充后的字典\n- 典型场景：先翻译、把译文挂到 `translated_text`，再喂给写故事的链\n```python\nfull_chain = (\n    {\"input\": lambda x: x}\n    | RunnablePassthrough.assign(\n        translated_text=lambda x: translate_chain.invoke({\"input\": x[\"input\"]}))\n    | story_prompt | llm | StrOutputParser()\n)\n```",
     "priority": 3
   },
   {
     "id": "aistudy-20260820-4",
     "module": "aistudy",
     "q": "`chain.invoke()` 和 `chain.stream()` 的区别？什么场景用流式？",
-    "a": "**考察点**：是否理解 Runnable 的同步聚合 vs 增量输出两种调用模式，以及它与前端体验（打字机效果）的关系。\n\n**标准解答**：- `invoke(input)`：一次性拿到完整结果（聚合后的最终值），适合后台任务、批处理、评测。\n  - `stream(input)`：返回一个**增量迭代器**，逐块（token / chunk）吐出内容，适合需要「边生成边展示」的对话界面。\n  - 两者是同一 Runnable 的两种接口，背后是同一个链，只是消费方式不同；LCEL 让这一切「免费」——只要链里每个组件支持流式，整条链就天然可流式。\n  - 场景：聊天机器人前端用 `stream` 做打字机效果；异步后端聚合、落库、评测用 `invoke` / `batch`。\n\n**项目实践**：`week6/day3_chain.py` 同时演示了两种——`story_chain.invoke(...)` 出整段，以及 `for chunk in full_chain.stream(...): print(chunk, end=\"\", flush=True)` 逐字打印。这条 `.stream()` 通道可直接对接 `week4/backend` 已有的 SSE（Server-Sent Events）接口，把增量推到前端。",
+    "a": "**`invoke` 一次性拿到完整结果，`stream` 返回增量迭代器逐块吐内容。**\n- `invoke`：后台任务、批处理、评测\n- `stream`：聊天界面的打字机效果，边生成边展示\n- 同一条链的两种消费方式，LCEL 让流式「免费」继承\n- 链里每个组件支持流式，整条链就天然可流式",
     "priority": 3
   },
   {
     "id": "aistudy-20260820-5",
     "module": "aistudy",
     "q": "LangChain 里怎么管理多轮对话记忆？`ConversationBufferMemory(return_messages=True)` 的 `return_messages` 影响什么？",
-    "a": "**考察点**：是否理解「记忆组件」这一层抽象；能否说清 buffer 记忆的取舍、`return_messages` 对下游格式的影响。\n\n**标准解答**：- `ConversationBufferMemory` 是最简单的记忆：把历史消息**原样缓冲**下来，每次对话把缓冲拼进 prompt。\n  - 配合 `ConversationChain(llm=llm, memory=memory)` 后，框架会自动在每轮把历史注入、并把本轮问答写回缓冲，你不用手写 history 数组。\n  - `return_messages=True` 决定记忆以什么形态返回给链：\n    - `True` → 返回 `AIMessage` / `HumanMessage` **消息对象列表**，适合对接 ChatModel（消息格式）；\n    - `False` → 返回拼接好的纯文本字符串，适合对接旧式 LLM 文本接口。\n  - 取舍：Buffer 记忆不压缩、不摘要，对话越长上下文越涨（和 week4 `tokenService.js` 的截断逻辑是同一个矛盾的两面）。\n\n**项目实践**：`week6/day4.py` 用 `ConversationBufferMemory(return_messages=True)` + `ConversationChain(verbose=True)` 做多轮测试：先 `predict(\"你好，我叫小明。\")`，再 `predict(\"我叫什么名字？\")` 能答出「小明」，证明历史被框架自动管理。`memory.buffer` 可直接打印当前缓冲内容。",
+    "a": "**`ConversationBufferMemory` 原样缓冲历史，`return_messages` 决定返回消息对象还是纯文本。**\n- `True` → `AIMessage`/`HumanMessage` 列表，对接 ChatModel 消息格式\n- `False` → 拼接好的纯文本，对接旧式 LLM 文本接口\n- 配 `ConversationChain(llm, memory)` 后自动注入历史、自动写回本轮\n- 不压缩不摘要，对话越长 token 线性膨胀",
     "priority": 1
   },
   {
     "id": "aistudy-20260820-6",
     "module": "aistudy",
     "q": "框架的 `ConversationBufferMemory` 和你之前手写的 ReAct 历史数组，本质区别是什么？什么场景该用框架、什么场景手写？",
-    "a": "**考察点**：是否真正做过 Agent，而不只是调库；能否对比「抽象层级」与「可控性」的权衡——这是高级前端/Agent 岗高频题。\n\n**标准解答**：- 手写 ReAct（本工作区 week3）：自己维护一个 `history` 数组，每轮把 `Thought/Action/Observation` 拼进 prompt，自己控制截断、自己解析工具调用。可控性最高，但样板代码多、易出错。\n  - 框架记忆（如 `ConversationBufferMemory` / LangGraph checkpoint）：把「状态管理」下沉到组件/图里，自动持久化、自动注入，开发快、可运维（LangSmith 可追踪）。代价是抽象变厚，遇到非标准流程要绕。\n  - 怎么选：标准多轮问答 → 框架记忆足够；需要自定义推理循环、工具编排、条件分支、人工介入 → 用 LangGraph 图 + checkpoint，或保留手写循环。本工作区正是这个演进路径：week3 手写 ReAct → 08-17 装了 LangGraph + checkpoint → 下一步评估用图重写。\n\n**项目实践**：`week3-Agent/react-agent/agent_core.py` 是手写 ReAct 循环（自己拼 history、自己截断）；`week6/day4.py` 是用 `ConversationChain` 把同样的「多轮记忆」交给框架。面试时可以说：「我们早期为完全可控用手写循环，后来接 LangChain/LangGraph 是为了把状态管理交给图 + checkpoint，减少样板、并获得 LangSmith 链路追踪」——这就是一个真实的演进故事，比背概念有说服力。\n\n---",
+    "a": "**手写循环完全可控但样板多，框架把状态管理下沉、开发快但抽象厚。**\n- 手写：自己拼 Thought/Action/Observation、自己截断、自己解析工具调用\n- 框架：自动持久化与注入，还能用 LangSmith 追踪链路\n- 标准多轮问答→框架记忆；自定义推理循环/条件分支→LangGraph + checkpoint\n💡 记忆/追问：讲清「手写→框架」的演进理由比背概念有说服力",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-1",
     "module": "aistudy",
     "q": "`ConversationBufferMemory` 与 `ConversationSummaryMemory` 的本质区别？什么场景该用 Summary？",
-    "a": "**考察点**：是否理解「记忆压缩」这一层抽象，能否讲清 token 成本与信息保真度的权衡（这是长对话治理的核心题，和后端 token 截断是同一矛盾）。\n\n**标准解答**：- **Buffer**：把历史消息**原样堆叠**，每次对话把整段缓冲拼进 prompt。保真度最高，但 token 随轮次**线性膨胀**，长对话必爆上下文。\n  - **Summary**：额外引入一个 LLM，把旧历史**压成一段持续更新的摘要**，token 占用**近似恒定**，但摘要是**有损**的（细节会丢）。\n  - 怎么选：对话短、且需要精确回忆细节（如用户刚说的名字）→ Buffer；对话很长、且只关心「大意」→ Summary；也可组合（近期 Buffer + 远期 Summary）。\n\n**项目实践**：`week6/day4.py` 同文件演示两种——先用 `ConversationBufferMemory(return_messages=True)` 跑「我叫小明」→「我叫什么」能精确答出；再切 `ConversationSummaryMemory(llm=llm, return_messages=True)` 跑同样流程。这正好对应 `week4/backend` 里 `tokenService.js` 的 token 截断痛点：都在解决「历史太长怎么塞进上下文」。",
+    "a": "**Buffer 原样堆叠保真但 token 线性膨胀，Summary 用 LLM 压成摘要、占用近似恒定但有损。**\n- Buffer：每次把整段缓冲拼进 prompt，保真度最高\n- Summary：额外引入一个 LLM 持续更新摘要，token 近似恒定\n- 短对话且要精确回忆细节（如刚说的名字）→ Buffer\n- 长对话只关心大意→Summary；也可近期 Buffer + 远期 Summary",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-10",
     "module": "aistudy",
     "q": "改别人的 `index.html` 注入模块时，CRLF 和「行内锚点」各带来什么坑？",
-    "a": "**考察点**：真实踩坑细节——写文件类脚本最容易被「看不见的字节」坑。\n\n**标准解答**：- **坑 A（CRLF）**：别人的 `index.html` 是 Windows 换行（`\\r\\n`），Python 读进来每行带 `\\r`，正则/字符串匹配全部失配。→ 读取后统一 `.replace(\"\\r\\n\", \"\\n\")` 再处理。\n  - **坑 B（行内锚点）**：像 `},{id:'resume',name:'项目深挖'}\\n];` 这种**行内写法**，锚点字符串**不能带前导两个空格**，否则匹配不到。→ 改之前先 `grep` 出真实字节形态再写死锚点。\n\n**项目实践**：`docs/面试题/sync_to_drill.py` 注册 `aistudy` 模块时踩过这两处；脚本里读取即做 `\\r\\n→\\n` 归一，锚点用 `grep` 实扫出的精确字符串。",
+    "a": "**改别人的 HTML：先归一化换行，锚点必须按真实字节写死。**\n- CRLF：读进来每行带 `\\r`，正则全失配 → 先 `.replace(\"\\r\\n\",\"\\n\")`\n- 行内锚点：像 `},{id:resume}` 这种行内写法，锚点不能带前导空格\n- 改之前先 grep 出真实字节形态再写死锚点",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-11",
     "module": "aistudy",
     "q": "跑 week6 脚本为什么必须用 `week6/langchain_env/Scripts/python.exe`？用错解释器报什么错？",
-    "a": "**考察点**：本地多环境排查——Python 多 venv 并存是常态，能一句话定位「缺模块」的真因。\n\n**标准解答**：- 不同 venv 装了不同依赖。`langchain_classic` 只装在 `week6/langchain_env` 里；用系统/其他 Python 跑就会 `ModuleNotFoundError`。\n  - 用错解释器典型报错：`ModuleNotFoundError: No module named 'langchain_classic'`（或 `langchain_core`/`langchain_openai`）。\n  - 跑法：先 `set DEEPSEEK_API_KEY=sk-xxx`，再 `.\\langchain_env\\Scripts\\python.exe day5-6.py`；VS Code 把解释器选成 `./week6/langchain_env/Scripts/python.exe`。\n\n**项目实践**：用户曾直跑 `week6/day5-6.py` 报 `ModuleNotFoundError: langchain_classic`；根因是没用 `langchain_env` 解释器。本工作区两套 venv 并存（`part1/.venv`：langchain 1.3.15 + openai 2.52.0；`week6/langchain_env`：pydantic 2.13.4 + langchain-core/openai 1.6.0 + langchain-classic 1.0.8），跑前务必确认用哪个。",
+    "a": "**`langchain_classic` 只装在 week6 的 venv 里，用错解释器就 ModuleNotFoundError。**\n- 必须用 `week6/langchain_env/Scripts/python.exe` 跑脚本\n- 报错：`ModuleNotFoundError: No module named \"langchain_classic\"`\n- 跑前 `set DEEPSEEK_API_KEY=sk-xxx`；VS Code 解释器也要选对\n- 本工作区两套 venv 并存，跑前先确认用哪个",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-12",
     "module": "aistudy",
     "q": "你在本工作区怎么处理 API Key 安全？为什么 `os.getenv` 还不够、必须去后台轮换？",
-    "a": "**考察点**：最高频安全题 + 本工作区真实事故，讲「我踩过、怎么修的」极其加分。\n\n**标准解答**：- **错误写法**：把 `sk-xxx` 明文写进源码（如 `os.environ[\"OPENAI_API_KEY\"] = \"sk-...\"`）。源码进 git 历史就永久泄露，且 `.env` 也常被误提交。\n  - **正确写法**：`os.environ[\"OPENAI_API_KEY\"] = os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 `raise` 提示；`.env` 必须被 `.gitignore` 覆盖，用 `python-dotenv` 的 `load_dotenv()` 读。\n  - **为什么 `os.getenv` 不够**：它只解决「不再硬编码到工作区文件」，但**已经泄露过的 Key 还在生效**。只要历史里、或曾 push 出去过，别人照样能用。所以必须去 DeepSeek 后台「API Keys」页面**轮换作废**（1 分钟清零），若确认推过 GitHub 再 `git filter-repo` 擦历史 + force push。\n\n**项目实践**：`week6/day4.py:7`、`week6/test_langchain.py:8` 原来明文写 `sk-5a32...7724`（已清洗，今日提交 `1c7f89dc` 入库的是干净版）；历史上 `part1/week2/.env` 曾入库（Initial `8a955988`，后删除）。当前 P0 待办：**真 Key 仍未轮换**，且需自查是否 push 过 GitHub。",
+    "a": "**不硬编码 + .env 进 gitignore 只是第一步，泄露过的 Key 必须去后台轮换作废。**\n- 正确写法：`os.environ[\"OPENAI_API_KEY\"] = os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 raise\n- 用 `python-dotenv` 的 `load_dotenv()` 读 `.env`\n- `os.getenv` 只解决「不再写进文件」，已泄露的 Key 仍在生效\n- 去后台 API Keys 页轮换；确认推过 GitHub 再 `git filter-repo` 擦历史",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-13",
     "module": "aistudy",
     "q": "RAG 的基本链路是什么？（week2 存量巩固，非本窗口新学）",
-    "a": "**考察点**：RAG 基础概念是否扎实（本题沿用 week2-RAG 存量能力，本期 08-20~22 未新增 RAG 学习）。\n\n**标准解答**：- 离线建库：文档切分（chunk）→ embedding 向量化 → 存入向量库（如 FAISS / Chroma / Milvus）。\n  - 在线检索：用户 query → embedding → 在向量库做**相似度检索**取 top-k 相关 chunk。\n  - 生成：把检索到的 chunk 拼进 prompt 作为上下文，交给 LLM 生成带引用的答案。\n  - 关键在「检索质量」：切分粒度、embedding 模型、相似度算法共同决定召回准不准。\n\n**项目实践**：本工作区 `week2-RAG/` 即 RAG 学习主线；它和 week6 的 Agent 可衔接——Agent 的 `search_web`/`retriever` 工具本质就是 RAG 检索能力的封装。",
+    "a": "**离线建库（切块→embedding→向量库），在线检索（query→embedding→top-k），再拼进 prompt 生成。**\n- 相似度检索取 top-k 相关 chunk 作为上下文\n- 切分粒度、embedding 模型、相似度算法共同决定召回准不准\n- 常用向量库：FAISS / Chroma / Milvus\n- 生成时尽量带引用来源，便于溯源",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-14",
     "module": "aistudy",
     "q": "向量检索里「相似度」怎么算？为什么不同 embedding 模型结果差异大？（week2 存量巩固）",
-    "a": "**考察点**：是否理解 embedding 是「模型相关」的，而非通用距离。\n\n**标准解答**：- 相似度通常用语义向量的**余弦相似度**（或内积 / 欧氏距离）衡量：两个文本向量夹角越小越相似。\n  - 差异大的根因：embedding 是**特定模型训练出来的映射**，不同模型的向量空间不同——同一句话在模型 A 和模型 B 下的向量不可直接比较，检索准确率也因模型而异。所以不能混用不同模型的 embedding 做检索。\n\n**项目实践**：`week2-RAG/` 的向量库与 `week4/backend` 的检索链路若换 embedding 模型，必须**重建索引**，否则相似度计算无意义。\n\n---",
+    "a": "**相似度通常用余弦相似度衡量；embedding 是模型相关的映射，不同模型不可混用。**\n- 两个向量夹角越小越相似（也可用内积或欧氏距离）\n- 不同模型的向量空间不同，同一句话的向量不能直接比较\n- 换 embedding 模型必须重建索引，否则相似度计算无意义",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-2",
     "module": "aistudy",
     "q": "`ConversationSummaryMemory` 为什么必须传入 `llm`？它会「丢」什么信息？",
-    "a": "**考察点**：是否真跑过 Summary Memory、观察到它的有损行为，而不是只背定义。\n\n**标准解答**：- 它要靠一个 LLM 把旧历史**重写/摘要**成一段文字，所以构造时必须传 `llm` 给它当「压缩器」用。\n  - 丢信息是必然的：**摘要只保留它认为重要的内容**，那些没有显式说出口、却隐含在对话里的信息推不出来。\n  - 例子：用户说「我喜欢打篮球」，摘要可能记成「用户喜欢篮球」；但后续问「我最喜欢的球星是谁」，模型答不上——因为「最喜欢哪个球星」从来没在对话里出现过，摘要也压不出这个没说过的事实。\n\n**项目实践**：`week6/day4.py` 的 `conversation_summary.predict(\"我最喜欢的球星是谁？\")` 就是这条踩坑演示；`summary_memory.buffer` 可直接打印压缩后的摘要，肉眼能看到细节被抹平。",
+    "a": "**Summary 要靠一个 LLM 当「压缩器」重写历史，所以必须传 `llm`；它丢的是细节。**\n- 摘要只保留它认为重要的内容，没说出口的隐含信息压不出来\n- 例：只说过「喜欢打篮球」，问「最喜欢的球星是谁」答不出——从没提过\n- `summary_memory.buffer` 可直接打印，肉眼能看到细节被抹平",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-3",
     "module": "aistudy",
     "q": "`ConversationChain` 相比手写 history 数组，自动替你做了哪几件事？",
-    "a": "**考察点**：是否理解「框架把状态管理下沉」这件事，能否对比 week3 手写 ReAct 的样板代码。\n\n**标准解答**：- 手写（week3）：自己维护 history 数组、自己把 `Thought/Action/Observation` 拼进 prompt、自己截断、自己把本轮问答写回。样板多、易错，但完全可控。\n  - `ConversationChain(llm=llm, memory=memory)`：自动在每轮把 memory 里的历史注入 prompt、把本轮 human/AI 消息写回 memory、按 memory 类型决定注入格式（消息对象 vs 纯文本）。你只写「对话内容」，状态管理交给 memory 组件。\n  - 代价：抽象变厚，非标准流程要绕。标准多轮问答用它最快。\n\n**项目实践**：`week3-Agent/react-agent/agent_core.py` 是手写循环；`week6/day4.py` 把同样的「多轮记忆」交给 `ConversationChain`。演进路径：week3 手写（完全可控）→ 接 LangChain/LangGraph（状态管理交给图 + checkpoint，获得 LangSmith 追踪）。面试讲这个真实故事比背概念有说服力。",
+    "a": "**它替你注入历史、写回本轮问答、并按 memory 类型决定注入格式。**\n- 手写要自己维护 history 数组、拼 prompt、截断、写回，样板多易错\n- `ConversationChain(llm=llm, memory=memory)` 后你只写对话内容\n- 代价是抽象变厚，非标准流程要绕\n💡 记忆/追问：标准多轮问答用它最快，复杂流程上 LangGraph",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-4",
     "module": "aistudy",
     "q": "`create_react_agent` 与 `create_openai_tools_agent` 本质区别？什么场景选哪个？",
-    "a": "**考察点**：是否真正踩过 ReAct 的坑、做过范式选型，而不是只会调一个 API。\n\n**标准解答**：- **文本解析式 ReAct**（`create_react_agent`）：靠 Prompt 约定 `Thought/Action/Action Input/Observation` 文本格式，再用**正则**解析模型输出拿到工具调用。强依赖模型的**格式跟随能力**，弱模型极易跑偏。\n  - **原生工具调用式**（`create_openai_tools_agent`）：走 OpenAI 兼容的 **function calling**，模型以**结构化字段**返回「调哪个工具、传什么参数」，无需文本解析。\n  - 怎么选：模型支持 function calling（如 DeepSeek-chat）→ 优先 tools agent，稳且不死循环；ReAct 文本式留给不支持 function calling 的模型。\n\n**项目实践**：`week6/day5-6.py` 最初想用 ReAct，但 DeepSeek 没严格按格式停笔，每轮重发 `Action: calculator`、5 轮烧光被强停（见第 7 题）。最终切 `create_openai_tools_agent(llm, tools, prompt)`，Prompt 改成 `ChatPromptTemplate` + `MessagesPlaceholder(\"agent_scratchpad\")`，工具与测试用例原样不动即根治。",
+    "a": "**ReAct 靠正则从文本抠工具调用、脆弱；tools agent 走 function calling、结构化返回更稳。**\n- 文本解析式强依赖模型格式跟随能力，弱模型极易跑偏\n- tools agent 直接拿「调哪个工具、传什么参」的结构化字段\n- 模型支持 function calling（如 DeepSeek-chat）就优先 tools agent\n- ReAct 留给不支持 function calling 的模型",
     "priority": 3
   },
   {
     "id": "aistudy-20260822-5",
     "module": "aistudy",
     "q": "`MessagesPlaceholder(variable_name=\"agent_scratchpad\")` 起什么作用？装的是什么？",
-    "a": "**考察点**：是否理解 tools agent 的 Prompt 骨架，而不是照抄模板。\n\n**标准解答**：- tools agent 需要在 Prompt 里预留一段「动态区」，承载**多轮工具调用 + 工具返回结果**的消息序列。\n  - `MessagesPlaceholder` 就是这个占位：在 `ChatPromptTemplate.from_messages([system, human, placeholder])` 里，它会被替换成**消息对象列表**（不是拼接字符串），列表内容由 AgentExecutor 在运行时填充（`AIMessage(tool_calls=...)` + `ToolMessage(...)`）。\n  - 变量名必须和 Agent 约定的 scratchpad 名一致（这里 `\"agent_scratchpad\"`）。\n\n**项目实践**：`week6/day5-6.py` 第 68–72 行就是这套骨架；`verbose=True` 运行时能在日志里看到 scratchpad 里逐步累积的「工具调用消息 + 工具结果消息」。",
+    "a": "**它是 prompt 里的动态占位区，装的是多轮工具调用与工具返回的消息序列。**\n- 被替换成**消息对象列表**，不是拼接字符串\n- 内容由 AgentExecutor 运行时填充：`AIMessage(tool_calls=...)` + `ToolMessage(...)`\n- 变量名必须与 Agent 约定的 `agent_scratchpad` 一致\n- `verbose=True` 能在日志里看到 scratchpad 逐步累积",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-6",
     "module": "aistudy",
     "q": "`Tool(name, func, description)` 三个参数各如何影响模型？`description` 写差了会怎样？",
-    "a": "**考察点**：是否理解「工具描述就是给模型的说明书」，这是 Agent 能不能选对工具的关键。\n\n**标准解答**：- `name`：工具在 function calling 里的标识，模型按它决定调谁。\n  - `func`：真正执行的 Python 函数，模型不关心内部实现。\n  - `description`：**给模型的自然语言说明书**，模型靠它判断「什么情况下该调这个工具、传什么参数」。写得好 → 选对工具、参数对；写得含糊/错 → 模型选错工具或传错参。\n  - 反面：若 calculator 的 description 写成「处理数学」，模型可能把「查时间」也塞给它。要写清「输入是数学表达式字符串」这类约束。\n\n**项目实践**：`week6/day5-6.py` 给三个工具各写了精准 description（`get_current_time`：「当用户问'现在几点'时使用」等）。这直接决定了第 7 题里复合问题「现在几点 + 算 100 平方根」能正确拆成两次工具调用。",
+    "a": "**`name` 决定调谁、`func` 是真正执行的函数、`description` 是给模型的说明书。**\n- 模型看不到代码，只能靠 description 判断何时调用、传什么参\n- description 写含糊，模型会选错工具或传错参数\n- 反例：calculator 写成「处理数学」，模型可能把「查时间」也塞给它\n- 要写清触发时机与参数约束，如「输入是数学表达式字符串」",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-7",
     "module": "aistudy",
     "q": "文本解析式 ReAct 为什么容易「卡迭代上限 / 死循环」？你在本工作区怎么根治的？",
-    "a": "**考察点**：满分题——既讲清根因（格式解析脆弱），又拿出本工作区的真实修复（换 tools agent），还能举一反三。\n\n**标准解答**：- 根因：ReAct 靠正则从模型文本里抠 `Action`/`Action Input`。一旦模型没严格按格式停笔（比如 `Action Input` 后黏了下一轮 `Thought`），解析器拿不到干净的 Action，就会重复发同一工具，5 轮（`max_iterations`）烧光后被强停，报 `Agent stopped due to iteration limit`。\n  - `handle_parsing_errors=True` 只是「不崩」，并**不能纠正行为**。\n  - 根治：换 `create_openai_tools_agent` 走 function calling，模型结构化返回工具调用，从根本上消灭「文本解析失败」这条死路。\n\n**项目实践**：`week6/day5-6.py` 的 `verbose` 日志曾显示模型每轮重发 `Action: calculator` 从不给 `Final Answer`；改用 tools agent 后，`max_iterations=5` 内稳定收敛。验证技巧：设 `DEEPSEEK_API_KEY=dummy` 用 `importlib` 加载模块，确认 `agent` 是 `RunnableSequence`、`executor` 是 `AgentExecutor`、3 工具注册正常且**不触发真实 API 调用**（省 token）。",
+    "a": "**根因是正则抠不出干净的 Action，根治是换 tools agent 走 function calling。**\n- 模型没按格式停笔（Action Input 后黏了下一轮 Thought）→重复发同一工具\n- 5 轮 `max_iterations` 烧光后报 `Agent stopped due to iteration limit`\n- `handle_parsing_errors=True` 只是不崩，并不能纠正行为\n- 换 `create_openai_tools_agent` 后稳定收敛",
     "priority": 3
   },
   {
     "id": "aistudy-20260822-8",
     "module": "aistudy",
     "q": "把 `eval` 当 Agent 工具时，最低安全线怎么写？为什么不能直接 `eval(expr)`？",
-    "a": "**考察点**：安全素养——Agent 工具本质是在执行模型生成的字符串，绝不能直接交给 `eval`。\n\n**标准解答**：- 直接 `eval(expr)` 等于把模型生成的任意代码交给 Python 执行器，能读到环境变量、能 `import os` 删文件，是严重 RCE 风险。\n  - 最低安全线：沙箱化 `eval`，清空内建、只白名单注入所需符号：\n    `eval(expr, {\"__builtins__\": {}}, {\"sqrt\": math.sqrt, \"pi\": math.pi})`\n  - 更稳妥：用 `ast.literal_eval` 或专用数学解析库（如 `sympy`/`numexpr`）。\n\n**项目实践**：`week6/day5-6.py` 的 `calculator` 正是这个沙箱写法——只暴露 `sqrt`/`pi`，其余一律不可用；异常再包一层 `try/except` 返回「计算错误」而非抛出。",
+    "a": "**直接 `eval` 等于把模型生成的字符串交给 Python 执行，是 RCE；最低安全线是清内建 + 白名单。**\n- 直接 eval 能读环境变量、能 `import os` 删文件\n- 沙箱写法：清空 `__builtins__`，只注入需要的符号\n- 更稳妥：`ast.literal_eval` 或 `sympy`/`numexpr`\n```python\neval(expr, {\"__builtins__\": {}}, {\"sqrt\": math.sqrt, \"pi\": math.pi})\n```\n- 异常再包 `try/except` 返回「计算错误」而不是抛出",
     "priority": 1
   },
   {
     "id": "aistudy-20260822-9",
     "module": "aistudy",
     "q": "`sync_to_drill.py` 这套管道做了哪几件事？为什么必须幂等？",
-    "a": "**考察点**：工程化思维——脚本是给机器定时跑的，不是给人跑一次的；幂等是自动化脚本的底线。\n\n**标准解答**：- 它把每周面试题 md 变成刷题网页的一个模块：① 正则抓「三、逐题解读」区块 → 结构化成 `{id, module, q, a}`；② 双写两份副本（`interview-drill/deploy/data` 本地预览 + `_drill_repo/data` GitHub Pages 源）；③ 幂等注册模块——检测 `index.html` 的 `MODULES` 数组是否已有 `aistudy`，没有才插入；④ 支持 `--week YYYY-MM-DD`（只取该日所在周一~周日）与 `--push`。\n  - 为什么幂等：自动化每周日跑一次，重复跑不能重复插入模块、不能覆盖人工改动。按 `id` 去重 + 检测锚点是否已存在，保证「跑 N 次 == 跑 1 次」。\n\n**项目实践**：`docs/面试题/sync_to_drill.py`（174 行），08-21 种子导入 3 份历史面试题（08-13/08-17/08-20）共 33 题落库，`--push` 带 `GIT_TERMINAL_PROMPT=0` 与 90s 超时防挂死（沙箱无 GitHub 凭证，push 注定失败，需本机手动 `git push`）。",
+    "a": "**它把每周面试题 md 结构化成 JSON、双写两份副本并幂等注册模块。**\n- 正则抓「逐题解读」区块 → `{id, module, q, a}`\n- 双写 `deploy/data`（本地预览）与 `_drill_repo/data`（Pages 源）\n- 检测 `index.html` 的 MODULES 是否已有 aistudy，没有才插入\n- 支持 `--week` 与 `--push`；每周日定时跑，所以必须幂等",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-1",
     "module": "aistudy",
     "q": "用 LangChain 从零搭 RAG，分哪几步？",
-    "a": "**考察点**：是否真跑通过 RAG 全链路，还是只背概念；组件命名是否准确（新栈 `langchain-*` 拆分包）。\n\n**标准解答**：五步——① Loader 加载文档（`DirectoryLoader` + `TextLoader`）；② Splitter 切分（`RecursiveCharacterTextSplitter`）；③ Embedding 向量化（`OpenAIEmbeddings`）；④ VectorStore 入库/检索（`Chroma.from_documents` + `as_retriever`）；⑤ RetrievalQA 链组合检索与生成（`RetrievalQA.from_chain_type`，`chain_type=\"stuff\"`）。\n\n**项目实践**：`week6/day7_langchain_rag.py` 就是这条五步直线的落地：Loader→Splitter→`Chroma.from_documents(persist_directory=...)`→`RetrievalQA.from_chain_type(llm, chain_type=\"stuff\", retriever=vectorstore.as_retriever(search_kwargs={\"k\":3}), return_source_documents=True)`。08-24 已真跑通（`chroma_langchain/chroma.sqlite3` 282KB 为证）。",
+    "a": "**五步：Loader 加载 → Splitter 切分 → Embedding → VectorStore 入库检索 → RetrievalQA 组合生成。**\n- `DirectoryLoader` + `TextLoader` 读文档\n- `RecursiveCharacterTextSplitter` 切块\n- `OpenAIEmbeddings` 向量化，`Chroma.from_documents` 落库并 `as_retriever`\n- `RetrievalQA.from_chain_type(llm, chain_type=\"stuff\", retriever=..., return_source_documents=True)`",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-10",
     "module": "aistudy",
     "q": "`ModuleNotFoundError: langchain_classic` 怎么排查？",
-    "a": "**考察点**：定位能力——先查解释器还是先怪包。\n\n**标准解答**：先确认「用的是哪个 Python 解释器」，再怀疑包没装。虚拟环境并存时极易用错解释器：用系统/别的 Python 跑，自然找不到 venv 里装的 `langchain_classic`。用 `which/python -c \"import sys; print(sys.executable)\"` 看解释器路径，再进对应 venv 验证 `pip show langchain-classic`。\n\n**项目实践**：08-22 坑2 即用户直跑 `day5-6.py` 报缺 `langchain_classic`，根因是用了非 `week6/langchain_env` 的解释器；统一用 `.\\langchain_env\\Scripts\\python.exe` 即好。本工作区两套 venv 并存（`week6/langchain_env` 与 `part1/.venv`），跑前必确认。",
+    "a": "**先确认用的是哪个 Python 解释器，再去怀疑包没装。**\n- `python -c \"import sys; print(sys.executable)\"` 看解释器路径\n- 进对应 venv 用 `pip show langchain-classic` 验证\n- 虚拟环境并存时极易用错解释器，自然找不到 venv 里的包\n- 本工作区两套 venv 并存，跑前必确认",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-11",
     "module": "aistudy",
     "q": "RAG/LLM 脚本跑不起来，你总结过哪些典型错误？结合 day7 七连坑谈。",
-    "a": "**考察点**：工程排错经验，是否真被坑过、能否系统化分层（依赖/路径/编码/API/向量库）。\n\n**标准解答**：day7 一口气踩了 7 个，可归为五类——① 依赖/导入错位：旧写法命中死包（`langchain 0.2.0` 的 `langchain.x` 导入），换成 `langchain-*` 拆分包；② 路径/CWD：`DirectoryLoader(\"./documents\")` 相对路径找错目录，用 `__file__` 拼绝对路径；③ 跨平台编码（最阴）：Windows 默认 GBK，`TextLoader` 不显式 `encoding` 会用 GBK 解 UTF-8 字节 → `UnicodeDecodeError` 被包成 `RuntimeError: Error loading`，必须 `loader_kwargs={\"encoding\":\"utf-8\"}`；④ API 层：`OpenAIEmbeddings.check_embedding_ctx_length=True` 会把文本 tokenize 成 ID 数组发给通义 → 400，关掉即好；⑤ 向量库：换 embedding 模型维度变化（64 vs 1536）Chroma 报维度冲突，`try/except` 后 `shutil.rmtree` 重建。\n\n**项目实践**：`week6/day7_langchain_rag.py` 08-24 从「写完没跑」推到「真 Key 端到端跑通」，终版含 `loader_kwargs={\"encoding\":\"utf-8\"}`(L26)、`check_embedding_ctx_length=False`(L48)、`try/except chromadb.errors.InvalidArgumentError → shutil.rmtree`(L54-70) 三处防御。证据：`chroma_langchain/chroma.sqlite3` 237568 字节是真实通义 1536 维向量落盘；提交 `6d720c58` 已入库。\n\n---",
+    "a": "**day7 七连坑可归五类：依赖导入、路径 CWD、编码、API 参数、向量库维度。**\n- 依赖：旧写法命中死包，改用 `langchain-*` 拆分包\n- 路径：`DirectoryLoader(\"./documents\")` 相对路径找错，用 `__file__` 拼绝对路径\n- 编码（最阴）：Windows 默认 GBK，`TextLoader` 要显式 `encoding=\"utf-8\"`\n- API：`OpenAIEmbeddings(check_embedding_ctx_length=False)`，否则通义报 400\n- 向量库：换模型维度变化，捕获 `InvalidArgumentError` 后 rmtree 重建",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-2",
     "module": "aistudy",
     "q": "`RecursiveCharacterTextSplitter` 参数怎么设？中文为何定制 `separators`？",
-    "a": "**考察点**：是否理解「切分」对检索质量的影响，而非无脑默认值。\n\n**标准解答**：`chunk_size` 控制单块最大长度（太小丢上下文、太大超 token 且检索不精准，常用 300~1000）；`chunk_overlap` 块间重叠（保留跨块语义，常用 50~200）；`separators` 决定优先按什么断开——英文默认按 `\\n`/` `，中文要用 `[\\n\\n,\\n,。,！,？, ,]` 才能按句/段切，避免把一个完整句子劈成两半。\n\n**项目实践**：`week6/day7_langchain_rag.py` 设 `chunk_size=300, chunk_overlap=50, separators=[\"\\n\\n\",\"\\n\",\"。\",\"！\",\"？\",\" \",\"\"]`，实测把 2379 字节 test.txt 切成 4 块；对比 week2 手写 RAG 的切分逻辑，这里靠框架参数而非手写循环。",
+    "a": "**`chunk_size` 控长度、`chunk_overlap` 保跨块语义、`separators` 决定优先断点。**\n- `chunk_size` 常用 300~1000：太小丢上下文，太大超 token 且检索不精准\n- `chunk_overlap` 常用 50~200，避免把一个完整语义劈断\n- 中文要定制 separators，默认按英文空格切会把整句劈开\n```python\nRecursiveCharacterTextSplitter(\n    chunk_size=300, chunk_overlap=50,\n    separators=[\"\\n\\n\", \"\\n\", \"。\", \"！\", \"？\", \" \", \"\"])\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-3",
     "module": "aistudy",
     "q": "怎么用 OpenAI 兼容接口接国产模型？",
-    "a": "**考察点**：是否理解「OpenAI 兼容协议」这层抽象，能不依赖官方 SDK 接通义/DeepSeek。\n\n**标准解答**：国产模型大多提供 OpenAI 兼容 `base_url`。Embedding 用 `OpenAIEmbeddings(model=\"text-embedding-v1\", base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\", api_key=DASHSCOPE_API_KEY)`；对话用 `ChatOpenAI(model=\"deepseek-chat\", base_url=\"https://api.deepseek.com/v1\", api_key=...)`。核心就是把 `api_key` 和 `base_url` 指向对应厂商，模型名用厂商自己的。\n\n**项目实践**：`day7_langchain_rag.py` 正是「通义 Embedding + DeepSeek 生成」混用，两者都走 OpenAI 兼容 `base_url`；Key 从 `DASHSCOPE_API_KEY` / `DEEPSEEK_API_KEY` 环境变量读取，零硬编码。",
+    "a": "**把 `base_url` 与 `api_key` 指向厂商的 OpenAI 兼容端点，模型名用厂商自己的。**\n- 对话：`ChatOpenAI(model=\"deepseek-chat\", base_url=\"https://api.deepseek.com/v1\")`\n- Embedding：通义走 dashscope 的 compatible-mode/v1 + `DASHSCOPE_API_KEY`\n- Key 一律从环境变量读，零硬编码\n```python\nOpenAIEmbeddings(model=\"text-embedding-v1\",\n    base_url=\"https://dashscope.aliyuncs.com/compatible-mode/v1\",\n    api_key=DASHSCOPE_API_KEY)\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-4",
     "module": "aistudy",
     "q": "Chroma 怎么持久化？`chain_type=\"stuff\"` 和 `return_source_documents` 是什么？",
-    "a": "**考察点**：工程落地细节（持久化路径、链类型选择、可解释性）。\n\n**标准解答**：`Chroma.from_documents(documents=chunks, embedding=emb, persist_directory=\"绝对路径\")` 会在该目录生成 `chroma.sqlite3` + 集合子目录，下次直接 `Chroma(persist_directory=..., embedding=...)` 加载，不必重建。`chain_type=\"stuff\"` 把检索到的所有块直接拼进同一个 prompt（适合语料小、块少的场景，简单不丢信息）；`return_source_documents=True` 让 `invoke` 结果里带 `source_documents`，可在回答下展示引用出处，增强可信与可溯源。\n\n**项目实践**：day7 的 `persist_directory=os.path.join(BASE_DIR,\"chroma_langchain\")`（绝对路径），08-24 已生成真实 `chroma.sqlite3`；`ask()` 里 `for doc in result['source_documents']` 打印来源 `metadata['source']` 与内容前 50 字。",
+    "a": "**`persist_directory` 落盘生成 chroma.sqlite3，下次直接加载，不必重建索引。**\n- `Chroma.from_documents(documents=chunks, embedding=emb, persist_directory=绝对路径)`\n- 下次 `Chroma(persist_directory=..., embedding=...)` 直接加载\n- `chain_type=\"stuff\"`：把检索到的块全拼进同一个 prompt，适合语料小、块少\n- `return_source_documents=True`：结果带 `source_documents`，可展示引用出处",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-5",
     "module": "aistudy",
     "q": "手写 RAG（week2）vs LangChain 封装（week6）区别？",
-    "a": "**考察点**：有没有工程化视角，知道框架解决了什么、又藏了什么。\n\n**标准解答**：手写（week2）自己实现 embedding 调用、向量检索、prompt 拼接，可控、无黑盒，但重复造轮子、难组合；LangChain（week6）用 `Loader/Splitter/VectorStore/Chain` 标准件拼装，开发快、可替换组件（换 VectorStore 只改一行），代价是抽象层深、版本/依赖易踩坑（见题 11）。小项目/学习用手写加深理解，生产用框架提效。\n\n**项目实践**：week2 手写版在 `week2-RAG/`，week6 框架版即 `day7_langchain_rag.py`；两者 RAG 五步一一对应，框架版把 week2 的多段代码收敛成 5 个标准调用。",
+    "a": "**手写可控无黑盒但重复造轮子；框架用标准件拼装、组件可替换，代价是抽象深、依赖易踩坑。**\n- 手写：自己实现 embedding 调用、向量检索、prompt 拼接\n- 框架：Loader/Splitter/VectorStore/Chain，换 VectorStore 只改一行\n- 学习用手写加深理解，生产用框架提效",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-6",
     "module": "aistudy",
     "q": "ReAct agent vs OpenAI tools agent 区别？坑在哪？",
-    "a": "**考察点**：是否亲手对比过两种范式，知道 ReAct 的死循环问题。\n\n**标准解答**：ReAct 是「文本解析式」——模型输出 `Thought/Action/Action Input/Observation` 文本，框架用正则从文本里抠工具调用，脆弱、易格式错乱；tools agent（function calling）是模型原生结构化输出工具调用，框架直接解析 JSON，稳。`create_openai_tools_agent` 根治 ReAct 那种「凑不出格式→死循环烧光 `max_iterations`」的问题。\n\n**项目实践**：`week6/day5-6.py` 从手写 ReAct（week3-Agent）升级到 `create_openai_tools_agent`；08-22 记忆里记过「ReAct 死循环烧光 max_iterations → 换 tools agent 根治」。",
+    "a": "**ReAct 用正则抠文本、脆弱易死循环；tools agent 解析结构化 JSON，稳。**\n- ReAct 输出 `Thought/Action/Action Input/Observation`，靠正则解析\n- tools agent 用模型原生 function calling，框架直读结构化字段\n- `create_openai_tools_agent` 根治「凑不出格式→烧光 max_iterations」",
     "priority": 3
   },
   {
     "id": "aistudy-20260824-7",
     "module": "aistudy",
     "q": "Agent 记忆怎么管理？Buffer vs Summary 怎么选？",
-    "a": "**考察点**：长对话场景下的记忆策略，有无踩过 token 爆炸。\n\n**标准解答**：`ConversationBufferMemory` 全量保留历史，简单但 token 随对话线性增长，长会话会爆上下文；`ConversationSummaryMemory` 用 LLM 把历史压缩成摘要，省 token 但丢细节（如「最喜欢的球星」这种具体事实推不出）。短对话用 Buffer，长对话用 Summary 或二者结合。\n\n**项目实践**：`week6/day4.py` 跑过 Summary Memory，实测「摘要压缩后细节丢失」；与 week4 后端把对话历史迁数据库持久化、支持多会话的思路一脉相承。",
+    "a": "**Buffer 全量保留但 token 线性增长；Summary 压成摘要省 token 但丢细节。**\n- 短对话用 Buffer，长对话用 Summary 或二者结合\n- Summary 丢的是没说出口的具体事实（如「最喜欢的球星」推不出）\n- 也可近期 Buffer + 远期 Summary 组合",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-8",
     "module": "aistudy",
     "q": "`agent_scratchpad`（`MessagesPlaceholder`）起什么作用？",
-    "a": "**考察点**：tools agent 骨架是否真懂，而非套模板。\n\n**标准解答**：tools agent 的 prompt 里要留一个 `MessagesPlaceholder(\"agent_scratchpad\")`，框架把「工具调用↔工具返回」的中间过程（scratchpad）塞进这个占位符，模型下一轮才能看到之前的工具结果继续推理。缺了它就看不到工具返回值，agent 等于瞎子。\n\n**项目实践**：`week6/day5-6.py` 的 prompt 用 `MessagesPlaceholder(\"agent_scratchpad\")` 搭骨架；08-22 总结把它列为 Agent 主线知识点。",
+    "a": "**它是 prompt 里承载「工具调用 ↔ 工具返回」中间过程的占位符。**\n- 框架把 scratchpad 塞进 `MessagesPlaceholder(\"agent_scratchpad\")`\n- 模型下一轮才能看到工具结果继续推理\n- 缺了它 agent 看不到工具返回值，等于瞎子",
     "priority": 1
   },
   {
     "id": "aistudy-20260824-9",
     "module": "aistudy",
     "q": "你怎么管理 API Key？为什么不能硬编码？",
-    "a": "**考察点**：安全底线，是否踩过泄露坑。\n\n**标准解答**：绝不写死在源码/提交里。做法：代码里 `os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 `raise` 提示；运行时用环境变量（临时 `PowerShell $env:DEEPSEEK_API_KEY='...'`，永久 `[Environment]::SetEnvironmentVariable(...,\"User\")`）；`.env` 走 `gitignore` 不入库。硬编码一旦 push 到 GitHub，密钥扫描器秒捡，必须去后台作废轮换。\n\n**项目实践**：本工作区曾把真 Key `sk-5a32...7724` 明文写进 `week6/day4.py`、`test_langchain.py` 和 `week2/.env`（历史），08-22 已清洗为 `os.getenv`；但真 Key 至今未轮换，是连续多日的 P0 待办。day7 第 10 行 `os.environ[\"OPENAI_API_KEY\"]=os.getenv(\"DEEPSEEK_API_KEY\",\"\")` 即此模式。",
+    "a": "**代码只读环境变量、.env 进 gitignore；硬编码一旦 push 必须去后台轮换。**\n- `os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 raise 提示\n- 临时：`$env:DEEPSEEK_API_KEY=...`；永久用 `SetEnvironmentVariable(..., \"User\")`\n- 硬编码 push 到 GitHub 会被密钥扫描器秒捡，只能作废轮换",
     "priority": 1
   },
   {
     "id": "aistudy-20260826-1",
     "module": "aistudy",
     "q": "什么是 MCP（Model Context Protocol）？它解决了什么痛点？",
-    "a": "**考察点**：是否理解 MCP 的定位——它不是某个框架，而是一套开放协议；能不能用一句话讲清它和 Function Calling / 手写工具的区别。\n\n**标准解答**：MCP 是 Anthropic 推出的开放标准协议，用来给 LLM/Agent 统一接外部工具、数据源、服务的「接口规范」。它把「工具提供方（Server）」和「模型调用方（Client/Host）」解耦：Server 按协议暴露 tool/resource，Host（如 Claude Desktop、Agent 框架）按同一协议调用，双方不需要知道彼此实现。类比「AI 的 USB-C 接口」——任何符合协议的 Server 都能即插即用。\n  它解决的痛点：①之前每个 Agent 框架都要自己写一套工具调用胶水代码（langchain 的 tool、openai 的 function calling 各自为政）；②工具和模型强耦合，换模型/换工具成本高；③缺乏统一安全边界。MCP 用一套协议统一了这层。\n\n**项目实践**：本周 week7 就实战了 Server 端——`week7/server.py` 用官方 `mcp` SDK 暴露 add/list_files 等工具，未来可接入任意兼容 MCP 的 Host，而不用为某个 Agent 框架改写胶水代码。",
+    "a": "**MCP 是 Anthropic 推出的开放协议，统一了 LLM/Agent 接外部工具与数据源的接口规范。**\n- 把工具提供方（Server）与模型调用方（Client/Host）解耦，双方不需知道彼此实现\n- 类比「AI 的 USB-C」：符合协议的 Server 即插即用\n- 解决三件事：各框架重复写胶水、工具与模型强耦合、缺统一安全边界\n- 注意它是协议不是框架，与 function calling 不是一层",
     "priority": 1
   },
   {
     "id": "aistudy-20260826-2",
     "module": "aistudy",
     "q": "用 MCP Python SDK 写一个最小可用的 MCP Server，核心步骤是什么？",
-    "a": "**考察点**：能不能徒手写骨架，知道 FastMCP 的三个关键点（实例化 / 装饰器 / run）。\n\n**标准解答**：四步：① `from mcp.server.fastmcp import FastMCP`；② `mcp = FastMCP(\"服务名\")` 创建实例；③ 用 `@mcp.tool()` 装饰普通函数把工具暴露出去；④ `if __name__ == \"__main__\": mcp.run()` 启动（默认 stdio 传输，进程间通过 stdin/stdout 通信）。\n\n**项目实践**：`week7/server.py` 就是这个骨架——`mcp = FastMCP(\"Demo Server\")`，两个 `@mcp.tool()`（add/multiply），末尾 `mcp.run()`；standalone 跑 `cd week7 && .venv\\Scripts\\python.exe server.py` 即起一个 stdio Server。`requirements.txt` 锁 `mcp<2` 保证这行 import 永远可用。",
+    "a": "**四步：导入 FastMCP → 建实例 → `@mcp.tool()` 装饰函数 → `mcp.run()` 启动。**\n- 默认 stdio 传输，进程间通过 stdin/stdout 通信，不占端口\n- `requirements.txt` 锁 `mcp<2`，保证 `mcp.server.fastmcp` 这条 import 永远可用\n```python\nfrom mcp.server.fastmcp import FastMCP\nmcp = FastMCP(\"Demo Server\")\n@mcp.tool()\ndef add(a: int, b: int) -> int:\n    return a + b\nif __name__ == \"__main__\":\n    mcp.run()\n```",
     "priority": 3
   },
   {
     "id": "aistudy-20260826-3",
     "module": "aistudy",
     "q": "`@mcp.tool()` 装饰的函数，参数类型注解和 docstring 分别起什么作用？",
-    "a": "**考察点**：是否理解「工具给模型看」这件事——模型看不到代码，只能看到 Schema 和描述。\n\n**标准解答**：MCP SDK 会**自动**根据函数签名生成工具的 JSON Schema：参数类型注解（int/float/str 等）决定 Schema 里参数的类型，SDK 据此做类型校验和入参转换；**docstring 会被提取成工具的自然语言描述**（description），模型靠这段描述判断「什么时候该调这个工具、传什么参数」。所以 docstring 写得好不好，直接决定模型会不会用你的工具——等于给工具写「使用说明书」。\n\n**项目实践**：`week7/server.py` 里 `list_files(subdir: str = \".\")` 的类型注解生成了 `subdir` 参数 Schema，docstring 明确写「列出 week7 目录下的文件/文件夹……返回每个条目的名称」，模型就能正确理解该工具的用途与返回。",
+    "a": "**类型注解生成 JSON Schema 做类型校验，docstring 被提取成 description 供模型判断调用时机。**\n- 模型看不到代码，只能看到 Schema 与描述\n- SDK 依据注解做入参类型转换与校验\n- docstring 写得好不好，直接决定模型会不会用这个工具\n💡 记忆/追问：给工具写 docstring 等于写「使用说明书」",
     "priority": 1
   },
   {
     "id": "aistudy-20260826-4",
     "module": "aistudy",
     "q": "为什么 `mcp>=2` 会导致 v1 的 `FastMCP` 代码直接跑不起来？FastMCP 与 MCPServer 有何区别？",
-    "a": "**考察点**：依赖版本治理意识；能不能说出「API 破坏性变更」这个真实踩过的坑。\n\n**标准解答**：`mcp` Python SDK 在 2.x 做了**破坏性变更**：把 v1 的 `FastMCP` 类改名为 `MCPServer`，且整体 API 形态改变。所以 v1 代码 `from mcp.server.fastmcp import FastMCP` 在 2.x 环境下会直接 `No module named 'mcp.server.fastmcp'`——因为那个子模块路径在 2.x 不存在了。FastMCP（v1）是「轻量装饰器式」写法（`@mcp.tool()` + `mcp.run()`），上手快；MCPServer（v2）是更底层的面向对象写法，概念更重。\n\n**项目实践**：今天 19:13 就踩了这个坑——venv 装了 `mcp 2.1.1`，import server.py 报 `No module named 'mcp.server.fast*'`（实为 `mcp.server.fastmcp`）。解决是锁 `mcp<2`（装 1.29.1），并在 `week7/requirements.txt` 写明注释 `mcp>=2 已改名为 MCPServer 且整体 API 破坏性变更，故锁 <2`。**教训：跑教程代码前先看它用的 SDK 大版本**。",
+    "a": "**mcp 2.x 把 `FastMCP` 改名 `MCPServer` 并重构 API，v1 的 import 路径直接不存在。**\n- 报错：`No module named \"mcp.server.fastmcp\"`\n- FastMCP（v1）是轻量装饰器式；MCPServer（v2）是更底层的面向对象写法\n- 解决：`requirements.txt` 锁 `mcp<2`\n💡 记忆/追问：跑教程代码前先看它用的 SDK 大版本",
     "priority": 3
   },
   {
     "id": "aistudy-20260826-5",
     "module": "aistudy",
     "q": "给 MCP 文件工具加「安全护栏」应该怎么做？为什么必须做？",
-    "a": "**考察点**：安全意识——给 AI 可调用的工具必须最小权限；能不能讲出具体实现。\n\n**标准解答**：文件类工具最危险的是「越权读系统文件」。做法：①用 `BASE_DIR = Path(__file__).resolve().parent` 把允许范围锚定在 Server 所在目录；②每次调用先把用户传入路径 `resolve()` 成绝对路径，再用 `str(target).startswith(str(BASE_DIR))` 校验，越界直接返回「拒绝访问」。再加二进制兜底：`try read_text(encoding=\"utf-8\") except UnicodeDecodeError` 防读二进制炸。为什么必须做：模型可能受 prompt injection 影响去拼 `../../etc/passwd` 这类路径，没有护栏就会真把敏感文件读出来泄露。\n\n**项目实践**：`week7/server.py` 的 `list_files` / `read_file` 都做了这套护栏——`target = (BASE_DIR / subdir).resolve()` 后 `if not str(target).startswith(str(BASE_DIR)): return \"拒绝访问：只允许读取 week7 目录内的文件\"`，越权路径被拦截；读文本失败用 `UnicodeDecodeError` 兜底。",
+    "a": "**把可访问范围锚定在 Server 所在目录，每次调用 resolve 后做前缀校验。**\n- `BASE_DIR = Path(__file__).resolve().parent` 限定根目录\n- `target = (BASE_DIR / subdir).resolve()`，再判 `str(target).startswith(str(BASE_DIR))`\n- 越界直接返回「拒绝访问」\n- `try read_text(encoding=\"utf-8\") except UnicodeDecodeError` 防读二进制炸\n- 必须做：模型可能被 prompt injection 诱导去拼 `../../etc/passwd`",
     "priority": 1
   },
   {
     "id": "aistudy-20260826-6",
     "module": "aistudy",
     "q": "本地如何运行和调试一个 MCP Server（stdio 传输 + MCP Inspector）？",
-    "a": "**考察点**：能不能说出落地调试链路，而不只是写代码。\n\n**标准解答**：MCP Server 默认走 stdio（通过进程 stdin/stdout 通信，不占端口）。直接运行：`python server.py`（用本项目 venv 的解释器）。可视化调试用官方 **MCP Inspector**：`npx @modelcontextprotocol/inspector python server.py`（或 `inspector .venv/Scripts/python.exe server.py`），它会起一个本地 Web（如 http://localhost:6274）让你看到注册了哪些工具、手动调用、看返回。注意一定要用**当前 venv 的解释器**跑，否则装的 mcp 包找不到。\n\n**项目实践**：今天 `week7` 调试链路是——先 `.venv\\Scripts\\python.exe server.py` 验证启动无报错，再用 `npx @modelcontextprotocol/inspector .venv\\Scripts\\python.exe server.py` 开 http://localhost:6274 调 list_files/read_file 验证护栏生效、越权被拦。",
+    "a": "**stdio 传输不占端口，直接跑脚本；可视化调试用官方 MCP Inspector。**\n- `python server.py`，必须用当前 venv 的解释器，否则找不到 mcp 包\n- `npx @modelcontextprotocol/inspector .venv/Scripts/python.exe server.py`\n- Inspector 起本地 Web（如 :6274），可看注册了哪些工具、手动调用看返回\n- 调试顺序：先跑通启动，再验证护栏（越权路径应被拒）",
     "priority": 1
   },
   {
     "id": "aistudy-20260826-7",
     "module": "aistudy",
     "q": "Q7（桥接）. MCP 与 Agent 的工具调用是什么关系？MCP 如何为 LLM/Agent 提供工具能力？",
-    "a": "**考察点**：能不能把本周 week7（MCP）和之前 week3（手写 ReAct）/week6（LangChain tools agent）串起来，说明「工具从哪来」。\n\n**标准解答**：Agent（如 week3 手写的 ReAct、week6 的 `create_openai_tools_agent`）需要「可调用的工具列表」来感知环境、执行动作。MCP 是这些工具的「标准化供给方式」：以前工具是写在 Agent 框架里的闭包/函数，现在可以是一个独立的 MCP Server，Agent 作为 MCP Client 在运行时去发现（list tools）并调用（call tool）。好处是工具可独立部署、跨模型复用、天然带协议层安全边界。一句话：MCP 负责「工具怎么暴露/调用」的协议，Agent 负责「什么时候调、调完怎么决策」的编排。\n\n**项目实践**：week3 `week3-Agent/react-agent` 手写 ReAct 时工具是硬编码进 prompt 的；week6 `week6/day5-6.py` 用 `create_openai_tools_agent` + `MessagesPlaceholder(agent_scratchpad)` 接 tools；下一步把 `week7/server.py` 暴露的 list_files/read_file 接到某个 MCP Client/Agent，就能让模型「看见并读取 week7 目录」——这就是 MCP 给 Agent 供工具的端到端验证。\n\n---",
+    "a": "**MCP 负责「工具怎么暴露/调用」的协议，Agent 负责「何时调、调完怎么决策」的编排。**\n- Agent 需要工具列表来感知环境、执行动作，MCP 是工具的标准化供给方式\n- 以前工具是写在 Agent 框架里的闭包，现在可以是独立部署的 MCP Server\n- Client 运行时 list tools / call tool，工具可跨模型复用、天然带协议层边界",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-1",
     "module": "aistudy",
     "q": "MCP 的 Client 与 Server 是怎么通信的？stdio 传输具体是什么形态？",
-    "a": "MCP 的 Client 与 Server 是怎么通信的？stdio 传输具体是什么形态？",
+    "a": "**Client 与 Server 用 JSON-RPC 2.0 消息通信；stdio 是 Client 把 Server 当子进程、走 stdin/stdout。**\n- 传输两种：stdio（本地子进程）与 HTTP+SSE（远程）\n- 握手：initialize → initialized 通知 → list_tools / call_tool\n- 每条消息一行 JSON，日志必须走 stderr，不能污染 stdout\n- Client spawn Server 进程，写 stdin 发请求、读 stdout 收响应\n💡 记忆/追问：stdio 下任何 print 到 stdout 都会破坏协议",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-10",
     "module": "aistudy",
     "q": "ReAct（文本解析）与 OpenAI Tools Agent（function calling）两种范式怎么选？",
-    "a": "ReAct（文本解析）与 OpenAI Tools Agent（function calling）两种范式怎么选？",
+    "a": "**模型支持 function calling 就选 Tools Agent，只有不支持时才退回 ReAct 文本式。**\n- ReAct 靠正则抠 `Action/Action Input`，格式一乱就空转、烧光迭代上限\n- Tools Agent 结构化返回工具调用，稳定收敛、更省 token\n- ReAct 的优势是可解释性强、能适配弱模型\n- 选型看模型能力，不要为了「看起来像 Agent」硬用 ReAct",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-11",
     "module": "aistudy",
     "q": "你做过 Node 与 Python 的跨语言协同吗？讲讲 week7 的架构。",
-    "a": "你做过 Node 与 Python 的跨语言协同吗？讲讲 week7 的架构。",
+    "a": "**做过：Node 做 Host/编排侧，Python 跑 MCP Server，两边用 stdio 子进程通信。**\n- Node spawn Python 解释器启动 server.py，经 stdin/stdout 收发 JSON-RPC\n- Python 侧只负责工具能力与护栏，Node 侧负责编排与对外接口\n- 关键：spawn 要传正确的 cwd 与 venv 解释器，否则找不到依赖和 Key\n- 子进程 error 与超时都要兜住，别让 Python 崩拖垮 Node 主进程",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-12",
     "module": "aistudy",
     "q": "MCP 工具被 Agent 调用失败时，你的排查顺序是什么？",
-    "a": "MCP 工具被 Agent 调用失败时，你的排查顺序是什么？",
+    "a": "**先绕开 LLM 直连 Server 验证，再往上查传输、注册、参数、模型选工具。**\n- ① Inspector 或脚本直连 `list_tools()`，看工具在不在\n- ② 手工 `call_tool()`，确认 Server 本身能返回\n- ③ 看 stderr 日志：stdout 被协议占用，日志必须走 stderr\n- ④ 检查参数 Schema 与 docstring，判断是否选错工具/传错参\n- ⑤ 最后查连接生命周期：`async with` 是否被提前关闭",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-13",
     "module": "aistudy",
     "q": "`ExceptionGroup: unhandled errors in a TaskGroup` 把真实异常吞了，怎么办？",
-    "a": "`ExceptionGroup: unhandled errors in a TaskGroup` 把真实异常吞了，怎么办？",
+    "a": "**用 `except*`（Python 3.11+）拆开 ExceptionGroup，或遍历 `.exceptions` 打印子异常。**\n- `except Exception as e` 只给一行 TaskGroup 摘要，真实栈在子异常里\n- 写法：`except* Exception as eg:` 后逐个 `traceback.print_exception(e)`\n- 根因通常是 anyio 连接关闭跨了 task 边界\n- 也可临时关掉 verbose 包装，直接看 stderr 原始日志",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-14",
     "module": "aistudy",
     "q": "LLM 应用里 API Key 应该如何管理？你踩过什么坑？",
-    "a": "LLM 应用里 API Key 应该如何管理？你踩过什么坑？",
+    "a": "**只读环境变量 + .env 进 gitignore；硬编码过就必须去后台轮换，否则改代码没用。**\n- `os.getenv(\"DEEPSEEK_API_KEY\", \"\")`，缺失即 raise\n- 踩过的坑：明文写进源码进了 git 历史；`.env` 被 `git add -A` 误提交\n- 轮换前 `os.getenv` 也救不了你，旧 Key 仍然生效\n- 确认推过远端还要 `git filter-repo` 擦历史并 force push",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-15",
     "module": "aistudy",
     "q": "【存量巩固】手写 RAG 与用 LangChain 框架搭 RAG，区别是什么？各自适合什么场景？",
-    "a": "【存量巩固】手写 RAG 与用 LangChain 框架搭 RAG，区别是什么？各自适合什么场景？",
+    "a": "**手写可控无黑盒、适合理解原理；框架标准件拼装、组件可替换，适合生产提效。**\n- 手写：自己实现 embedding 调用、向量检索、prompt 拼接\n- 框架：Loader/Splitter/VectorStore/Chain，换向量库只改一行\n- 框架代价是抽象深、版本与依赖易踩坑\n- 小项目/学习用手写，上生产用框架",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-16",
     "module": "aistudy",
     "q": "【存量巩固】中文文档切分要注意什么？`chunk_size` / `overlap` 怎么取？",
-    "a": "【存量巩固】中文文档切分要注意什么？`chunk_size` / `overlap` 怎么取？",
+    "a": "**中文要定制 separators 按句读断；`chunk_size` 300~1000、`chunk_overlap` 50~200。**\n- 默认分隔符按英文空格，会把整句劈开、破坏语义\n- 中文 separators 用段落、换行、句号、感叹号、问号、空格\n- chunk 太小丢上下文，太大超 token 且检索不精准\n- overlap 保留跨块语义，避免关键信息刚好被切断",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-17",
     "module": "aistudy",
     "q": "【存量巩固】向量库里混入不同维度的 embedding 会怎样？如何兜底？",
-    "a": "【存量巩固】向量库里混入不同维度的 embedding 会怎样？如何兜底？",
+    "a": "**不同维度的向量混进同一个集合会报维度冲突，写入和检索直接失败。**\n- 换 embedding 模型必须重建索引，两个模型的向量空间不可比\n- 兜底：捕获 `chromadb.errors.InvalidArgumentError` 后 `shutil.rmtree` 清库重建\n- 预防：把 embedding 模型名写进集合元数据，加载时校验维度一致",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-2",
     "module": "aistudy",
     "q": "Python SDK 连接 MCP Server 的标准流程？为什么不能把 `async with` 写在工具工厂函数里？",
-    "a": "Python SDK 连接 MCP Server 的标准流程？为什么不能把 `async with` 写在工具工厂函数里？",
+    "a": "**用 stdio_client 建连接、ClientSession 建会话，两者必须在同一个 async 上下文里进出。**\n- 流程：server_params → `stdio_client` → `ClientSession(read, write)` → `initialize()`\n- 之后 `session.list_tools()` / `session.call_tool(name, args)`\n- 不能把 `async with` 写在工具工厂函数里：工厂是同步返回 Tool 的\n- 那样连接会在函数返回时就关闭，后续调用拿到已关闭的 stream\n- 正解：连接生命周期与 Agent 同层，或用 `AsyncExitStack` 延迟关闭",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-3",
     "module": "aistudy",
     "q": "mcp 1.x 与 2.x 有哪些破坏性变更？如何写出兼容两种版本的代码？",
-    "a": "mcp 1.x 与 2.x 有哪些破坏性变更？如何写出兼容两种版本的代码？",
+    "a": "**2.x 把高层 `FastMCP` 改名 `MCPServer` 并调整 API，低层 Server/session 基本兼容。**\n- `from mcp.server.fastmcp import FastMCP`（1.x）在 2.x 报 no module\n- 兼容写法：try 导入 FastMCP，ImportError 时回退 MCPServer 并取别名\n- 更稳的做法：`requirements.txt` 锁 `mcp<2`\n```python\ntry:\n    from mcp.server.fastmcp import FastMCP as MCP\nexcept ImportError:\n    from mcp.server import MCPServer as MCP\n```",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-4",
     "module": "aistudy",
     "q": "如何在不依赖 LLM / Agent 的前提下，独立验证一个 MCP Server 是否正常？",
-    "a": "如何在不依赖 LLM / Agent 的前提下，独立验证一个 MCP Server 是否正常？",
+    "a": "**绕开 LLM 直连验证：用 MCP Inspector，或自己写 Client 脚本调 list_tools / call_tool。**\n- `npx @modelcontextprotocol/inspector .venv/Scripts/python.exe server.py`\n- 脚本里 ClientSession 直连，看工具是否注册、调用返回是否正确\n- 再单独验证安全护栏：传越界路径应被拒绝\n- 好处：先排除模型因素，确认 Server 本身没问题",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-5",
     "module": "aistudy",
     "q": "如何把 MCP 工具接入 LangChain ReAct Agent？讲讲完整链路。",
-    "a": "如何把 MCP 工具接入 LangChain ReAct Agent？讲讲完整链路。",
+    "a": "**用 langchain-mcp-adapters 把 MCP 工具转成 LangChain Tool，再交给 create_react_agent。**\n- 开 MCP client 拿到 session → `load_mcp_tools(session)` 得到 Tool 列表\n- `create_react_agent(llm, tools)` + `AgentExecutor` 组装\n- Tool 要同时给 `func` 与 `coroutine`，否则异步链路会踩坑\n- 连接必须在 async 上下文里保持，不能提前关闭",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-6",
     "module": "aistudy",
     "q": "LangChain `Tool` 的 `func` 与 `coroutine` 有何区别？只给 `func` 会踩什么坑？",
-    "a": "LangChain `Tool` 的 `func` 与 `coroutine` 有何区别？只给 `func` 会踩什么坑？",
+    "a": "**`func` 是同步实现，`coroutine` 是异步实现；只给 func 在 async 链路里会阻塞或报错。**\n- LangChain 在 `ainvoke` 时优先用 `coroutine`，没有则退化为线程池执行\n- 只给 func 的坑：MCP 这类异步工具被丢进 executor，或在已有 loop 里再 asyncio.run 报错\n- 正解：`Tool(name=..., description=..., func=..., coroutine=...)` 两个都给",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-7",
     "module": "aistudy",
     "q": "`asyncio.run() cannot be called from a running event loop` 的根因与解法？",
-    "a": "`asyncio.run() cannot be called from a running event loop` 的根因与解法？",
+    "a": "**根因是在一个已经在跑的事件循环里又调 asyncio.run()，它要求当前线程没有 running loop。**\n- 常见于同步 `Tool.func` 里调 async 代码，或在 Jupyter、Web 框架内部调用\n- 解法一：把调用方也改成 async，直接 `await`\n- 解法二：`nest_asyncio.apply()`，仅作临时兜底\n- 解法三：放到单独线程，在新线程里 `asyncio.run`",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-8",
     "module": "aistudy",
     "q": "anyio 报 `Attempted to exit cancel scope in a different task` 是什么原因？怎么修？",
-    "a": "anyio 报 `Attempted to exit cancel scope in a different task` 是什么原因？怎么修？",
+    "a": "**anyio 的 cancel scope 必须在同一个 task 里进出，跨 task 关闭就会报这个错。**\n- 典型场景：`async with` 建立的连接在 A task 打开、在 B task 关闭\n- 或在协程外调用 `AsyncExitStack.aclose()`\n- 修法：让连接的 open/close 都在同一个 task 内完成\n- 或用单一入口协程长期持有 session，不要在 task 之间传递",
     "priority": 1
   },
   {
     "id": "aistudy-20260828-9",
     "module": "aistudy",
     "q": "ReAct Prompt 模板必须保留哪些变量？用 f-string 会导致什么问题？",
-    "a": "ReAct Prompt 模板必须保留哪些变量？用 f-string 会导致什么问题？",
+    "a": "**必须保留 `{tools}`、`{tool_names}`、`{agent_scratchpad}`，`{input}` 按需。**\n- 用 f-string 会把这些占位符当场渲染掉（或直接 KeyError）\n- 于是框架运行时再也填不进工具列表与中间步骤\n- 应该用 `PromptTemplate` / `ChatPromptTemplate` 保留占位符\n- 缺 `agent_scratchpad` 模型看不到工具返回值，agent 直接瞎跑",
     "priority": 1
   }
 ]

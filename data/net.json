@@ -3,448 +3,448 @@
     "id": "net001",
     "module": "net",
     "q": "CORS 跨域是什么？怎么解决？",
-    "a": "CORS = 跨域资源共享，浏览器同源策略的安全例外。\n同源 = 协议+域名+端口全同；跨域响应被拦截，除非服务端返回 **Access-Control-Allow-Origin**。\n流程：简单请求直接发；非简单（自定义头/PUT/JSON）先发 **OPTIONS 预检**，通过才发真实请求。\n解决：后端加白名单头；凭据 withCredentials 需 Allow-Credentials+具体 Origin；或**开发代理**（vite proxy/nginx）绕开；JSONP 仅 GET 且过时。",
+    "a": "**CORS 是浏览器同源策略的官方例外：由服务端用响应头声明允许哪些跨源访问。**\n- 同源 = 协议+域名+端口全同，任一不同即跨域\n- 浏览器拦的是「响应」，请求其实已经发出去了\n- 简单请求直接发；非简单请求先发 OPTIONS 预检\n- 带 Cookie 需 withCredentials + Allow-Credentials + 具体 Origin\n- 开发用 vite/nginx 代理绕过，JSONP 仅 GET 已淘汰",
     "priority": 1
   },
   {
     "id": "net002",
     "module": "net",
     "q": "XSS 与 CSRF 区别及防护？",
-    "a": "**XSS**（跨站脚本）：注入脚本盗 cookie/钓鱼。防护：① 输出**转义**；② CSP 限制脚本源；③ Cookie 设 HttpOnly；④ 输入校验/富文本白名单。\n**CSRF**（跨站请求伪造）：借登录态发非本意请求。防护：① **SameSite=Lax/Strict** Cookie；② CSRF Token（服务端校验）；③ 校验 Origin/Referer；④ 关键操作二次确认。",
+    "a": "**XSS 是往页面注入恶意脚本偷数据，CSRF 是借你的登录态发非本意请求。**\n- XSS 利用站点对输入的信任；CSRF 利用浏览器自动带 Cookie\n- XSS 防护：输出转义、CSP、HttpOnly Cookie、富文本白名单\n- CSRF 防护：SameSite=Lax/Strict、CSRF Token、校验 Origin/Referer\n- 关键操作再加二次确认（验证码 / 密码）\n💡 记忆：XSS 信用户，CSRF 信浏览器。",
     "priority": 1
   },
   {
     "id": "net003",
     "module": "net",
     "q": "HTTP 与 HTTPS 区别？",
-    "a": "**HTTP** 明文传输，无加密、易被窃听/篡改。**HTTPS** = HTTP + **TLS 加密**：① 防窃听（内容加密）；② 防篡改（完整性校验）；③ 身份认证（证书验服务器真伪，防中间人）。过程：TCP 握手 → **TLS 握手**（证书校验+密钥协商）→ 加密通信。\n代价：略慢（握手开销，HTTP2 缓解）、需证书（Let's Encrypt 免费）。前端：混合内容（HTTPS 页引 HTTP 资源）被拦。",
+    "a": "**HTTPS = HTTP + TLS，一次性解决明文传输的窃听、篡改、冒充三大问题。**\n- HTTP 端口 80 明文传输；HTTPS 端口 443 加密传输\n- TLS 握手：证书验明服务器身份 + 协商对称密钥\n- 之后用对称密钥加密通信，并做完整性校验\n- 代价：多一次握手开销，HTTP/2 已大幅缓解\n- HTTPS 页面加载 HTTP 资源（混合内容）会被浏览器拦截",
     "priority": 1
   },
   {
     "id": "net004",
     "module": "net",
     "q": "TCP 三次握手 / 四次挥手？",
-    "a": "**三次握手**（建连）① 客户端 SYN；② 服务端 SYN+ACK；③ 客户端 ACK → 双方确认收发能力，防历史连接。**四次挥手**（断连）① 客户端 FIN；② 服务端 ACK（还可发）；③ 服务端 FIN；④ 客户端 ACK → 因 TCP **全双工**，关闭需双向各一次。\n**TIME_WAIT** 主动关方等 2MSL 防最后 ACK 丢失。注意：握手 3 次、挥手 4 次（服务端 ACK 与 FIN 分开）。",
+    "a": "**三次握手建连确认双方收发能力，四次挥手因 TCP 全双工需双向各关一次。**\n- 握手：SYN → SYN+ACK → ACK，顺带同步双方初始序列号\n- 挥手：FIN → ACK → FIN → ACK，服务端 ACK 与 FIN 分开发\n- 被动关方回 ACK 后可能还有数据要发，所以挥手多一次\n- 主动关方最后进入 TIME_WAIT，等待 2MSL",
     "priority": 1
   },
   {
     "id": "net005",
     "module": "net",
     "q": "GET 与 POST 区别？",
-    "a": "语义：GET 取数据（安全/幂等）、POST 提交（可能改状态）。参数：GET 在 **URL**（可见、长度限、可收藏/缓存）；POST 在 **请求体**（可大数据/二进制、相对隐蔽）。缓存：GET 可缓存、POST 一般不。\n安全：都不安全（明文），敏感必须 HTTPS；POST 非加密只是不在 URL。幂等：GET 幂等、POST 非幂等（重复提交副作用）。现代 REST：GET 查、POST 建、PUT 改、DELETE 删。",
+    "a": "**GET 语义是安全幂等地「取」，POST 是「提交」且可能改变服务端状态。**\n- 参数：GET 放 URL 查询串，POST 放请求体\n- GET 受 URL 长度限制、可收藏可缓存；POST 无限制、默认不缓存\n- 两者都不安全，明文传输，敏感数据必须走 HTTPS\n- GET 幂等；POST 非幂等，重复提交会有副作用\n- REST 约定：GET 查 / POST 建 / PUT 改 / DELETE 删",
     "priority": 1
   },
   {
     "id": "net006",
     "module": "net",
     "q": "常见 HTTP 状态码？",
-    "a": "**2xx 成功** 200 OK、201 已创建、204 无内容。**3xx 重定向** 301 永久、302 临时、304 未改（用缓存）、307/308 强制方法。**4xx 客户端错** 400 参数错、401 未认证、403 禁止、404 无、405 方法不被允许、429 限流。\n**5xx 服务端错** 500 内部、502 网关坏、503 不可用、504 网关超时。实践：401 跳登录、429 退避重试、5xx 告警。",
+    "a": "**状态码按首位分五类，面试只记 2xx/3xx/4xx/5xx 里的高频码。**\n- 200 成功、201 已创建、204 无响应体\n- 301 永久重定向、302 临时重定向、304 未修改走缓存\n- 401 未认证（跳登录）、403 无权限、404 不存在、429 限流\n- 500 服务端内部错、502 网关坏、503 不可用、504 网关超时\n💡 追问：401 是「你是谁」，403 是「你不行」。",
     "priority": 1
   },
   {
     "id": "net007",
     "module": "net",
     "q": "Cookie / Session / Token 区别？",
-    "a": "**Cookie** 浏览器存的小文本（随请求自动带），可设 HttpOnly/SameSite/Secure/过期。**Session** 服务端会话（存 Cookie 里的 sessionId 映射），状态在服务端。**Token**（JWT）无状态，令牌含信息客户端存，请求头带。\n关系：Session 靠 Cookie 传 id；Token 可放 Cookie/Authorization 头。注意：敏感用 HttpOnly Cookie 防 XSS 盗。",
+    "a": "**Cookie 是浏览器的存储载体，Session 状态在服务端，Token 状态在令牌里。**\n- Cookie：随请求自动携带，可设 HttpOnly/Secure/SameSite/过期\n- Session：服务端存会话，只把 sessionId 放进 Cookie\n- Token（JWT）：无状态，客户端存，放 Authorization 头\n- Session 占服务端内存、分布式要共享；Token 难即时失效\n- 敏感令牌优先放 HttpOnly Cookie，防 XSS 窃取",
     "priority": 1
   },
   {
     "id": "net008",
     "module": "net",
     "q": "HTTP/1.1、2、3 区别？",
-    "a": "**1.1** 默认持久连接（keep-alive）、管道化（队头阻塞）、文本协议。**2（HTTP2）** **多路复用**（一连接并行多请求，治队头阻塞）、**二进制帧**、**头部压缩 HPACK**、服务端推送（已弃用）、单连接。**3（HTTP3）** 基于 **QUIC（UDP）**，0-RTT、连接迁移、无 TCP 队头阻塞，弱网更稳。\n实践：2 已成主流，3 在推；域名分片在 2 下没必要。",
+    "a": "**演进主线：1.1 长连接 → 2 多路复用 → 3 换掉 TCP 改用 QUIC。**\n- 1.1：keep-alive 持久连接，但仍有应用层队头阻塞\n- 2：二进制分帧 + 多路复用 + HPACK 头部压缩，单连接并发\n- 2 下域名分片反而没必要，目前已是主流\n- 3：基于 UDP 的 QUIC，0-RTT、连接迁移、无 TCP 队头阻塞\n- 3 在弱网和移动切网场景优势最明显",
     "priority": 1
   },
   {
     "id": "net009",
     "module": "net",
     "q": "前端缓存策略整体？",
-    "a": "多层：① **HTTP 缓存**（强缓存 Cache-Control + 协商 ETag/Last-Modified）；② **Service Worker**（离线/自定义）；③ **localStorage/sessionStorage**（小数据）；④ **IndexedDB**（大量结构化）；⑤ **Memory 缓存**（运行时）。资源策略：HTML no-cache（每次问）、JS/CSS 长缓存+hash、图片长缓存。\n注意：缓存更新用文件 hash 破缓存。",
+    "a": "**前端缓存是分层的：以 HTTP 缓存为主，其余按数据形态选存储。**\n- 强缓存 Cache-Control（max-age），命中不发请求\n- 协商缓存 ETag / Last-Modified，未变更返回 304\n- HTML 用 no-cache，JS/CSS 带 hash 长缓存\n- 离线与精细控制用 Service Worker，结构化大数据用 IndexedDB\n- 更新靠文件 contenthash 破缓存",
     "priority": 1
   },
   {
     "id": "net010",
     "module": "net",
     "q": "CSP 是什么？",
-    "a": "**Content-Security-Policy** 白名单声明**允许加载的资源来源**（脚本/样式/连接），从根上防 XSS/注入（非法源被拦）。示例：default-src 'self'; script-src 'self' https://cdn。好处：即使有注入脚本，非白名单域也不执行。\n配合：Nonce/Hash 放行内联脚本；report-only 模式先监控。注意：配置过严会误伤，需测试。是 XSS 的纵深防御。",
+    "a": "**CSP 是白名单机制，声明页面只允许加载哪些来源的资源，用来兜底防 XSS。**\n- 通过 Content-Security-Policy 响应头或 meta 标签下发\n- default-src 'self' 兜底默认来源，script-src 限制脚本源\n- 内联脚本需 nonce 或 hash 放行，否则被拦\n- 先跑 report-only 观察上报，再正式启用避免误伤",
     "priority": 1
   },
   {
     "id": "net011",
     "module": "net",
     "q": "点击劫持（Clickjacking）？",
-    "a": "攻击者用**透明 iframe 覆盖**在正常按钮上，用户点了看不见的层（如悄悄关注/转账）。防护：① **X-Frame-Options: DENY/SAMEORIGIN**（禁止/同域被嵌套）；② **CSP frame-ancestors**（更细）；③ JS 防嵌套（top!==self 跳走）；④ 关键操作二次确认。\n注意：自身页想被嵌需显式允许来源。",
+    "a": "**点击劫持是用透明 iframe 盖住正常页面，骗你点到看不见的按钮。**\n- 首选防护：X-Frame-Options: DENY 或 SAMEORIGIN\n- 现代替代：CSP 的 frame-ancestors 指令，粒度更细\n- JS 兜底：发现被嵌套（top !== self）就跳走\n- 转账、授权等关键操作加二次确认",
     "priority": 1
   },
   {
     "id": "net012",
     "module": "net",
     "q": "SQL 注入及防护？",
-    "a": "注入：把恶意 SQL 拼进查询（' OR 1=1 --）篡改逻辑/拖库。防护：① **参数化查询/预编译**（? 占位，最根治，ORM/Prepared Statement）；② **ORM** 用防注入 API；③ 输入校验/白名单；④ 最小权限 DB 账号；⑤ 不拼 SQL 字符串。\n前端：校验输入长度/格式（辅助，真防护在服务端）。",
+    "a": "**SQL 注入是把输入拼进语句改变了语义，根治只能靠后端参数化查询。**\n- 核心：预编译语句用占位符，输入永远当数据不当代码\n- 辅以输入白名单校验、最小权限数据库账号\n- 前端校验只改善体验，抓包改包即可绕过\n- 别用手写正则黑名单挡 SELECT/UNION，易绕过也易误伤",
     "priority": 1
   },
   {
     "id": "net013",
     "module": "net",
     "q": "中间人攻击（MITM）与证书？",
-    "a": "攻击者在你与服务器间**窃听/篡改**（公共 WiFi 下）。防护：① **HTTPS/TLS** 加密+证书验身；② 校验证书链（防伪造）；③ HSTS（强制 HTTPS，防降级的 TLS）；④ 证书固定（Pinning，App 内）；⑤ 不连不可信 WiFi。\n前端：混合内容（HTTPS 页引 HTTP 资源）被拦——全站 HTTPS；警惕自签证书。",
+    "a": "**MITM 是攻击者插在通信链路中间窃听或篡改，靠 TLS 证书验身来破。**\n- 全站 HTTPS：加密 + 校验证书链，识别伪造证书\n- HSTS 强制 HTTPS，防止被降级到明文 HTTP\n- App 可做证书固定（Certificate Pinning）\n- 不连不可信 WiFi，页面避免混合内容",
     "priority": 1
   },
   {
     "id": "net014",
     "module": "net",
     "q": "DNS 解析过程？",
-    "a": "把域名 → IP：① 查**浏览器缓存**；② 查**系统/ hosts**；③ **本地 DNS（递归）** 问根域（.）→ 顶级域（.com）→ 权威 DNS（拿到 IP）；④ 返回并缓存。记录：A（IPv4）、AAAA（IPv6）、CNAME（别名）、MX（邮件）。\n优化：① DNS **预解析** <link rel=dns-prefetch>；② 用 CDN（就近解析）；③ TTL 控缓存时长。注意：DNS 解析耗时影响首屏。",
+    "a": "**DNS 就是域名换 IP，按「查缓存 → 本地 DNS 递归查询」逐级问下去。**\n- 顺序：浏览器缓存 → 系统缓存与 hosts → 本地 DNS 服务器\n- 本地 DNS 递归问：根域 → 顶级域 → 权威 DNS，最终拿到 IP\n- 常见记录：A/AAAA 地址、CNAME 别名、MX 邮件\n- 优化：dns-prefetch 预解析、CDN 就近解析、合理 TTL",
     "priority": 1
   },
   {
     "id": "net015",
     "module": "net",
     "q": "*1. 描述一下 TCP 的三次握手过程？",
-    "a": "**参考答案：**\n\n- **第一次握手（SYN）：** 客户端向服务器发送一个 SYN（同步序列编号）报文段，其中包含客户端的初始序列号 `seq = x`。此时客户端进入 `SYN_SENT` 状态。\n- **第二次握手（SYN+ACK）：** 服务器收到客户端的 SYN 报文段后，会向客户端发送一个 SYN 和 ACK（确认）都置位的报文段。其中包含服务器的初始序列号 `seq = y`，以及对客户端序列号的确认号 `ack = x + 1`。此时服务器进入 `SYN_RCVD` 状态。\n- **第三次握手（ACK）：** 客户端收到服务器的 SYN+ACK 报文段后，会向服务器发送一个 ACK 报文段。其中序列号为 `seq = x + 1`，确认号为 `ack = y + 1`。此时客户端进入 `ESTABLISHED` 状态，服务器收到该 ACK 后也进入 `ESTABLISHED` 状态，连接建立完成。",
+    "a": "**三次握手：客户端发 SYN，服务端回 SYN+ACK，客户端再回 ACK，双方进入 ESTABLISHED。**\n- 第一次：客户端 SYN，seq=x，进入 SYN_SENT\n- 第二次：服务端 SYN+ACK，seq=y、ack=x+1，进入 SYN_RCVD\n- 第三次：客户端 ACK，seq=x+1、ack=y+1，双方 ESTABLISHED\n- 实质是双方各自确认「我发的对方收得到」\n💡 记忆：SYN → SYN+ACK → ACK。",
     "priority": 1
   },
   {
     "id": "net016",
     "module": "net",
     "q": "*2. 为什么 TCP 连接需要三次握手，而不是两次或四次？",
-    "a": "**参考答案：**\n\n- **防止已失效的连接请求报文突然又传送到了服务器：** 如果是两次握手，一个早已失效的客户端连接请求（在网络中滞留了很久）到达服务器，服务器会立即建立连接并等待客户端发送数据，从而浪费资源。三次握手通过第三次客户端的确认，确保了本次连接是双方都期望建立的。\n- **同步双方的初始序列号：** TCP 需要在一个可靠的连接上进行数据传输，序列号的同步是保证数据有序、不重不丢的关键。三次握手过程完成了双方初始序列号的交换和确认。\n- **两次握手不够：** 无法确认客户端的接收能力。\n- **四次握手没必要：** 三次握手已经足以建立一个可靠的连接，四次握手会增加不必要的网络开销。",
+    "a": "**三次刚好能双向确认收发能力并同步序列号，两次不够、四次多余。**\n- 两次不够：服务端无法确认客户端的接收能力\n- 防历史连接：滞留的旧 SYN 到达时客户端不会确认，避免空等\n- 三次完成双方初始序列号的交换与确认\n- 四次没必要，只会多一次往返开销",
     "priority": 1
   },
   {
     "id": "net017",
     "module": "net",
     "q": "*3. 描述一下 TCP 的四次挥手过程？",
-    "a": "**参考答案：**\n\n- **第一次挥手（FIN）：** 客户端（或服务器）决定关闭连接，向对方发送一个 FIN（结束）报文段，其中包含一个序列号 `seq = u`。此时，主动关闭方进入 `FIN_WAIT_1` 状态。\n- **第二次挥手（ACK）：** 被动关闭方收到 FIN 报文段后，发送一个 ACK 报文段作为确认，确认号为 `ack = u + 1`。此时被动关闭方进入 `CLOSE_WAIT` 状态。主动关闭方收到这个 ACK 后，进入 `FIN_WAIT_2` 状态。\n- **第三次挥手（FIN）：** 被动关闭方在处理完所有待发送的数据后，也向对方发送一个 FIN 报文段，序列号为 `seq = w`。此时被动关闭方进入 `LAST_ACK` 状态。\n- **第四次挥手（ACK）：** 主动关闭方收到对方的 FIN 报文段后，发送一个 ACK 报文段进行确认，确认号为 `ack = w + 1`。发送完毕后，主动关闭方进入 `TIME_WAIT` 状态，等待 2MSL（最长报文段寿命）后，连接彻底关闭。被动关闭方收到这个 ACK 后，立即关闭连接。",
+    "a": "**四次挥手：FIN → ACK → FIN → ACK，主动关方最后等 2MSL 才彻底关闭。**\n- 第一次：主动方发 FIN（seq=u），进入 FIN_WAIT_1\n- 第二次：被动方回 ACK（ack=u+1）进 CLOSE_WAIT，主动方进 FIN_WAIT_2\n- 第三次：被动方发完剩余数据再发 FIN（seq=w），进 LAST_ACK\n- 第四次：主动方回 ACK 后进 TIME_WAIT，等 2MSL",
     "priority": 1
   },
   {
     "id": "net018",
     "module": "net",
     "q": "*4. 为什么 TCP 挥手需要四次？",
-    "a": "**参考答案：**\n\n因为 TCP 是全双工的，连接的关闭需要双向进行。当一方（例如客户端）发送 FIN 请求关闭时，仅仅是表明客户端不再发送数据了，但它仍然可以接收数据。服务器收到 FIN 后，会先发送一个 ACK 确认，表示收到了关闭请求。但此时服务器可能还有数据没有发送完，所以不能立即关闭。等到服务器所有数据都发送完毕后，再发送自己的 FIN 报文段，请求关闭服务器到客户端方向的连接。因此，ACK 和 FIN 通常是分开发送的，总共需要四次挥手。",
+    "a": "**TCP 是全双工的，两个方向要分别关闭，被动方的 ACK 与 FIN 无法合并。**\n- 收到 FIN 只说明对方不再发数据，自己仍可接收\n- 被动方可能还有数据没发完，只能先回 ACK\n- 等数据发完才发自己的 FIN，所以挥手多一次\n- 被动方若也没数据，理论上可合并为三次",
     "priority": 1
   },
   {
     "id": "net019",
     "module": "net",
     "q": "*5. 什么是 TIME\\\\\\_WAIT 状态？为什么要有这个状态？",
-    "a": "**参考答案：**\n\n`TIME_WAIT` 是 TCP 连接中断过程中，主动关闭连接的一方在完成第四次挥手后进入的状态。\n\n它的主要作用有两个：\n\n- **可靠地终止 TCP 连接：** 确保最后发送的 ACK 报文段能够到达对方。如果这个 ACK 丢失，对方会超时重传 FIN，处于 `TIME_WAIT` 状态的这一方可以重新发送 ACK，使对方能够正常关闭。\n- **防止已失效的报文段与新连接混淆：** 在一个连接关闭后，网络中可能还残留着之前发送的、延迟到达的报文段。等待 2MSL（Maximum Segment Lifetime，报文最大生存时间）可以确保本次连接中产生的所有报文段都从网络中消失，从而不会干扰到后续使用相同端口号的新连接。",
+    "a": "**TIME_WAIT 是主动关方发完最后一个 ACK 后的等待状态，持续 2MSL。**\n- 作用一：最后的 ACK 若丢失可重发，保证对方正常关闭\n- 作用二：让残留报文在网络中消散，避免污染相同四元组的新连接\n- 2MSL = 两倍报文最大生存时间\n- 服务器侧大量 TIME_WAIT 会占端口，可开 tcp_tw_reuse",
     "priority": 1
   },
   {
     "id": "net020",
     "module": "net",
     "q": "*6. 说说 TCP 和 UDP 的区别？",
-    "a": "**参考答案：**\n\n- **连接性：** TCP 是面向连接的协议，传输数据前必须先建立连接（三次握手）。UDP 是无连接的协议，发送数据前不需要建立连接。\n- **可靠性：** TCP 提供可靠的数据传输服务，通过序列号、确认应答、超时重传、流量控制和拥塞控制等机制保证数据无差错、不丢失、不重复且按序到达。UDP 是不可靠的，尽最大努力交付，不保证数据的可靠性。\n- **报文格式：** TCP 头部开销较大，最小为 20 字节。UDP 头部开销小，只有 8 字节。\n- **传输效率：** UDP 因为没有复杂的控制机制，所以传输效率比 TCP 高。\n- **应用场景：** TCP 适用于要求高可靠性的应用，如文件传输（FTP）、电子邮件（SMTP）、网页浏览（HTTP）。UDP 适用于对实时性要求高、可以容忍少量丢包的应用，如视频会议、在线直播、DNS 查询。",
+    "a": "**TCP 面向连接、可靠有序；UDP 无连接、快但不保证送达。**\n- TCP：三次握手、确认重传、流量与拥塞控制，头部至少 20 字节\n- UDP：尽最大努力交付，头部仅 8 字节，无重传无顺序\n- TCP 用于 HTTP/FTP/邮件；UDP 用于音视频、直播、DNS\n- 取舍的本质是：用可靠性换延迟",
     "priority": 1
   },
   {
     "id": "net021",
     "module": "net",
     "q": "*7. HTTP 和 HTTPS 有什么区别？",
-    "a": "**参考答案：**\n\n- **安全性：** HTTP 是超文本传输协议，数据以明文方式传输，不安全。HTTPS（HTTP Secure）是 HTTP 的安全版，通过 SSL/TLS 协议对数据进行加密传输，并进行身份认证，安全性更高。\n- **连接方式和端口：** HTTP 的默认端口是 80。HTTPS 的默认端口是 443。HTTPS 在 TCP 三次握手之后，还需要进行 SSL/TLS 的握手过程。\n- **证书：** HTTPS 需要向证书颁发机构（CA）申请数字证书，以证明服务器的身份。\n- **开销：** HTTPS 因为涉及加密解密和证书验证，会比 HTTP 消耗更多的服务器资源和处理时间。",
+    "a": "**HTTPS 在 HTTP 与 TCP 之间加了一层 TLS，换来机密性、完整性和身份认证。**\n- HTTP 默认端口 80 明文；HTTPS 默认端口 443 加密\n- HTTPS 需向 CA 申请证书，证明服务器真实身份\n- 流程：TCP 握手 → TLS 握手（证书校验 + 密钥协商）→ 加密通信\n- 代价：握手与加解密有额外 CPU 与耗时开销",
     "priority": 1
   },
   {
     "id": "net022",
     "module": "net",
     "q": "*10. HTTP 常见的状态码有哪些？",
-    "a": "**参考答案：**\n\n- **1xx (信息性)：** 接收的请求正在处理。\n- **2xx (成功)：**\n  - `200 OK`：请求成功。\n  - `201 Created`：资源创建成功（常见于 POST 新建）。\n  - `204 No Content`：成功但无返回体（常见于 DELETE / PUT）。\n- **3xx (重定向)：**\n  - `301 Moved Permanently`：永久重定向。\n  - `302 Found`：临时重定向。\n  - `304 Not Modified`：资源未变，使用缓存。\n- **4xx (客户端错误)：**\n  - `400 Bad Request`：请求语法/参数错误。\n  - `401 Unauthorized`：**未认证**——没有身份凭证（如未登录 / 缺 token），应跳登录。\n  - `403 Forbidden`：**无权限**——已认证但角色/权限不足，服务器拒绝。区别关键：401 是“你是谁”，403 是“你不行”。\n  - `404 Not Found`：资源不存在。\n  - `429 Too Many Requests`：触发**限流**，应退避重试。\n- **5xx (服务器错误)：**\n  - `500 Internal Server Error`：服务器内部错误。\n  - `502 Bad Gateway`：网关/代理收到上游无效响应。\n  - `503 Service Unavailable`：服务暂时不可用（过载/维护）。\n  - `504 Gateway Timeout`：网关超时。",
+    "a": "**状态码按首位分五类，记住每类的代表码就能应付绝大多数追问。**\n- 1xx 信息性：请求已接收，继续处理\n- 2xx 成功：200 OK、201 Created、204 No Content\n- 3xx 重定向：301 永久、302 临时、304 未修改走缓存\n- 4xx 客户端错：400 参数错、401 未认证、403 无权限、404 不存在、429 限流\n- 5xx 服务端错：500 内部错、502 网关坏、503 不可用、504 网关超时\n💡 追问：401 是「你是谁」，403 是「你不行」。",
     "priority": 1
   },
   {
     "id": "net023",
     "module": "net",
     "q": "*11. 什么是 OSI 七层模型和 TCP/IP 四层模型？",
-    "a": "**参考答案：**\n\n- **OSI 七层模型（理论模型）：**\n\n  1. **物理层：** 传输比特流。\n  2. **数据链路层：** 将比特流组装成帧，进行差错控制。\n  3. **网络层：** 路由选择，逻辑寻址（IP）。\n  4. **传输层：** 端到端的连接，可靠传输（TCP/UDP）。\n  5. **会话层：** 建立、管理和终止会话。\n  6. **表示层：** 数据格式转换、加密解密。\n  7. **应用层：** 为用户提供网络服务（HTTP, FTP）。\n- **TCP/IP 四层模型（事实标准）：**\n\n  1. **网络接口层（数据链路层/物理层）：** 对应 OSI 的物理层和数据链路层。\n  2. **网际层（网络层）：** 对应 OSI 的网络层，核心协议是 IP。\n  3. **传输层：** 对应 OSI 的传输层，核心协议是 TCP 和 UDP。\n  4. **应用层：** 对应 OSI 的会话层、表示层和应用层。",
+    "a": "**OSI 是七层理论模型，TCP/IP 是四层事实标准，后者把上三层合并成应用层。**\n- OSI 七层：物理、数据链路、网络、传输、会话、表示、应用\n- TCP/IP 四层：网络接口层、网际层（IP）、传输层（TCP/UDP）、应用层\n- 传输层负责端到端传输，网际层负责寻址与路由\n- 常问：HTTP 在应用层，TCP/UDP 在传输层，IP 在网际层",
     "priority": 1
   },
   {
     "id": "net024",
     "module": "net",
     "q": "*12. ARP 协议是做什么的？",
-    "a": "**参考答案：**\n\nARP（Address Resolution Protocol，地址解析协议）用于在局域网内根据已知 IP 地址解析出对应的 MAC（物理）地址。\n\n流程：**广播请求 → 单播应答**。\n- 主机知道目标 IP，但数据链路层需要目标 MAC，于是**广播** ARP 请求（含目标 IP）。\n- 局域网内所有主机收到请求，只有 IP 匹配的主机**单播**回复 ARP 应答（含自己的 MAC）。\n- 发送方缓存该 IP-MAC 映射（ARP 表）供后续使用。\n\n补充：ARP 是网络层与链路层间的协议，仅在同网段内生效；跨网段通信由网关 ARP 代为解析。",
+    "a": "**ARP 在局域网内用已知 IP 查 MAC：广播发请求，匹配的主机单播应答。**\n- 数据链路层只认 MAC，所以要先把目标 IP 解析成 MAC\n- 流程：广播 ARP 请求 → 目标主机单播回复 → 缓存进 ARP 表\n- 只在同网段生效，跨网段由网关代为解析\n- ARP 工作在网际层与链路层之间，无鉴权故有欺骗风险",
     "priority": 1
   },
   {
     "id": "net025",
     "module": "net",
     "q": "*15. 什么是死锁？产生死锁的四个必要条件是什么？",
-    "a": "**参考答案：**\n\n死锁是指两个或多个进程在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力干涉，它们都将无法推进下去。\n\n产生死锁的四个必要条件：\n\n1. **互斥条件（Mutual Exclusion）：** 资源在同一时刻只能被一个进程使用。\n2. **请求与保持条件（Hold and Wait）：** 一个进程因请求资源而阻塞时，对已获得的资源保持不放。\n3. **不可剥夺条件（No Preemption）：** 进程已获得的资源，在未使用完之前，不能被强行剥夺，只能在使用完后由自己释放。\n4. **循环等待条件（Circular Wait）：** 存在一种进程资源的循环等待链，链中每个进程已获得的资源同时被链中下一个进程所请求。",
+    "a": "**死锁是多个进程互相持有对方所需资源而无限等待，四个条件同时成立才发生。**\n- 互斥：资源同一时刻只能被一个进程占用\n- 请求与保持：拿着已有资源又去申请新资源\n- 不可剥夺：资源不能被强行抢占，只能自己释放\n- 循环等待：形成进程—资源的环形等待链\n💡 记忆：破坏任一必要条件即可预防死锁。",
     "priority": 1
   },
   {
     "id": "net026",
     "module": "net",
     "q": "*17. 什么是虚拟内存？",
-    "a": "**参考答案：**\n\n虚拟内存是一种内存管理技术，它为每个进程提供了一个大的、连续的、私有的地址空间，即虚拟地址空间。这个虚拟地址空间会被映射到物理内存（RAM）和磁盘上的一部分空间（交换空间或页面文件）。\n\n其核心思想是：程序运行时，不需要将所有代码和数据都加载到物理内存中，只需要加载当前需要用到的部分即可。当需要访问的部分不在物理内存时，操作系统会负责将其从磁盘调入内存。",
+    "a": "**虚拟内存给每个进程一个独立且连续的大地址空间，再映射到物理内存和磁盘。**\n- 程序不必整体装入内存，只加载当前用到的页\n- 访问到不在内存的页时，操作系统从磁盘调入（缺页中断）\n- 程序看到的是虚拟地址，由 MMU 翻译成物理地址\n- 磁盘上用于换出的部分叫交换空间 / 页面文件",
     "priority": 1
   },
   {
     "id": "net027",
     "module": "net",
     "q": "*18. 虚拟内存的作用是什么？",
-    "a": "**参考答案：**\n\n1. **扩大地址空间：** 使得程序可以拥有超过物理内存大小的可用内存空间。\n2. **内存保护：** 每个进程的虚拟地址空间是独立的，可以防止一个进程破坏另一个进程的内存。\n3. **内存共享：** 不同的进程可以将它们的虚拟地址空间映射到相同的物理内存页，从而实现共享库或进程间通信。\n4. **提高内存利用率：** 通过按需加载页，物理内存中只存放了当前活跃的程序部分，提高了物理内存的利用效率。",
+    "a": "**虚拟内存的价值：扩容、隔离、共享、提升内存利用率。**\n- 让程序可用空间超过物理内存大小\n- 进程地址空间相互隔离，互不破坏\n- 不同进程可映射到同一物理页，实现共享库与进程间通信\n- 按需调页，物理内存只保留活跃部分",
     "priority": 1
   },
   {
     "id": "net028",
     "module": "net",
     "q": "*20. 什么是用户态和内核态？为什么要区分？",
-    "a": "**参考答案：**\n\n- **内核态（Kernel Mode）：** 操作系统内核运行的模式，拥有最高权限，可以访问所有内存和执行所有特权指令（如 I/O 操作、内存管理等）。\n- **用户态（User Mode）：** 应用程序运行的模式，权限受限，只能访问自己的内存空间，不能直接访问硬件或执行特权指令。\n\n**区分的原因：**\n\n主要是为了\\*\\*保护操作系统\\*\\*和\\*\\*系统的稳定性\\*\\*。通过限制应用程序的权限，可以防止用户程序恶意或无意地破坏操作系统内核、影响其他程序的运行或直接操作硬件，从而保证整个系统的安全和稳定。当用户程序需要执行特权操作时，必须通过\\*\\*系统调用（System Call）\\*\\*陷入内核态，由操作系统代为完成。",
+    "a": "**内核态跑操作系统、权限最高；用户态跑应用程序、权限受限，为的是隔离保护。**\n- 内核态可访问全部内存并执行特权指令（IO、内存管理）\n- 用户态只能访问自己的空间，不能直接操作硬件\n- 防止应用破坏内核或影响其他程序，保证系统稳定与安全\n- 需要特权操作时通过系统调用陷入内核态\n- 频繁的用户态/内核态切换有性能开销",
     "priority": 1
   },
   {
     "id": "net029",
     "module": "net",
     "q": "*21. 什么是系统调用？",
-    "a": "**参考答案：**\n\n系统调用是运行在用户空间的程序向操作系统内核请求服务的一种接口。由于用户程序不能直接执行内核级别的操作（如文件读写、进程创建等），它们必须通过系统调用来请求操作系统提供这些服务。这个过程通常会涉及从用户态到内核态的切换。",
+    "a": "**系统调用是用户程序向内核申请服务的唯一合法入口。**\n- 文件读写、进程创建、网络通信等都需经它完成\n- 调用时从用户态切换到内核态，由内核代为执行\n- 切换要保存与恢复现场，有开销，故 IO 应尽量批量化",
     "priority": 1
   },
   {
     "id": "net030",
     "module": "net",
     "q": "*22. 什么是中断？",
-    "a": "**参考答案：**\n\n中断是指 CPU 在执行程序过程中，由于发生了某个内部或外部的紧急事件，而暂停当前程序的执行，转而去执行处理该事件的程序，处理完毕后再返回原程序被中断处继续执行的过程。中断是实现多任务和处理硬件异步事件的关键机制。",
+    "a": "**中断是 CPU 暂停当前程序去处理紧急事件，处理完再回到断点继续执行。**\n- 分外部硬件中断与内部异常（软中断 / 系统调用）\n- 是实现多任务与响应异步硬件事件的基础\n- 流程：保存现场 → 执行中断处理程序 → 恢复现场\n- 中断处理程序要求短小快，耗时任务延后处理",
     "priority": 1
   },
   {
     "id": "net031",
     "module": "net",
     "q": "*33. 数据库事务的四大特性（ACID）是什么？",
-    "a": "**参考答案：**\n\n- **原子性（Atomicity）：** 事务是一个不可分割的工作单位，事务中的操作要么都发生，要么都不发生。\n- **一致性（Consistency）：** 事务必须使数据库从一个一致性状态变换到另一个一致性状态。也就是说，一个事务执行之前和执行之后，数据库都必须处于一致性状态。\n- **隔离性（Isolation）：** 一个事务的执行不能被其他事务干扰。即一个事务内部的操作及使用的数据对并发的其他事务是隔离的，并发执行的各个事务之间不能互相干扰。\n- **持久性（Durability）：** 一个事务一旦被提交，它对数据库中数据的改变就是永久性的，接下来的其他操作和数据库故障不应该对其有任何影响。",
+    "a": "**事务四大特性：要么全做要么全不做，前后一致、互不干扰、提交后不丢。**\n- 原子性：操作不可分割，失败则整体回滚\n- 一致性：从一个一致状态转换到另一个一致状态\n- 隔离性：并发事务之间互不干扰\n- 持久性：提交后写入永久存储，宕机也不丢",
     "priority": 1
   },
   {
     "id": "net032",
     "module": "net",
     "q": "*34. 数据库的隔离级别有哪些？",
-    "a": "**参考答案：**\n\nSQL 标准定义了 4 种隔离级别，用以解决不同的并发问题：\n\n- **读未提交（Read Uncommitted）：** 最低的隔离级别。一个事务可以读取到另一个事务未提交的数据。会产生\\*\\*脏读\\*\\*、\\*\\*不可重复读\\*\\*和\\*\\*幻读\\*\\*。\n- **读已提交（Read Committed）：** 一个事务只能读取到其他事务已经提交的数据。可以解决\\*\\*脏读\\*\\*。但会产生\\*\\*不可重复读\\*\\*和\\*\\*幻读\\*\\*。这是大多数数据库（如 Oracle, SQL Server）的默认隔离级别。\n- **可重复读（Repeatable Read）：** 保证在同一个事务中多次读取同一数据的结果是一致的。可以解决\\*\\*脏读\\*\\*和\\*\\*不可重复读\\*\\*。但仍可能产生\\*\\*幻读\\*\\*。这是 MySQL InnoDB 引擎的默认隔离级别。\n- **可串行化（Serializable）：** 最高的隔离级别。强制事务串行执行，避免了所有并发问题（脏读、不可重复读、幻读）。但性能开销最大。",
+    "a": "**四级隔离由低到高：读未提交、读已提交、可重复读、可串行化。**\n- 读未提交：能读到别人未提交的数据，三种问题全有\n- 读已提交：解决脏读，Oracle / SQL Server 默认\n- 可重复读：解决不可重复读，MySQL InnoDB 默认\n- 可串行化：全部解决，靠加锁串行执行，性能最差",
     "priority": 1
   },
   {
     "id": "net033",
     "module": "net",
     "q": "*35. 什么是脏读、不可重复读、幻读？",
-    "a": "**参考答案：**\n\n- **脏读（Dirty Read）：** 一个事务读取到了另一个事务\\*\\*未提交\\*\\*的数据。\n- **不可重复读（Non-Repeatable Read）：** 在同一个事务内，多次读取同一行数据，结果却不一致。这是因为在读取间隔，有另一个事务对该行数据进行了\\*\\*修改\\*\\*并提交了。\n- **幻读（Phantom Read）：** 在同一个事务内，多次执行同样的查询，返回的记录\\*\\*行数\\*\\*不一致。这是因为在查询间隔，有另一个事务\\*\\*插入\\*\\*或\\*\\*删除\\*\\*了符合查询条件的行。",
+    "a": "**脏读读未提交数据，不可重复读是同一行的值变了，幻读是结果集行数变了。**\n- 脏读：读到别人未提交、随后可能回滚的数据\n- 不可重复读：事务内两次读同一行，值不一致（被修改）\n- 幻读：事务内两次同条件查询，返回行数不一致（被插入/删除）\n- 分别由读已提交、可重复读、可串行化逐级解决",
     "priority": 1
   },
   {
     "id": "net034",
     "module": "net",
     "q": "*36. 什么是 MVCC？",
-    "a": "**参考答案：**\n\nMVCC（Multi-Version Concurrency Control，多版本并发控制）是一种无锁的读-写并发控制机制，核心是为每行数据的每次修改保留一个**版本**，读不阻塞写、写不阻塞读。\n\n**实现机制（以 InnoDB 为例）：**\n- **undo log 版本链**：每行隐藏字段 `trx_id`（最近修改事务 id）与 `roll_pointer`（指向 undo log 中旧版本）；每次更新都把旧版本写入 undo log，形成版本链。\n- **ReadView（读视图）**：事务开启时生成，记录当前活跃事务 id 列表与快照边界；通过比对版本链上各版本的 `trx_id` 与 ReadView，找到**对当前事务可见**的版本。\n\n**快照读 vs 当前读：**\n- **快照读**（一致性读）：普通 `SELECT` 走 MVCC，读 ReadView 可见的快照版本，不加锁。\n- **当前读**：`SELECT ... FOR UPDATE`、`UPDATE`、`DELETE`、`INSERT` 读取最新已提交版本并加锁，避免读到过期数据。\n\n**幻读解决：** InnoDB 在**可重复读（RR）**下，除 MVCC 外还用 **next-key lock（间隙锁 + 记录锁）** 锁定查询范围，阻止其他事务在间隙插入，从而解决幻读（RC 级别下不解决）。",
+    "a": "**MVCC 用多版本实现读写互不阻塞：读走快照，写产生新版本。**\n- 每行隐藏 trx_id 与 roll_pointer，旧版本串成 undo log 版本链\n- ReadView 记录当前活跃事务，据此判断哪个版本对本事务可见\n- 快照读（普通 SELECT）不加锁；当前读（FOR UPDATE/UPDATE）加锁读最新\n- InnoDB 在 RR 下再靠 next-key lock 锁住间隙解决幻读\n💡 追问：MVCC + 间隙锁 = RR 下无幻读。",
     "priority": 1
   },
   {
     "id": "net035",
     "module": "net",
     "q": "*37. 聚簇索引和非聚簇索引的区别？",
-    "a": "**参考答案：**\n\n这是 InnoDB 存储引擎中的一个重要概念。\n\n- **聚簇索引（Clustered Index）：**\n\n  - 索引的叶子节点存储了\\*\\*完整的行数据\\*\\*。\n  - 数据行的物理存储顺序与索引的键值顺序一致。\n  - 一张表\\*\\*只能有一个\\*\\*聚簇索引（通常是主键）。\n- **非聚簇索引（Non-Clustered Index / Secondary Index）：**\n\n  - 索引的叶子节点存储的是\\*\\*索引键值\\*\\*和指向对应行的\\*\\*主键值\\*\\*（而不是行的物理地址）。\n  - 一张表可以有多个非聚簇索引。\n\n**查询过程区别：**\n\n- 使用聚簇索引查询，可以直接在叶子节点找到所有数据。\n- 使用非聚簇索引查询，需要先在非聚簇索引的叶子节点找到对应的主键值，然后再用这个主键值去聚簇索引中查找完整的行数据，这个过程称为\\*\\*回表\\*\\*。\n\n**其他综合**",
+    "a": "**聚簇索引叶子节点存整行数据，非聚簇索引叶子节点存主键，需要回表。**\n- 聚簇索引决定数据物理存储顺序，一张表只能有一个（通常主键）\n- 非聚簇（二级）索引可以有多个\n- 走二级索引拿到主键后再回聚簇索引取整行，叫回表\n- 覆盖索引可直接返回所需字段，避免回表",
     "priority": 1
   },
   {
     "id": "net036",
     "module": "net",
     "q": "*38. GET 和 POST 请求的区别？",
-    "a": "**参考答案：**\n\n- **参数位置：** GET 请求的参数放在 URL 的查询字符串中，是可见的。POST 请求的参数放在请求体（Request Body）中。\n- **安全性：** POST 相对于 GET 更安全一些，因为参数不在 URL 中显示，且不会被浏览器历史记录保存。但从传输层面讲，如果不使用 HTTPS，它们都是不安全的。\n- **数据大小：** GET 请求的 URL 长度有限制（浏览器和服务器的限制），所以能传输的数据量有限。POST 请求没有大小限制。\n- **幂等性：** GET 请求是幂等的，即多次执行同样的操作，结果是相同的。POST 请求不一定是幂等的，多次提交可能会创建多个资源。\n- **缓存：** GET 请求的结果可以被浏览器缓存，而 POST 请求默认不会。",
+    "a": "**GET 把参数放 URL，POST 放请求体；语义上 GET 安全幂等，POST 不是。**\n- 语义：GET 获取资源不改变状态，POST 提交会改变状态\n- 传输：都在请求报文里，不走 HTTPS 都是明文\n- 长度：GET 受 URL 长度限制（各浏览器不同），POST 无硬性限制\n- 历史与缓存：GET 会被缓存、留在历史记录，POST 不会\n- 刷新回退：GET 无害，POST 浏览器会提示重复提交",
     "priority": 1
   },
   {
     "id": "net037",
     "module": "net",
     "q": "*39. 什么是 Cookie 和 Session？它们有什么区别？",
-    "a": "**参考答案：**\n\nCookie 和 Session 都是用来在客户端和服务器之间维持状态的机制。\n\n- **Cookie:**\n\n  - 数据存储在\\*\\*客户端\\*\\*（浏览器）。\n  - 不安全，容易被篡改。\n  - 单个 Cookie 大小有限制（约 4KB），一个域名下的 Cookie 数量也有限制。\n- **Session:**\n\n  - 数据存储在\\*\\*服务器端\\*\\*。\n  - 相对安全。\n  - 服务器通过一个 `Session ID` 来识别不同的用户，这个 `Session ID` 通常通过 Cookie 发送给客户端。\n  - 会占用服务器资源，并发用户多时会对服务器造成压力。\n\n**区别总结：**\n\n- **存储位置：** Cookie 在客户端，Session 在服务器端。\n- **安全性：** Session 比 Cookie 安全。\n- **存储容量：** Session 能存储的数据量远大于 Cookie。\n- **服务器压力：** Session 会增加服务器的开销。",
+    "a": "**Cookie 把状态存在浏览器，Session 把状态存在服务端，只给浏览器一个 id。**\n- Cookie：客户端存储，约 4KB，可被篡改或被盗，不放敏感数据\n- Session：服务端存储，靠 Cookie 里的 sessionId 关联用户\n- Session 更安全但占服务器内存，分布式要做共享存储\n- Token / JWT 是无状态方案，服务端不保存会话",
     "priority": 1
   },
   {
     "id": "net038",
     "module": "net",
     "q": "*40. 什么是 RESTful API？",
-    "a": "**参考答案：**\n\nREST（Representational State Transfer）是一种软件架构风格，不是标准。RESTful API 是遵循 REST 风格设计的 API。\n\n其核心特点包括：\n\n- **资源（Resources）：** API 操作的对象都是资源，用 URI (统一资源标识符) 来表示。\n- **表现层（Representation）：** 资源以某种表现形式（如 JSON, XML）进行传输。\n- **状态转移（State Transfer）：** 通过 HTTP 动词（GET, POST, PUT, DELETE 等）来对资源进行操作，实现客户端和服务器状态的转移。\n\n  - `GET`: 获取资源\n  - `POST`: 新建资源\n  - `PUT`: 更新整个资源\n  - `DELETE`: 删除资源\n- **无状态（Stateless）：** 服务器不保存客户端的会话状态。每一次请求都必须包含所有必要的信息。",
+    "a": "**RESTful 是以资源为中心的 API 风格：用 URI 定位资源，用 HTTP 动词表达操作。**\n- 资源用名词复数 URI 表示，如 /users/1\n- GET 查、POST 建、PUT 整体改、PATCH 局部改、DELETE 删\n- 表现层：用 JSON 等格式表述资源\n- 无状态：每次请求自带全部信息，服务端不保存会话",
     "priority": 1
   },
   {
     "id": "net039",
     "module": "net",
     "q": "*41. 什么是 IoC 和 DI？",
-    "a": "**参考答案：**\n\n- **IoC (Inversion of Control)，控制反转：** 是一种设计原则。它指的是将传统上由程序代码直接操控的对象（依赖）的创建和控制权，转移（反转）给一个外部的容器或框架来管理。程序本身不再负责创建和管理其依赖的对象，而是被动地等待容器来提供。\n- **DI (Dependency Injection)，依赖注入：** 是实现 IoC 的一种具体的设计模式。它指容器动态地将某个对象所依赖的其他对象注入到该对象中。注入的方式通常有三种：构造函数注入、Setter 方法注入、接口注入。\n\n**关系：** IoC 是一种思想，DI 是实现这种思想的一种方式。它们的核心目标是\\*\\*解耦\\*\\*，降低组件之间的耦合度，使得系统更容易测试、维护和扩展。",
+    "a": "**IoC 是把对象创建与依赖的控制权交给容器，DI 是容器把依赖注入进来。**\n- IoC 是思想（控制反转），DI 是实现方式（依赖注入）\n- 注入方式常见三种：构造函数、Setter、接口注入\n- 核心收益是解耦，便于替换实现与单元测试\n- 前端典型例子：Angular、NestJS 的依赖注入容器\n💡 记忆：IoC 是思想，DI 是手段。",
     "priority": 1
   },
   {
     "id": "net040",
     "module": "net",
     "q": "*42. 设计模式中的单例模式是什么？",
-    "a": "**参考答案：**\n\n单例模式（Singleton Pattern）是一种创建型设计模式，它保证一个类只有一个实例，并提供一个全局访问点来获取这个实例。\n\n**实现要点：**\n\n1. **私有化构造函数：** 防止外部通过 `new` 关键字直接创建实例。\n2. **私有静态实例变量：** 在类内部持有一个该类的静态实例。\n3. **公有静态获取方法：** 提供一个全局唯一的公共方法，用于返回这个静态实例。\n\n常见的实现方式有懒汉式（线程不安全和线程安全版本）、饿汉式、双重检查锁定（DCL）、静态内部类等。",
+    "a": "**单例模式保证一个类只有一个实例，并提供全局访问点。**\n- 私有化构造函数，禁止外部直接 new\n- 内部持有静态实例，通过静态方法返回\n- 懒汉式用到才创建，饿汉式启动时就创建\n- JS 里模块天然单例，常用闭包或静态属性实现\n```js\nconst Singleton = (() => {\n  let instance;\n  return { getInstance() { return instance || (instance = {}); } };\n})();\n```",
     "priority": 1
   },
   {
     "id": "net041",
     "module": "net",
     "q": "*43. 什么是面向对象（OOP）？",
-    "a": "**参考答案：**\n\n面向对象编程（Object-Oriented Programming）是一种编程范式，它将程序中的数据和操作数据的方法组织成“对象”。\n\n其三大核心特性是：\n\n- **封装（Encapsulation）：** 将数据（属性）和操作数据的方法（行为）捆绑在一个对象中，并对对象的内部细节进行隐藏，只暴露有限的接口与外部交互。\n- **继承（Inheritance）：** 允许一个类（子类）继承另一个类（父类）的属性和方法，从而实现代码复用和建立类之间的层次关系。\n- **多态（Polymorphism）：** 指不同类的对象对同一消息做出不同的响应。即“一个接口，多种实现”。多态的实现通常依赖于继承、方法重写和父类引用指向子类对象。",
+    "a": "**OOP 把数据和操作数据的方法组织成对象，三大特性是封装、继承、多态。**\n- 封装：隐藏内部细节，只暴露必要接口\n- 继承：子类复用父类属性与方法，建立层次关系\n- 多态：同一接口多种实现，靠重写与父类引用指向子类对象\n- 收益是复用、易扩展、易维护",
     "priority": 1
   },
   {
     "id": "net042",
     "module": "net",
     "q": "*44. Linux 常用命令有哪些？",
-    "a": "**参考答案：**\n\n- `ls`: 列出目录内容。\n- `cd`: 切换目录。\n- `pwd`: 显示当前工作目录。\n- `cp`: 复制文件或目录。\n- `mv`: 移动或重命名文件或目录。\n- `rm`: 删除文件或目录。\n- `grep`: 在文件中搜索指定的字符串。\n- `ps`: 显示当前进程状态。\n- `top`: 实时显示系统进程动态。\n- `netstat`: 显示网络连接、路由表等信息。\n- `find`: 在文件系统中查找文件。",
+    "a": "**Linux 日常就这几类：看目录、看内容、看进程、看网络。**\n- ls / cd / pwd：列目录、切换、显示当前路径\n- cp / mv / rm：复制、移动重命名、删除（rm -rf 要谨慎）\n- cat / grep / find：查看内容、搜索文本、查找文件\n- ps / top / kill：进程查看与终止\n- netstat / curl / ping：看网络连接与调试请求",
     "priority": 1
   },
   {
     "id": "net043",
     "module": "net",
     "q": "*45. 什么是 Git？它和 SVN 有什么区别？",
-    "a": "**参考答案：**\n\nGit 是一个开源的分布式版本控制系统（DVCS），用于敏捷高效地处理任何或小或大的项目。\n\n与 SVN (Subversion) 这种集中式版本控制系统（CVCS）的主要区别：\n\n- **架构：** Git 是分布式的，每个开发者本地都拥有一个完整的代码仓库（`.git` 目录），可以在不联网的情况下进行提交、查看历史、创建分支等操作。SVN 是集中式的，所有代码和历史版本都存储在中央服务器上，本地只有一个工作副本，大部分操作都需要连接中央服务器。\n- **分支：** Git 的分支操作非常轻量级和高效，创建、切换、合并分支都很快。SVN 的分支本质上是拷贝整个目录，非常笨重。\n- **性能：** Git 的绝大多数操作都在本地进行，速度非常快。SVN 的操作大多需要网络交互，速度较慢。\n- **安全性：** Git 的分布式特性使得代码仓库有多个备份，更安全。SVN 的中央服务器一旦故障，所有人都无法工作。",
+    "a": "**Git 是分布式的，每人本地都有完整仓库；SVN 是集中式的，历史只在中央服务器。**\n- Git 可离线提交、建分支、看历史；SVN 多数操作要联网\n- Git 分支是轻量指针，SVN 分支本质是目录拷贝\n- Git 本地操作速度快，SVN 依赖网络往返\n- Git 每个副本都是备份，SVN 中央服务器故障全员停摆",
     "priority": 1
   },
   {
     "id": "net044",
     "module": "net",
     "q": "*49. 什么是缓存？常见的缓存策略有哪些？",
-    "a": "**参考答案：**\n\n缓存是一种将计算结果或数据存储起来，以便后续请求可以更快地访问的技术。其核心思想是用空间换时间。\n\n常见的缓存读写策略：\n\n- **Cache-Aside (旁路缓存)：**\n  - **读：** 先读缓存，命中则返回；未命中则读数据库，写入缓存后返回。\n  - **写：** 先更新数据库，再删除缓存（或更新缓存）。最常用。\n- **Read-Through (穿透读)：** 应用只与缓存交互，缓存未命中时由缓存服务负责从数据库加载。\n- **Write-Through (穿透写)：** 应用只写缓存，由缓存服务同步写入数据库（写路径有延迟但读一致）。\n- **Write-Around (绕写)：** 写操作**只写数据库，不写缓存**；适合写多读少或写入后不立即读的场景，避免缓存被冷数据污染。读未命中时再按需加载。\n- **Write-Back / Write-Behind (写回/异步写)：** 写操作**只写缓存**，由缓存服务**异步批量**刷回数据库。写吞吐极高、延迟低，但缓存宕机可能丢数据，需持久化/兜底。\n\n高频三大缓存问题（面试必问）：\n\n- **缓存穿透**：查询**不存在**的数据，缓存和 DB 都没有，请求每次都打到 DB。解决：① 缓存**空值/null**（设短过期）；② **布隆过滤器**拦截不存在的 key；③ 接口参数校验。\n- **缓存击穿**：某个**热点 key 过期瞬间**，大量并发同时打到 DB。解决：① **互斥锁**（只放一个线程重建缓存）；② **逻辑过期**（不真删，后台异步续期）；③ 热点 key 不过期。\n- **缓存雪崩**：**大量 key 同时过期**或缓存层宕机，请求涌入 DB。解决：① 过期时间加**随机值**打散；② **多级缓存**（本地 + Redis）；③ **熔断/限流**降级；④ Redis 高可用（集群）。",
+    "a": "**缓存是用空间换时间，主流读写策略是 Cache-Aside（旁路缓存）。**\n- 读：先读缓存，未命中读 DB 再写回缓存\n- 写：先更新 DB，再删除缓存（比直接更新缓存更安全）\n- 变体：Read/Write-Through 由缓存代管 DB，Write-Back 异步刷盘\n- 穿透查不存在：缓存空值 + 布隆过滤器\n- 击穿热点过期：互斥锁 / 逻辑过期；雪崩：TTL 加随机 + 多级缓存",
     "priority": 1
   },
   {
     "id": "net045",
     "module": "net",
     "q": "什么是XSS攻击？有哪些类型？如何防范？",
-    "a": "**参考答案：**\n\nXSS（Cross-Site Scripting）跨站脚本攻击是指攻击者在网页中注入恶意脚本代码，当用户浏览该网页时，脚本会在用户浏览器中执行。\n\n**类型：**\n\n- **存储型XSS**：恶意脚本被存储在服务器数据库中\n- **反射型XSS**：恶意脚本通过URL参数等方式反射给用户\n- **DOM型XSS**：通过修改DOM结构来执行恶意脚本\n\n**防范措施：**\n\n- 输入验证和输出编码\n- 使用CSP（Content Security Policy）\n- 设置HttpOnly Cookie\n- 使用安全的DOM操作方法",
+    "a": "**XSS 是往页面注入恶意脚本并在别人浏览器里执行，用来盗 Cookie、钓鱼。**\n- 存储型：脚本存进数据库，所有访问者都会中招\n- 反射型：脚本藏在 URL 里，服务端原样返回\n- DOM 型：前端 JS 把不可信数据写进 DOM 触发，不经服务端\n- 防护：输出转义、CSP、HttpOnly Cookie、用 textContent 而非 innerHTML\n- 富文本用 DOMPurify 等白名单库消毒",
     "priority": 1
   },
   {
     "id": "net046",
     "module": "net",
     "q": "什么是CSRF攻击？如何防范？",
-    "a": "**参考答案：**\n\nCSRF（Cross-Site Request Forgery）跨站请求伪造是指攻击者诱导用户在已登录的网站上执行非本意的操作。\n\n**防范措施：**\n\n- 使用CSRF Token验证\n- 检查Referer头\n- 使用SameSite Cookie属性\n- 重要操作添加验证码\n- 使用双重Cookie验证",
+    "a": "**CSRF 是诱导已登录用户访问恶意页面，借其登录态发起非本意请求。**\n- 首选 SameSite=Lax/Strict Cookie，跨站请求不带 Cookie\n- 服务端下发并校验 CSRF Token\n- 校验 Origin / Referer 判断来源可信\n- 关键操作加验证码或二次确认",
     "priority": 1
   },
   {
     "id": "net047",
     "module": "net",
     "q": "什么是CSP？如何配置和使用？",
-    "a": "**参考答案：**\n\nCSP（Content Security Policy）内容安全策略是一种安全机制，用于检测和减轻XSS攻击。\n\n**配置方式：**\n\n```HTML\n<!-- HTTP头配置 -->\nContent-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'\n\n<!-- Meta标签配置 -->\n<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self'\">\n```\n\n**常用指令：**\n\n- `default-src`：默认策略\n- `script-src`：脚本来源\n- `style-src`：样式来源\n- `img-src`：图片来源",
+    "a": "**CSP 通过响应头或 meta 标签下发白名单，限制页面可加载的资源来源。**\n- 推荐用 HTTP 响应头，meta 方式不支持 frame-ancestors 与 report-only\n- default-src 是兜底默认，script-src 专门限制脚本源\n- 内联脚本需 nonce 或 hash 放行\n- 先上 Content-Security-Policy-Report-Only 观察，再切正式\n```http\nContent-Security-Policy: default-src 'self'; script-src 'self' https://cdn.example.com\n```",
     "priority": 1
   },
   {
     "id": "net048",
     "module": "net",
     "q": "什么是点击劫持攻击？如何防范？",
-    "a": "**参考答案：**\n\n点击劫持（Clickjacking）是指攻击者使用透明或不可见的iframe覆盖在正常网页上，诱导用户点击。\n\n**防范措施：**\n\n- 设置X-Frame-Options头：`DENY`、`SAMEORIGIN`\n- 使用CSP的frame-ancestors指令\n- JavaScript框架检测：\n\n```JavaScript\nif (top !== window) {\n    top.location = window.location;\n}\n```",
+    "a": "**点击劫持用透明 iframe 覆盖正常页面，让你在不知情时点到恶意按钮。**\n- 设 X-Frame-Options: DENY 或 SAMEORIGIN 禁止被嵌套\n- 更推荐 CSP 的 frame-ancestors 指令，可指定允许的父页面\n- JS 兜底：发现被嵌套就跳出框架\n- 转账、授权等关键操作加二次确认\n```js\nif (top !== self) top.location = self.location;\n```",
     "priority": 1
   },
   {
     "id": "net049",
     "module": "net",
     "q": "Cookie有哪些安全属性？分别有什么作用？",
-    "a": "**参考答案：**\n\n**安全属性：**\n\n- **HttpOnly**：防止JavaScript访问Cookie，减少XSS攻击\n- **Secure**：只在HTTPS连接中传输Cookie\n- **SameSite**：控制跨站请求时是否发送Cookie\n\n  - `Strict`：完全禁止跨站发送\n  - `Lax`：部分跨站请求可发送\n  - `None`：允许跨站发送（需配合Secure）\n\n```JavaScript\ndocument.cookie = \"sessionId=abc123; HttpOnly; Secure; SameSite=Strict\";\n```",
+    "a": "**Cookie 三个安全属性：HttpOnly 防 JS 读、Secure 只走 HTTPS、SameSite 控跨站。**\n- HttpOnly：挡住 XSS 通过 document.cookie 窃取\n- Secure：只在 HTTPS 连接中发送\n- SameSite=Strict 全禁跨站；Lax 放行部分导航；None 允许跨站但必须配 Secure\n- 再用 Max-Age / Expires 控制生命周期，令牌尽量短时效",
     "priority": 1
   },
   {
     "id": "net050",
     "module": "net",
     "q": "什么是SQL注入？前端如何防范？",
-    "a": "**参考答案：**\n\nSQL 注入是攻击者把恶意 SQL 拼入查询（如 `' OR 1=1 --'`）篡改逻辑、拖库。**根本修复必须在后端**：使用**参数化查询 / 预编译语句**（Prepared Statement，占位符 `?` 或 `$1`），让输入永远作为“数据”而非“SQL 代码”执行，ORM 防注入 API 同理。这是唯一可靠手段。\n\n**前端防范只是辅助（不能依赖）：**\n- 输入校验/白名单、长度与格式限制：改善体验、挡掉部分粗陋输入。\n- **注意：** 前端校验/转义/正则黑名单**无法真正阻止注入**——攻击者可直接绕过前端（抓包、改请求、用工具）打后端；正则屏蔽 `SELECT/UNION` 之类既易误伤又漏过编码变形（如 `SESELECTLECT`）。\n- 因此：前端校验是体验层防御；后端参数化才是安全根因。切勿用前端正则“防注入”蒙混。\n\n```JavaScript\n// 后端根因：参数化（Node mysql2 示例），前端任何校验都替代不了\nconst [rows] = await connection.execute(\n  'SELECT * FROM users WHERE id = ?',\n  [userId]\n);\n```",
+    "a": "**SQL 注入的根治在后端参数化查询，前端只能做辅助校验。**\n- 后端用预编译占位符，输入永远当数据不当代码\n- 前端做白名单校验、长度与格式限制，改善体验\n- 前端正则黑名单挡不住注入，抓包即可绕过前端\n- 配合最小权限数据库账号、ORM 安全 API\n```js\nawait conn.execute('SELECT * FROM users WHERE id = ?', [userId]);\n```\n💡 追问：前端校验只是体验层，不可作为防线。",
     "priority": 1
   },
   {
     "id": "net051",
     "module": "net",
     "q": "什么是同源策略？如何安全地进行跨域请求？",
-    "a": "**参考答案：**\n\n同源策略要求协议、域名、端口完全相同才能访问资源。\n\n**安全跨域方案：**\n\n- **CORS**：服务器设置Access-Control-Allow-Origin\n- **JSONP**：仅支持GET请求，存在安全风险\n- **代理服务器**：后端代理请求\n- **PostMessage**：用于iframe通信\n\n```JavaScript\n// CORS示例\nfetch('https://api.example.com/data', {\n    method: 'POST',\n    credentials: 'include', // 发送Cookie\n    headers: {\n        'Content-Type': 'application/json'\n    }\n});\n```",
+    "a": "**同源策略要求协议、域名、端口全同才允许读取资源，目的是隔离不同站点。**\n- 跨域读响应默认被拦，但 img/script/link 标签加载不受限\n- 正规方案：CORS，服务端声明 Access-Control-Allow-Origin\n- 带凭据需 credentials 配合 Allow-Credentials 与具体 Origin\n- iframe 间通信用 postMessage，收发双方都要校验 origin\n```js\nfetch('https://api.example.com/data', { credentials: 'include' });\n```",
     "priority": 1
   },
   {
     "id": "net052",
     "module": "net",
     "q": "如何安全地存储敏感信息？",
-    "a": "**参考答案：**\n\n**存储方案对比：**\n\n- **LocalStorage/SessionStorage**：明文存储，XSS可访问\n- **Cookie**：可设置HttpOnly，但仍有CSRF风险\n- **IndexedDB**：XSS可访问\n\n**安全措施：**\n\n- 敏感信息加密存储\n- 使用短期Token代替长期凭证\n- 定期清理存储数据\n- 避免在前端存储密码等敏感信息\n\n```JavaScript\n// 加密存储示例\nconst encryptData = (data, key) => {\n    return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();\n};\n```",
+    "a": "**前端没有真正安全的存储：LocalStorage、IndexedDB 都能被 XSS 直接读到。**\n- 原则是尽量不存，必须存就用短期 Token\n- 优先放 HttpOnly + Secure + SameSite 的 Cookie\n- 密码、身份证、银行卡号绝不明文落盘\n- 用完及时清理，退出登录要让令牌失效\n💡 追问：前端加密没用，密钥一样会被 XSS 拿到。",
     "priority": 1
   },
   {
     "id": "net053",
     "module": "net",
     "q": "什么是中间人攻击？如何防范？",
-    "a": "**参考答案：**\n\n中间人攻击（MITM）是指攻击者在通信双方之间拦截和修改数据。\n\n**防范措施：**\n\n- 使用HTTPS加密传输\n- 验证SSL证书\n- 使用HSTS（HTTP Strict Transport Security）\n- 证书固定（Certificate Pinning）\n- 避免使用公共WiFi进行敏感操作\n\n```JavaScript\n// HSTS头设置\nStrict-Transport-Security: max-age=31536000; includeSubDomains\n```",
+    "a": "**中间人攻击是攻击者在通信链路中间窃听或篡改，公共 WiFi 下高发。**\n- 全站 HTTPS，加密传输并校验证书链\n- 开启 HSTS，强制 HTTPS 防止被降级\n- App 内可做证书固定（Certificate Pinning）\n- 敏感操作避开不可信网络，警惕自签证书\n```http\nStrict-Transport-Security: max-age=31536000; includeSubDomains\n```",
     "priority": 1
   },
   {
     "id": "net054",
     "module": "net",
     "q": "如何防范恶意文件上传？",
-    "a": "**参考答案：**\n\n**前端防范：**\n\n- 文件类型验证（MIME类型检查）\n- 文件大小限制\n- 文件名过滤\n- 文件内容检测\n\n```JavaScript\nfunction validateFile(file) {\n    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];\n    const maxSize = 5 * 1024 * 1024; // 5MB\n\n    if (!allowedTypes.includes(file.type)) {\n        throw new Error('不支持的文件类型');\n    }\n\n    if (file.size > maxSize) {\n        throw new Error('文件过大');\n    }\n\n    return true;\n}\n```",
+    "a": "**文件上传前端只能做初筛，真正的类型判断必须在服务端。**\n- 前端校验 MIME 与后缀、限制大小、过滤文件名\n- file.type 来自浏览器可被伪造，不能作为安全依据\n- 服务端查文件头魔数、随机重命名、存到非 Web 可执行目录\n- 图片可二次渲染破坏内嵌脚本\n```js\nconst ok = ['image/jpeg','image/png'].includes(file.type) && file.size < 5*1024*1024;\n```",
     "priority": 1
   },
   {
     "id": "net055",
     "module": "net",
     "q": "什么是DOM Clobbering攻击？如何防范？",
-    "a": "**参考答案：**\n\nDOM Clobbering是指通过HTML注入来覆盖全局变量或DOM属性，影响JavaScript代码执行。\n\n**攻击示例：**\n\n```HTML\n<img name=\"userConfig\" src=\"x\">\n<script>\n// 原本期望的对象被覆盖\nconsole.log(window.userConfig); // 输出img元素而非配置对象\n</script>\n```\n\n**防范措施：**\n\n- 避免使用全局变量\n- 使用命名空间\n- 严格的HTML过滤\n- 使用`hasOwnProperty`检查属性",
+    "a": "**DOM Clobbering 是用带 name/id 的 HTML 元素覆盖 JS 里的全局变量或属性。**\n- 典型：注入 img 标签带 name，会让 window.xxx 变成该元素\n- 危害：绕过判空逻辑、污染配置对象、触发意外分支\n- 防护：严格 HTML 过滤，禁止用户可控的 name/id\n- 取值前用 hasOwnProperty 判断，少依赖全局变量",
     "priority": 3
   },
   {
     "id": "net056",
     "module": "net",
     "q": "什么是原型污染攻击？如何防范？",
-    "a": "**参考答案：**\n\n原型污染是指攻击者修改JavaScript对象的原型，影响所有实例对象。\n\n**攻击示例：**\n\n```JavaScript\n// 恶意输入\nconst maliciousInput = '{\"__proto__\": {\"isAdmin\": true}}';\nconst userData = JSON.parse(maliciousInput);\n// 所有对象都被污染\nconsole.log({}.isAdmin); // true\n```\n\n**防范措施：**\n\n- 使用`Object.create(null)`创建纯净对象\n- 使用`Map`代替普通对象\n- 输入验证，过滤`__proto__`等危险属性\n- 使用`Object.freeze()`冻结原型",
+    "a": "**原型污染是攻击者改写 Object.prototype，让所有对象实例都受影响。**\n- 典型入口：递归合并 / 深拷贝时未过滤 __proto__ 键\n- 危害：伪造 isAdmin 之类的属性绕过权限判断\n- 防护：合并时跳过 __proto__、constructor、prototype\n- 用 Object.create(null)、Map，或 Object.freeze(Object.prototype)\n```js\nconst safeSet = (o, k, v) => { if (k === '__proto__' || k === 'constructor') return; o[k] = v; };\n```",
     "priority": 3
   },
   {
     "id": "net057",
     "module": "net",
     "q": "如何安全地处理用户输入？",
-    "a": "**参考答案：**\n\n**处理原则：**\n\n- **永远不信任用户输入**\n- **输入验证**：白名单验证优于黑名单\n- **输出编码**：根据上下文选择编码方式\n- **长度限制**：防止DoS攻击\n\n```JavaScript\n// 输入清理函数\nfunction sanitizeInput(input) {\n    return input\n        .replace(/[<>\\\"']/g, '') // 移除危险字符\n        .trim()\n        .substring(0, 1000); // 长度限制\n}\n\n// HTML编码\nfunction escapeHtml(text) {\n    const div = document.createElement('div');\n    div.textContent = text;\n    return div.innerHTML;\n}\n```",
+    "a": "**核心原则：一切输入都不可信，校验在入口，编码在出口。**\n- 校验用白名单，黑名单容易被各种编码变形绕过\n- 输出按上下文编码：HTML、属性、URL、JS 各不相同\n- 限制长度与频次，防 DoS\n- 富文本必须用 DOMPurify 等白名单库消毒\n```js\nconst esc = s => { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; };\n```",
     "priority": 3
   },
   {
     "id": "net058",
     "module": "net",
     "q": "什么是依赖混淆攻击？如何防范？",
-    "a": "**参考答案：**\n\n依赖混淆攻击是指攻击者上传恶意包到公共仓库，利用包管理器的解析机制让应用下载恶意包。\n\n**防范措施：**\n\n- 使用私有npm仓库\n- 锁定依赖版本（package-lock.json）\n- 定期审计依赖包：`npm audit`\n- 使用`.npmrc`配置可信源\n- 监控依赖包的异常行为\n\n```JSON\n// .npmrc配置示例\n@company:registry=https://private-registry.company.com/\nregistry=https://registry.npmjs.org/\n```",
+    "a": "**依赖混淆是攻击者往公共源发同名高版本包，骗包管理器装上恶意依赖。**\n- 私有包统一用 scope，并在 .npmrc 绑定私有 registry\n- 提交 lockfile 锁定版本，CI 用 npm ci 而非 npm install\n- 定期 npm audit，关注包的维护活跃度\n- 禁止引入来源不明或未锁版本的依赖\n```ini\n# .npmrc\n@company:registry=https://registry.internal.com/\n```",
     "priority": 3
   },
   {
     "id": "net059",
     "module": "net",
     "q": "如何防范ReDoS（正则表达式拒绝服务）攻击？",
-    "a": "**参考答案：**\n\nReDoS攻击利用正则表达式的回溯特性，通过特殊输入导致CPU占用过高。\n\n**危险模式：**\n\n```JavaScript\n// 危险的正则表达式\nconst badRegex = /^(a+)+$/;\nconst input = 'a'.repeat(25) + 'X'; // 触发灾难性回溯\n```\n\n**防范措施：**\n\n- 避免嵌套量词：`(a+)+`、`(a*)*`\n- 使用具体量词：`{1,10}`代替`+`\n- 设置超时限制\n- 使用正则表达式安全检测工具\n- 考虑使用有限状态自动机",
+    "a": "**ReDoS 用能触发灾难性回溯的输入，让正则匹配耗时爆炸、CPU 打满。**\n- 危险模式：嵌套量词 (a+)+、(a*)* 以及分支重叠\n- 改用具体量词 {1,20}，或拆成多条简单正则\n- 对用户可控的正则加执行超时，或改用 DFA 类引擎\n- 先做输入长度限制，再交给正则\n```js\nconst bad = /^(a+)+$/;   // 输入 'a'.repeat(25)+'X' 即卡死\nconst ok  = /^a{1,20}$/; // 改用具体量词\n```",
     "priority": 3
   },
   {
     "id": "net060",
     "module": "net",
     "q": "什么是Tabnabbing攻击？如何防范？",
-    "a": "**参考答案：**\n\nTabnabbing攻击是指恶意网站通过`window.opener`修改原页面，进行钓鱼攻击。\n\n**攻击场景：**\n\n```JavaScript\n// 恶意页面代码\nif (window.opener) {\n    window.opener.location = 'https://fake-bank.com/login';\n}\n```\n\n**防范措施：**\n\n```JavaScript\n// 使用rel=\"noopener noreferrer\"\n<a href=\"https://external-site.com\" target=\"_blank\" rel=\"noopener noreferrer\">链接</a>\n\n// JavaScript打开窗口时清除opener\nconst newWindow = window.open('https://external-site.com');\nnewWindow.opener = null;\n```",
+    "a": "**Tabnabbing 是新打开的页面通过 window.opener 把原标签页跳转到钓鱼页。**\n- 场景：A 页 target 打开恶意 B，B 直接改 opener.location\n- 防护：外链一律加 rel=\"noopener noreferrer\"\n- window.open 之后手动把 opener 置为 null\n- 现代浏览器对 target=_blank 已默认隐含 noopener\n```html\n<a href=\"https://ext.example.com\" target=\"_blank\" rel=\"noopener noreferrer\">外链</a>\n```",
     "priority": 1
   },
   {
     "id": "net061",
     "module": "net",
     "q": "如何安全地使用eval()和Function构造函数？",
-    "a": "**参考答案：**\n\n**安全原则：**\n\n- **避免使用**：优先使用JSON.parse()、模板字符串等替代方案\n- **输入验证**：严格验证和过滤输入\n- **沙箱环境**：在受限环境中执行\n\n```JavaScript\n// 危险用法\neval(userInput); // 永远不要这样做\n\n// 安全替代方案\n// 1. JSON解析\nconst data = JSON.parse(jsonString);\n\n// 2. 模板字符串\nconst template = `Hello ${name}`;\n\n// 3. 使用安全的解析库\nconst safeEval = require('safe-eval');\nsafeEval(code, context);\n```",
+    "a": "**eval 和 new Function 会把字符串当代码执行，等于给输入开后门，应当禁用。**\n- 字符串解析优先用 JSON.parse 替代\n- 动态模板用模板字符串或成熟模板引擎\n- 无法避免时必须在沙箱中运行，入参严格白名单\n- CSP 去掉 unsafe-eval 可直接禁掉 eval\n```js\n// 危险：eval(userInput)\nconst data = JSON.parse(jsonString); // 安全替代\n```",
     "priority": 3
   },
   {
     "id": "net062",
     "module": "net",
     "q": "什么是子资源完整性（SRI）？如何使用？",
-    "a": "**参考答案：**\n\nSRI（Subresource Integrity）用于验证外部资源的完整性，防止CDN劫持等攻击。\n\n**使用方法：**\n\n```HTML\n<!-- 为外部脚本添加integrity属性 -->\n<script src=\"https://cdn.example.com/library.js\"\n        integrity=\"sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC\"\n        crossorigin=\"anonymous\"></script>\n\n<link rel=\"stylesheet\"\n      href=\"https://cdn.example.com/style.css\"\n      integrity=\"sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u\"\n      crossorigin=\"anonymous\">\n```\n\n**生成哈希值：**\n\n```Bash\n**使用openssl生成SHA384哈希**\nopenssl dgst -sha384 -binary file.js | openssl base64 -A\n```",
+    "a": "**SRI 给外链资源加哈希，浏览器校验不匹配就拒绝执行，防止 CDN 被劫持。**\n- 用在 script / link 标签的 integrity 属性上\n- 值形如 sha384- 加 base64 摘要\n- 必须配 crossorigin，否则校验不会生效\n- 资源内容变更时要同步更新哈希\n```html\n<script src=\"https://cdn.example.com/lib.js\" integrity=\"sha384-oqVuAfXRKap7fdgc...\" crossorigin=\"anonymous\"></script>\n```",
     "priority": 1
   },
   {
     "id": "net063",
     "module": "net",
     "q": "如何防范WebSocket安全风险？",
-    "a": "**参考答案：**\n\n**主要风险：**\n\n- 跨站WebSocket劫持\n- 缺乏同源策略保护\n- 数据传输安全\n\n**防范措施：**\n\n```JavaScript\n// 1. 使用WSS加密连接\nconst socket = new WebSocket('wss://secure-server.com/socket');\n\n// 2. 验证Origin头（服务端）\nif (request.headers.origin !== 'https://trusted-domain.com') {\n    return reject();\n}\n\n// 3. 使用Token认证\nsocket.onopen = function() {\n    socket.send(JSON.stringify({\n        type: 'auth',\n        token: getAuthToken()\n    }));\n};\n\n// 4. 输入验证\nsocket.onmessage = function(event) {\n    const data = JSON.parse(event.data);\n    if (validateMessage(data)) {\n        processMessage(data);\n    }\n};\n```",
+    "a": "**WebSocket 不受同源策略保护，来源校验、加密、鉴权都得自己做。**\n- 一律用 wss 加密连接，不要用明文 ws\n- 服务端校验 Origin 头，防跨站 WebSocket 劫持\n- 连接建立后用 Token 鉴权，别只依赖 Cookie\n- 收发的消息同样要校验，防注入与 XSS\n```js\nconst ws = new WebSocket('wss://api.example.com');\nws.onopen = () => ws.send(JSON.stringify({ type: \"auth\", token }));\n```",
     "priority": 1
   },
   {
     "id": "net064",
     "module": "net",
     "q": "如何实现安全的前端日志记录？",
-    "a": "**参考答案：**\n\n**安全考虑：**\n\n- 避免记录敏感信息\n- 防止日志注入攻击\n- 控制日志级别\n\n```JavaScript\nclass SecurityLogger {\n    constructor() {\n        this.sensitiveFields = ['password', 'token', 'ssn', 'creditCard'];\n    }\n\n    // 清理敏感信息\n    sanitizeData(data) {\n        const cleaned = { ...data };\n        this.sensitiveFields.forEach(field => {\n            if (cleaned[field]) {\n                cleaned[field] = '***';\n            }\n        });\n        return cleaned;\n    }\n\n    // 防止日志注入\n    escapeLogData(message) {\n        return message.replace(/[\\r\\n]/g, '');\n    }\n\n    log(level, message, data = {}) {\n        const cleanData = this.sanitizeData(data);\n        const safeMessage = this.escapeLogData(message);\n\n        console.log(`[${level}] ${safeMessage}`, cleanData);\n\n        // 发送到安全的日志服务\n        this.sendToLogService(level, safeMessage, cleanData);\n    }\n}\n```\n\n---\n\n这些面试题涵盖了前端安全的核心知识点，包括常见攻击手段、防范措施、安全最佳实践等。在实际面试中，面试官可能会深入询问具体的实现细节或结合实际项目场景进行讨论。",
+    "a": "**前端日志的原则：不记敏感信息、防日志注入、按级别可控。**\n- 脱敏：密码、token、身份证、卡号等字段统一打码\n- 防注入：去掉回车换行，避免伪造日志行\n- 分级：按 level 输出，生产环境不打调试日志\n- 上报走独立日志服务，本地不留明文副本\n```js\nconst SAFE = ['password', 'token'];\nconst mask = d => Object.fromEntries(\n  Object.entries(d).map(([k, v]) => [k, SAFE.includes(k) ? \"***\" : v])\n);\n```",
     "priority": 1
   }
 ]
