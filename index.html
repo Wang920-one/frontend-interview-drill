@@ -129,6 +129,8 @@
   .rate.fz{ background:var(--yellow); }
   .rate.ok{ background:var(--green); color:#fff; }
   .rate.picked{ outline:3px dashed var(--blue); outline-offset:2px; }
+  .rate.clr{ flex:0 0 58px; background:#efeae0; color:#6f665c; font-size:18px; }
+  .rate.clr.hide{ display:none; }
 
   /* 导航 */
   .nav{ display:flex; gap:8px; }
@@ -322,6 +324,7 @@
     <div class="rate no" data-rate="unknown">不会</div>
     <div class="rate fz" data-rate="fuzzy">模糊</div>
     <div class="rate ok" data-rate="know">掌握</div>
+    <div class="rate clr hide" id="clearRate" title="清除本题评级">↺</div>
   </div>
 
   <div class="nav">
@@ -424,6 +427,19 @@ const LS_MODS='drill-mods-v1';
 try{ const _m=JSON.parse(localStorage.getItem(LS_MODS)||'[]'); if(Array.isArray(_m)) selMods=_m.filter(id=>MODULES.some(m=>m.id===id)); }catch(e){ selMods=[]; }
 function saveSelMods(){ try{ localStorage.setItem(LS_MODS, JSON.stringify(selMods)); }catch(e){} }
 function baseQs(){ return selMods.length? QUESTIONS.filter(q=>selMods.includes(q.module)) : QUESTIONS; }
+/* 每个模式（含所选模块组合）各自记住背到哪题，切回来不用从头翻 */
+const LS_MODE_POS='drill-mode-pos-v1';
+let modePos = {};
+try{ modePos = JSON.parse(localStorage.getItem(LS_MODE_POS)||'{}') || {}; }catch(e){ modePos={}; }
+function modeKey(){ return curMode + '|' + (selMods.length? selMods.slice().sort().join(',') : 'all'); }
+// 注意：必须在 buildList() **之前**把 id 取出来，
+// 否则 buildList → showCard → saveLast 会先把「第 1 题」写进 modePos，真实进度就被冲掉了
+function restorePosById(savedId){
+  if(!savedId || !list.length) return false;
+  const p = list.findIndex(q=>q.id===savedId);
+  if(p <= 0) return false;   // 没找到或就在开头，保持原位即可
+  pos = p; return true;
+}
 let drawerView='modules', drawerMod='all';
 
 /* 复习通知 / 每日配额 / 每日复习计数 */
@@ -531,7 +547,12 @@ $('#modBtn').onclick=openDrawer;
 $('#drawerClose').onclick=closeDrawer;
 $('#drawerMask').onclick=closeDrawer;
 
-function afterModChange(){ renderDrawer(); buildList(); renderRevPlan(); }
+function afterModChange(){
+  const savedId = modePos[modeKey()];   // 先取，再 buildList
+  renderDrawer(); buildList();
+  if(restorePosById(savedId)) showCard();
+  renderRevPlan();
+}
 function buildList(){
   const base = baseQs();
   if(curMode==='review'){
@@ -598,7 +619,11 @@ function hl(a){
 function saveLast(){
   if(!appReady) return;
   const q=list[pos]; if(!q) return;
-  try{ localStorage.setItem(LS_LAST, JSON.stringify({mods:selMods, module:selMods.length===1?selMods[0]:'all', mode:curMode, id:q.id})); }catch(e){}
+  try{
+    modePos[modeKey()] = q.id;
+    localStorage.setItem(LS_MODE_POS, JSON.stringify(modePos));
+    localStorage.setItem(LS_LAST, JSON.stringify({mods:selMods, module:selMods.length===1?selMods[0]:'all', mode:curMode, id:q.id}));
+  }catch(e){}
 }
 function showCard(){
   const q=list[pos]; if(!q){ showEmpty(); return; }
@@ -613,6 +638,7 @@ function showCard(){
   $('#revInfo').innerHTML=reviewInfoText(q);
   elCard.classList.remove('flip');
   document.querySelectorAll('.rate').forEach(r=>r.classList.toggle('picked', progress[q.id]===r.dataset.rate));
+  const clrBtn=$('#clearRate'); if(clrBtn) clrBtn.classList.toggle('hide', !progress[q.id]);
   $('#prevBtn').disabled=(pos===0); $('#nextBtn').disabled=(pos===n-1);
   saveLast();
 }
@@ -915,22 +941,38 @@ elCard.onclick=()=>{
 };
 
 /* 评分 */
+const RATE_NAME={unknown:'不会', fuzzy:'模糊', know:'掌握'};
 document.querySelectorAll('.rate').forEach(r=>r.onclick=()=>{
   const q=list[pos]; if(!q) return; const v=r.dataset.rate;
-  if(progress[q.id]===v){ delete progress[q.id]; if(curMode==='review'){ bumpReviewToday(q.id,false); unbumpRevToday(q.module, q.id); } else { bumpToday(q.id,false); } }
-  else { progress[q.id]=v; if(curMode==='review'){ bumpReviewToday(q.id,true); bumpRevToday(q.module, q.id); } else { bumpToday(q.id,true); } }
+  // 已选中同一个评级 → 保持不变（避免误触把「模糊」点回「没记过」）
+  if(progress[q.id]===v){ flashHint('已经是「'+RATE_NAME[v]+'」啦 · 需要用 ↺ 才能清除'); return; }
+  progress[q.id]=v;
+  if(curMode==='review'){ bumpReviewToday(q.id,true); bumpRevToday(q.module, q.id); }
+  else { bumpToday(q.id,true); }
   localStorage.setItem(LS_PROG, JSON.stringify(progress));
   recordReview(q.id, v);
   if(curMode==='review'){ buildList(); } else { showCard(); }
   updateProgress(); updateRevUI();
 });
+$('#clearRate').onclick=()=>{
+  const q=list[pos]; if(!q || !progress[q.id]) return;
+  delete progress[q.id];
+  localStorage.setItem(LS_PROG, JSON.stringify(progress));
+  if(curMode==='review'){ bumpReviewToday(q.id,false); unbumpRevToday(q.module, q.id); }
+  else { bumpToday(q.id,false); }
+  if(curMode==='review'){ buildList(); } else { showCard(); }
+  updateProgress(); updateRevUI();
+};
 
 /* 模式 */
 document.querySelectorAll('.mode').forEach(m=>m.onclick=()=>{
   document.querySelectorAll('.mode').forEach(x=>x.classList.remove('on')); m.classList.add('on');
   curMode=m.dataset.mode;
   $('#revQuotaWrap').classList.toggle('on', curMode==='review');
-  buildList(); renderRevPlan();
+  const savedId = modePos[modeKey()];   // 先取，再 buildList
+  buildList();
+  if(restorePosById(savedId)){ showCard(); flashHint('📍 回到上次：第 '+(pos+1)+'/'+list.length+' 题'); }
+  renderRevPlan();
 });
 
 $('#prevBtn').onclick=()=>{ if(pos>0){ pos--; showCard(); } };
